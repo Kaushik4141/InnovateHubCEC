@@ -30,7 +30,7 @@
           </div>
           <div class="flex flex-1 justify-end gap-8">
             <div class="flex items-center gap-9">
-              <a class="text-white text-sm font-medium leading-normal" href="index.html">Home</a>
+              <a class="text-white text-sm font-medium leading-normal" href="/index">Home</a>
               <a class="text-white text-sm font-medium leading-normal" href="#">About</a>
               <a class="text-white text-sm font-medium leading-normal" href="#">Services</a>
               <a class="text-white text-sm font-medium leading-normal" href="#">Contact</a>
@@ -46,17 +46,20 @@
           <div class="layout-content-container flex flex-col w-[512px] max-w-[512px] py-5 max-w-[960px] flex-1">
             <h2 class="text-white tracking-light text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5">Sign in to InnovativeHubCEC</h2>
             <div class="text-white tracking-light text-[28px] font-bold leading-tight px-60 text-center justify-center pb-3 pt-5">
+              <form action="/login" method="POST">
               <label class="flex flex-col min-w-40 flex-1">
-                <input
+                <input type="email"
+                name="email"
                   placeholder="Email"
                   class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-[#243447] focus:border-none h-14 placeholder:text-[#93acc8] p-4 text-base font-normal leading-normal"
-                  value=""
+                  value="" id="login-email"
                 />
               </label>
             </div>
             <div class="text-white tracking-light text-[28px] font-bold leading-tight px-60 text-center pb-5 pt-5">
               <label class="flex flex-col min-w-40 flex-1">
-                <input
+                <input type="password"
+                name="password"
                   placeholder="Password"
                   class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-[#243447] focus:border-none h-14 placeholder:text-[#93acc8] p-4 text-base font-normal leading-normal"
                   value=""
@@ -65,12 +68,13 @@
             </div>
             <p class="text-[#93acc8] text-sm font-normal leading-normal text-center pb-3 pt-1 px-4 underline">Forgot password?</p>
             <div class="flex px-4 py-3 justify-center">
-              <button style="align-items:center ;"
+              <button style="align-items:center ;" type="submit"
                 class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 flex-1 bg-[#1978e5] text-white text-sm font-bold leading-normal tracking-[0.015em]"
               >
                 <span class="truncate">Sign In</span>
               </button>
             </div>
+            </form>
             <p class="text-[#93acc8] text-sm font-normal leading-normal pb-3 pt-1 px-4 text-center underline">Don't have an account? Sign up</p>
           </div>
         </div>
