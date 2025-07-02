@@ -1,15 +1,15 @@
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 const port = 3000;
 const path = require("path");
 const login = require("./modules/signup.js");
-
 mongoose
   .connect("mongodb://localhost:27017/login")
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.error("MongoDB connection error:", err));
-app.use(express.static("public"));
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -23,6 +23,7 @@ app.get("/login", (req, res) => {
 app.get("/signup", (req, res) => {
   res.render("signup");
 });
+
 app.post("/signup", async (req, res) => {
   try {
     const { FullName, USN, year, email, password, confirmPassword } = req.body;
@@ -59,6 +60,7 @@ app.post("/login", async (req, res) => {
       // Check if user exists
       const user = await login.find({ email: email, password: password });
       if (user) {
+         res.cookie('userEmail', user.email, { httpOnly: true });
         console.log("User logged in:", user);
         res.status(200).render("index", { user: user });
       } else {
@@ -70,6 +72,21 @@ app.post("/login", async (req, res) => {
   } catch (error) {
     console.error("Error logging in user:", error);
     res.redirect("/login");
+  }
+});
+app.get("/profile", async (req, res) => {
+  const email = req.cookies.userEmail;
+  if (!email) {
+    return res.redirect("/login");
+  }
+  try {
+    const user = await login.findOne({ email });
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    res.render("profile", { user });
+  } catch (err) {
+    res.status(500).send("Server error");
   }
 });
 app.listen(port, () => {
