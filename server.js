@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 //app.use(cookieParser());
 const port = 3000;
 const path = require("path");
-const login = require("./modules/signup.js");
+const login = require("./src/modules/signup.js");
 app.use(express.static('public'));
 mongoose
   .connect("mongodb://localhost:27017/login")
