@@ -2,17 +2,24 @@
   "name": "innovatehubcec",
   "version": "1.0.0",
   "description": "🚀 InnovateHubCEC\r InnovateHubCEC is an online platform built for students of CEC to showcase their projects, share their innovations, and connect with peers and seniors working in domains they are interested in.",
-  "main": "server.js",
+  "main": "src/server.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "nodemon src/server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
+    "cookieparser": "^0.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.0.1",
     "ejs": "^3.1.10",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.1"
   }
 }
