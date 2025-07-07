@@ -1,11 +1,12 @@
 const express = require("express");
 const app = express();
 const mongoose = require("mongoose");
-const cookieParser = require('cookie-parser');
-app.use(cookieParser());
+//const cookieParser = require('cookie-parser');
+//app.use(cookieParser());
 const port = 3000;
 const path = require("path");
 const login = require("./modules/signup.js");
+app.use(express.static('public'));
 mongoose
   .connect("mongodb://localhost:27017/login")
   .then(() => console.log("MongoDB connected"))
