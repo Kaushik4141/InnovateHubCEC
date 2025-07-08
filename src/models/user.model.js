@@ -35,11 +35,11 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default: "https://www.gravatar.com/avatar/ "
+    default: "../public/default_avatar.png" 
   },
   coverimage: {
     type: String,
-    default: "https://www.gravatar.com/avatar/ "
+    default: "../public/default_coverimage.png"
   },
   likehistory: [{
     type: mongoose.Schema.Types.ObjectId,

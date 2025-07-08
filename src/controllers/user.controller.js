@@ -3,6 +3,21 @@ import {ApiError} from "../utils/apierrorhandler.js";
 import { User } from "../models/user.model.js";  
 import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiresponsehandler.js";
+
+const generateAccessAndRefreshToken=async (userId)=> {
+    try{
+        const user = await User.findById(user._id)
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+        user.refreshToken = refreshToken
+        await user.save({validatebeforeSave: false})
+        return { accessToken, refreshToken }
+
+    }
+    catch(error){
+        throw new ApiError("Error generating tokens", 500);
+    }}
+
 const registerUser = asyncHandler(async (req, res, next) => {
    //data from frontend
    //validation
@@ -15,7 +30,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
    //return response
 
    const {fullname, email, usn, password,year }=req.body; 
-   console.log("email",email);
+ 
    if(!fullname || !email || !usn || !password || !year){
          throw new ApiError("Please provide all required fields", 400);
    }
@@ -27,28 +42,27 @@ const registerUser = asyncHandler(async (req, res, next) => {
     }
     const avatarLocalPath = req.files && req.files.avatar && req.files.avatar[0] ? req.files.avatar[0].path : null;
 const coverimageLocalPath = req.files && req.files.coverimage && req.files.coverimage[0] ? req.files.coverimage[0].path : null;
-    console.log("avatarLocalPath",avatarLocalPath);
+   let avatarUrl, coverimageUrl;
 
-    console.log("coverimageLocalPath",coverimageLocalPath);
-
-    if (!avatarLocalPath || !coverimageLocalPath){
-       throw new ApiError("Please upload avatar and cover image", 400);
-    }
-const avatar = await uploadOnCloudinary(avatarLocalPath)
-const coverimage = await uploadOnCloudinary(coverimageLocalPath)
-if(!avatar || !coverimage){
-    throw new ApiError("Error uploading images", 400);
+if (avatarLocalPath) {
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    avatarUrl = avatar?.secure_url;
 }
-const user=await User.create({
+if (coverimageLocalPath) {
+    const coverimage = await uploadOnCloudinary(coverimageLocalPath);
+    coverimageUrl = coverimage?.secure_url;
+}
+
+const user = await User.create({
     fullname,
     email,
     usn,
     year,
     password,
-    avatar:avatar.secure_url,
-    coverimage:coverimage.secure_url
-})
-const createduserid=await User.findById(user._id).select("-password -refreshToken");
+    ...(avatarUrl && { avatar: avatarUrl }),
+    ...(coverimageUrl && { coverimage: coverimageUrl })
+});
+const createduserid=await User.findById(user._id).select("-password -refreshToken")
 if(!createduserid){
     throw new ApiError("User not created", 500);
 }
@@ -57,4 +71,44 @@ return res.status(201).json(
  );
 })
 
-export { registerUser }
+const loginuser= asyncHandler(async (req, res, next) => {
+    //data from frontend
+    //validation by email
+    //check if user exists email
+    //check password
+    //access and refresh token 
+    //send cokiees 
+    //return response
+    const {email, password} = req.body;
+    if(!email){
+        throw new ApiError("Please provide email", 400)
+    }
+    if(!password){
+        throw new ApiError("Please provide password", 400)
+    }
+    const user = await User.findOne({email})
+    if(!user){
+        throw new ApiError("User not found", 404)
+    }
+    const isPasswordMatched = await user.isPasswordCorrect(password)
+    if(!isPasswordMatched){
+        throw new ApiError("Invalid password", 401)
+    }
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+   const loggedInUser=await User.findByIdAndUpdate(user._id).select("-password -refreshToken")
+   const cookieOptions = {
+    httpOnly: true,
+    secure: true, // Set to true if using HTTPS
+   }
+   return res.status(200).cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(new ApiResponse(200, {
+        user:loggedInUser,accessToken,refreshToken
+     }, "User logged in successfully"))
+})
+const logoutUser=asyncHandler(async (req, res, next) => {
+  
+})  
+export { registerUser 
+, loginuser
+}
