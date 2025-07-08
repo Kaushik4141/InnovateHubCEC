@@ -70,7 +70,13 @@ const Header = () => {
               <MessageCircle className="h-5 w-5" />
               <span className="text-xs mt-1">Messages</span>
             </button>
-            
+            <button 
+              onClick={() => navigate('/Leaderboard')}
+              className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+            >
+              <MessageCircle className="h-5 w-5" />
+              <span className="text-xs mt-1">Leaderboard</span>
+            </button>
             {/* Notifications */}
             <div className="relative">
               <button 
