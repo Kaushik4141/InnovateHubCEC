@@ -6,7 +6,7 @@ import { ApiResponse } from "../utils/apiresponsehandler.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
-    const user = await User.findById(user._id);
+    const user = await User.findById(userId);
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
@@ -104,7 +104,7 @@ const loginuser = asyncHandler(async (req, res, next) => {
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
     user._id
   );
-  const loggedInUser = await User.findByIdAndUpdate(user._id).select(
+  const loginuser = await User.findByIdAndUpdate(user._id).select(
     "-password -refreshToken"
   );
   const cookieOptions = {
@@ -119,7 +119,7 @@ const loginuser = asyncHandler(async (req, res, next) => {
       new ApiResponse(
         200,
         {
-          user: loggedInUser,
+          user: loginuser,
           accessToken,
           refreshToken,
         },
@@ -128,11 +128,11 @@ const loginuser = asyncHandler(async (req, res, next) => {
     );
 });
 const logoutUser = asyncHandler(async (req, res) => {
-  User.findByIdAndUpdate(
+  await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: "undefined",
+      $unset: {
+        refreshToken: 1,
       },
     },
     { new: true }
@@ -143,8 +143,9 @@ const logoutUser = asyncHandler(async (req, res) => {
   };
   return res
     .status(200)
-    .cookie("accessToken", cookieOptions)
-    .cookie("refreshToken", cookieOptions)
-    .json(new ApiResponse(200, {}, "User logged out successfully"));
-});
+    .clearCookie("accessToken", cookieOptions)
+    .clearCookie("refreshToken", cookieOptions)
+    .json(new ApiResponse(200, {}, "User logged Out"))
+})
+
 export { registerUser, loginuser, logoutUser };
