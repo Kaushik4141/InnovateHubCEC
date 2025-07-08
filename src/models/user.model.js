@@ -3,14 +3,14 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
-  FullName: {
+  fullname: {
     type: String,
     required: true,
     unique: true,
     index: true,
     trim: true
   },
-  USN: {
+  usn: {
     type: String,
     required: true,
     unique: true,
