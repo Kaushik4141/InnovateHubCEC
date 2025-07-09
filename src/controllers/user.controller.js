@@ -194,6 +194,68 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
 
 })
-
-
-export { registerUser, loginuser, logoutUser, refreshAccessToken };
+const changeCurrrentPassword = asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body
+    if (!currentPassword || !newPassword) {
+        throw new ApiError(400, "Please provide current and new password")
+    }
+    const user = await User.findById(req.user._id)
+    if (!user) {
+        throw new ApiError(404, "User not found")
+    }
+    const isPasswordMatched = await user.isPasswordCorrect(currentPassword)
+    if (!isPasswordMatched) {
+        throw new ApiError(401, "Current password is incorrect")
+    }
+    user.password = newPassword
+    await user.save({validatebeforeSave : false})
+    return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully"))
+})
+const getcurrentUser = asyncHandler(async (req, res) => {
+    return res
+    .status(200)
+    .json(200, req.user, "Current user fetched successfully")
+})
+const updateAccountDetails = asyncHandler(async (req, res) => {
+    const { fullname, email, usn, year } = req.body;
+    if (!fullname || !email || !usn || !year) {
+        throw new ApiError("Please provide all required fields", 400);
+    }
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+        { fullname, email, usn, year },
+        { new: true, runValidators: true }
+    ).select("-password -refreshToken");
+    if (!user) {
+        throw new ApiError("User not found", 404);
+    }
+    return res
+        .status(200)
+        .json(new ApiResponse(200, user, "User details updated successfully"));
+});
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath=res.file?.path
+  if (!avatarLocalPath) {
+    throw new ApiError("Please provide an avatar image", 400);
+  }
+  const avatar=await uploadOnCloudinary(avatarLocalPath)
+  if (!avatar?.secure_url) {
+    throw new ApiError("Error uploading avatar image", 400);
+  }
+  const user=await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar?.secure_url,
+      },
+    },
+    { new: true,}
+  ).select("-password ")
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "User avatar updated successfully"));
+}
+)
+export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar }
