@@ -6,7 +6,7 @@ const storage = multer.diskStorage({
     filename: function (req, file, cb) {
       
       cb(null, file.originalname)
-      //You can also use a custom naming convention here it should be unique but not mandatory
+      //You can also use a custom naming convention here it should be unique but here it is not needed mandatory
       // cb(null, Date.now() + '-' + file.originalname)
     }
   })
