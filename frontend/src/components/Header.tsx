@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, MessageCircle, User, Home, Users, Briefcase, BookOpen,
-  ChevronDown, Settings, LogOut, Plus
+  ChevronDown, Settings, LogOut, Plus,
+  Trophy
 } from 'lucide-react';
 
 const Header = () => {
