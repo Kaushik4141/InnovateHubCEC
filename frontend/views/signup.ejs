@@ -73,7 +73,7 @@
                 <div class="layout-content-container flex flex-col w-[512px] max-w-[512px] py-5 max-w-[960px] flex-1">
                     <h2 class="text-white tracking-light text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5">Create your InnovativeHubCEC account</h2>
                     
-                    <form id="signupForm" action="/signup" method="POST">
+                    <form id="signupForm" action="/http://localhost:8000/api/v1/users/register" method="POST">
                         <!-- First Name -->
                         <div class="text-white tracking-light text-[28px] font-bold leading-tight px-60 text-center justify-center pb-3 pt-5">
                             <label class="flex flex-col min-w-40 flex-1">
@@ -93,8 +93,8 @@
                             <label class="flex flex-col min-w-40 flex-1">
                                 <input 
                                     type="text"
-                                    name="USN"
-                                    id="USN"
+                                    name="usn"
+                                    id="usn"
                                     placeholder="Your USN"
                                     class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-lg text-white focus:outline-0 focus:ring-0 border-none bg-[#243447] focus:border-none h-14 placeholder:text-[#93acc8] p-4 text-base font-normal leading-normal"
                                     required
@@ -211,120 +211,125 @@
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-    <script>
-        document.getElementById('signupForm').addEventListener('submit', function(e) {
-           
-            
-            // Clear previous errors
-            clearErrors();
-            
-            // Get form values
-            const fullName = document.getElementById('FullName').value.trim();
-            const USN = document.getElementById('USN').value.trim();
-             const year = document.getElementById('year').value;
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            const terms = document.getElementById('terms').checked;
-            
-            let isValid = true;
-            
-            // Validate first name
-            if (!firstName) {
-                showError('FullName', 'FullNameError', 'Full name is required');
-                isValid = false;
-            }
-            
-            // Validate last name
-            if (!USN) {
-                showError('USN', 'USNError', 'USN is required');
-                isValid = false;
-            }
-            if (!year) {
-                showError('year', 'yearError', 'Please select your graduation year');
-                isValid = false;
-            }
-            // Validate email
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!email) {
-                showError('email', 'emailError', 'Email is required');
-                isValid = false;
-            } else if (!emailRegex.test(email)) {
-                showError('email', 'emailError', 'Please enter a valid email address');
-                isValid = false;
-            }
-            
-            // Validate password
-            if (!password) {
-                showError('password', 'passwordError', 'Password is required');
-                isValid = false;
-            } else if (password.length < 8) {
-                showError('password', 'passwordError', 'Password must be at least 8 characters long');
-                isValid = false;
-            }
-            
-            // Validate confirm password
-            if (!confirmPassword) {
-                showError('confirmPassword', 'confirmPasswordError', 'Please confirm your password');
-                isValid = false;
-            } else if (password !== confirmPassword) {
-                showError('confirmPassword', 'confirmPasswordError', 'Passwords do not match');
-                isValid = false;
-            }
-            
-            // Validate terms
-            if (!terms) {
-                showError('terms', 'termsError', 'You must agree to the terms and conditions');
-                isValid = false;
-            }
-            
-            if (isValid) {
-                // Show success message
-                document.getElementById('successMessage').style.display = 'block';
-                
-                // Simulate account creation and redirect
-                setTimeout(() => {
-                    // In a real application, you would submit the form data to your server
-                    // For now, we'll just redirect to the sign-in page
-                    window.location.href = 'signin.html';
-                }, 2000);
-            }
+<script>
+  document.getElementById('signupForm').addEventListener('submit', function (e) {
+    e.preventDefault(); // prevent default form submit
+
+    clearErrors();
+
+    const fullName = document.getElementById('Full').value.trim();
+    const usn = document.getElementById('usn').value.trim();
+    const year = document.getElementById('year').value;
+    const email = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    const terms = document.getElementById('terms').checked;
+
+    let isValid = true;
+
+    if (!fullName) {
+      showError('Full', 'FullNameError', 'Full name is required');
+      isValid = false;
+    }
+
+    if (!usn) {
+      showError('USN', 'USNError', 'USN is required');
+      isValid = false;
+    }
+
+    if (!year) {
+      showError('year', 'yearError', 'Please select your graduation year');
+      isValid = false;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email) {
+      showError('email', 'emailError', 'Email is required');
+      isValid = false;
+    } else if (!emailRegex.test(email)) {
+      showError('email', 'emailError', 'Please enter a valid email address');
+      isValid = false;
+    }
+
+    if (!password) {
+      showError('password', 'passwordError', 'Password is required');
+      isValid = false;
+    } else if (password.length < 8) {
+      showError('password', 'passwordError', 'Password must be at least 8 characters long');
+      isValid = false;
+    }
+
+    if (!confirmPassword) {
+      showError('confirmPassword', 'confirmPasswordError', 'Please confirm your password');
+      isValid = false;
+    } else if (password !== confirmPassword) {
+      showError('confirmPassword', 'confirmPasswordError', 'Passwords do not match');
+      isValid = false;
+    }
+
+    if (!terms) {
+      showError('terms', 'termsError', 'You must agree to the terms and conditions');
+      isValid = false;
+    }
+
+    if (isValid) {
+      // Send data to server with Axios
+      axios.post('http://localhost:8000/api/v1/users/register', {
+        fullName,
+        usn,
+        year,
+        email,
+        password
+      })
+        .then(function (response) {
+          console.log(response.data);
+          document.getElementById('successMessage').style.display = 'block';
+          setTimeout(() => {
+            window.location.href = 'signin.html';
+          }, 2000);
+        })
+        .catch(function (error) {
+          console.error(error);
+          alert('Something went wrong. Please try again.');
         });
-        
-        function showError(inputId, errorId, message) {
-            const input = document.getElementById(inputId);
-            const error = document.getElementById(errorId);
-            
-            input.classList.add('input-error');
-            error.textContent = message;
-            error.style.display = 'block';
-        }
-        
-        function clearErrors() {
-            const inputs = document.querySelectorAll('input');
-            const errors = document.querySelectorAll('.error-message, .success-message');
-            
-            inputs.forEach(input => {
-                input.classList.remove('input-error');
-            });
-            
-            errors.forEach(error => {
-                error.style.display = 'none';
-            });
-        }
-        
-        // Clear error when user starts typing
-        document.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', function() {
-                this.classList.remove('input-error');
-                const errorId = this.id + 'Error';
-                const errorElement = document.getElementById(errorId);
-                if (errorElement) {
-                    errorElement.style.display = 'none';
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+    }
+  });
+
+  function showError(inputId, errorId, message) {
+    const input = document.getElementById(inputId);
+    const error = document.getElementById(errorId);
+
+    if (input) {
+      input.classList.add('input-error');
+    }
+    error.textContent = message;
+    error.style.display = 'block';
+  }
+
+  function clearErrors() {
+    const inputs = document.querySelectorAll('input');
+    const errors = document.querySelectorAll('.error-message, .success-message');
+
+    inputs.forEach(input => {
+      input.classList.remove('input-error');
+    });
+
+    errors.forEach(error => {
+      error.style.display = 'none';
+    });
+  }
+
+  document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', function () {
+      this.classList.remove('input-error');
+      const errorId = this.id + 'Error';
+      const errorElement = document.getElementById(errorId);
+      if (errorElement) {
+        errorElement.style.display = 'none';
+      }
+    });
+  });
+</script>
+</body></html>
