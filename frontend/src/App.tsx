@@ -6,6 +6,8 @@ import Messages from './components/Messages';
 import Network from './components/Network';
 import Jobs from './components/Jobs';
 import Notifications from './components/Notifications';
+import Login from './components/Login';
+import SignupForm from './components/register';
 
 function App() {
   return (
@@ -19,6 +21,9 @@ function App() {
           <Route path="/network" element={<Network />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<SignupForm />} />
+          {/* Add more routes as needed */}
         </Routes>
       </div>
     </Router>
