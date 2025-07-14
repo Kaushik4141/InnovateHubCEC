@@ -10,7 +10,7 @@ export default defineConfig({
   },
   server: {   
     proxy: {
-      '/v1/api': 'http://localhost:8000',
+      '/api/v1': 'http://localhost:8000',
     },
   },
 });
