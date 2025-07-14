@@ -5,6 +5,7 @@ import {
   ChevronDown, Settings, LogOut, Plus,
   Trophy
 } from 'lucide-react';
+import axios from 'axios';
 
 const Header = () => {
   const navigate = useNavigate();
@@ -16,6 +17,15 @@ const Header = () => {
     { id: 2, text: "New competition: AI Innovation Challenge", time: "4h ago", unread: true },
     { id: 3, text: "Aditya Kumar accepted your connection", time: "1d ago", unread: false }
   ];
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/v1/users/logout', {}, { withCredentials: true });
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+  };
 
   return (
     <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-50">
@@ -50,6 +60,13 @@ const Header = () => {
               <Home className="h-5 w-5" />
               <span className="text-xs mt-1">Home</span>
             </button>
+            <button 
+              onClick={() => navigate('/register')}
+              className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+              >
+                <Home className="h-5 w-5" />
+                <span className="text-xs mt-1">Register</span>
+                   </button>
             <button 
               onClick={() => navigate('/network')}
               className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
@@ -152,7 +169,7 @@ const Header = () => {
                       <Settings className="h-4 w-4 mr-3" />
                       Settings
                     </button>
-                    <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center">
+                    <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center" onClick={handleLogout}>
                       <LogOut className="h-4 w-4 mr-3" />
                       Sign Out
                     </button>
