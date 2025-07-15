@@ -8,7 +8,7 @@ import Jobs from './components/Jobs';
 import Notifications from './components/Notifications';
 import Login from './components/Login';
 import SignupForm from './components/register';
-
+import Leaderboard from './components/Leaderboard';
 function App() {
   return (
     <Router>
@@ -23,6 +23,8 @@ function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<SignupForm />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+
           {/* Add more routes as needed */}
         </Routes>
       </div>
