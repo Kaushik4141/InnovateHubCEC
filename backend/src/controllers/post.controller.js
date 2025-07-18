@@ -1,23 +1,23 @@
-import { Post, Video } from "../models/post.model.js";
+import { Post} from "../models/post.model.js";
 import { ApiError } from "../utils/apierrorhandler.js";
 import { ApiResponse } from "../utils/apiresponsehandler.js";
-import { deleteFile, uploadOnCloudnary } from "../utils/cloudinary.js";
-import { asynHandler } from "../utils/asynchandler.js";
-const postUpload = asynHandler(async (req, res) => {
+import { deleteFile, uploadOnCloudinary } from "../utils/cloudinary.js";
+import { asyncHandler } from "../utils/asynchandler.js";
+const postUpload = asyncHandler(async (req, res) => {
   try {
     const { description } = req.body;
     const userid = req.user._id;
     const postFileLocalPath = req.files?.postFile?.[0]?.path;
-    if (!videoFileLocalPath) throw new ApiError(400, "Video file required");
+    if (!postFileLocalPath) throw new ApiError(400, "Post file required");
     
-    const uploadPostOnCloudinary = await uploadOnCloudnary(postFileLocalPath);
+    const uploadPostOnCloudinary = await uploadOnCloudinary(postFileLocalPath);
    
     if (!(uploadPostOnCloudinary))
       throw new ApiError(400, "Upload video error");
     const postPublish = await Post.create({
       postFile: uploadPostOnCloudinary.url,
       description,
-      cloudinaryPostID: uploadVideoOnCloudinary.public_id,
+      cloudinaryPostID: uploadPostOnCloudinary.public_id,
       owner: userid,
     });
     if (!postPublish)
@@ -30,38 +30,38 @@ const postUpload = asynHandler(async (req, res) => {
   }
 });
 
-const getAllPost = asynHandler(async (req, res) => {
+const getAllPost = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
   const sortOptions = {};
   if (sortBy) {
     sortOptions[sortBy] = sortType == "desc" ? -1 : 1;
   }
   try {
-    const result = await Post.aggregate([
-      {
-        $match: {
-          $or: [
-            { description: { $regex: query, $options: "i" } },
-          ],
-          owner: userId,
-        },
-      },
-      {
-        $sort: sortOptions,
-      },
-      {
-        $skip: (page - 1) * limit,
-      },
-      {
-        $limit: parseInt(limit),
-      },
-    ]);
+    const match = {};
+    if (query) {
+      match.description = { $regex: query, $options: "i" };
+    }
+    if (userId) {
+      match.owner = userId;
+    }
+    const pipeline = [];
+    if (Object.keys(match).length) {
+      pipeline.push({ $match: match });
+    }
+    if (sortBy) {
+      pipeline.push({ $sort: sortOptions });
+    }
+    pipeline.push(
+      { $skip: (parseInt(page) - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) }
+    );
+    const result = await Post.aggregate(pipeline);
     return res.status(200).json(new ApiResponse(200, { result }, "Success"));
   } catch (e) {
     throw new ApiError(500, e.message);
   }
 });
-const getVideoById = asynHandler(async (req, res) => {
+const getPostById = asyncHandler(async (req, res) => {
   try {
     const { postId } = req.params;
     const postUrl = await Post.findById(postId);
@@ -69,12 +69,12 @@ const getVideoById = asynHandler(async (req, res) => {
 
     return res
       .status(200)
-      .json(new ApiResponse(200, { videoUrl }, "Success file "));
+      .json(new ApiResponse(200, { postUrl }, "Success file "));
   } catch (e) {
     throw new ApiError(404, e.message);
   }
 });
-const updatePost = asynHandler(async (req, res) => {
+const updatePost = asyncHandler(async (req, res) => {
   try {
     const { postId } = req.params;
     const localFilePathofPost = req.file.path;
@@ -113,7 +113,7 @@ const updatePost = asynHandler(async (req, res) => {
     throw new ApiError(500, "Error uploading: " + e.message);
   }
 });
-const deletePost = asynHandler(async (req, res) => {
+const deletePost = asyncHandler(async (req, res) => {
   try {
     const { postId } = req.params;
     const public_id_video = await Post.findById(postId);
@@ -144,7 +144,7 @@ const deletePost = asynHandler(async (req, res) => {
   }
 });
 
-const togglePublishStatus = asynHandler(async (req, res) => {
+const togglePublishStatus = asyncHandler(async (req, res) => {
   try {
     const { postId } = req.params;
     const toggel = await Post.findOneAndUpdate({ _id: postId }, [
