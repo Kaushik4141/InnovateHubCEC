@@ -1,10 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowRight, Users, Trophy, Code, Brain, Palette, Cpu } from 'lucide-react';
+import Header from './Header';
+
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
+  useEffect(() => {
+    fetch('/api/v1/users/current-user', { credentials: 'include' })
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(data => setIsLoggedIn(!!data?.data))
+      .catch(() => setIsLoggedIn(false));
+  }, []);
+
+  if (isLoggedIn === null) {
+    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] text-white">Loading...</div>;
+  }
+  if (isLoggedIn) {
+    // If logged in, show the main header and maybe redirect or show dashboard
+    return (
+      <div className="min-h-screen bg-gray-900 text-white">
+        <Header />
+        <div className="flex flex-col items-center justify-center h-[80vh]">
+          <h1 className="text-4xl font-bold mb-4">Welcome back to InnovateHubCEC!</h1>
+          <button
+            className="mt-4 px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+            onClick={() => navigate('/dashboard')}
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* Header */}
@@ -38,13 +68,13 @@ const LandingPage = () => {
                 About Us
               </button>
               <button 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/register')}
                 className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
               >
                 Sign Up
               </button>
               <button 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/Login')}
                 className="border border-purple-500 text-purple-400 px-6 py-2 rounded-lg font-medium hover:bg-purple-500 hover:text-white transition-colors"
               >
                 Log In
@@ -68,7 +98,7 @@ const LandingPage = () => {
                 InnovateHubCEC is your gateway to showcasing projects, connecting with mentors, and participating in exciting competitions. Join us and bring your ideas to life.
               </p>
               <button 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/Login')}
                 className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 flex items-center"
               >
                 Get Started
@@ -187,7 +217,7 @@ const LandingPage = () => {
             Sign up now and start your journey with InnovateHubCEC. Unleash your potential and make a difference.
           </p>
           <button 
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/Login')}
             className="bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors transform hover:scale-105"
           >
             Join InnovateHubCEC Today

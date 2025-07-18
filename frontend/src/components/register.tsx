@@ -226,6 +226,15 @@ const SignupForm: React.FC = () => {
         >
           Create Account
         </button>
+        <p className="text-[#93acc8] text-sm text-center">
+          Already have an account?{' '}
+          <span
+            className="underline text-[#1978e5] cursor-pointer"
+            onClick={() => navigate('/login')}
+          >
+            Sign in
+          </span>
+        </p>
       </form>
     </div>
   );

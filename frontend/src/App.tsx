@@ -9,12 +9,13 @@ import Notifications from './components/Notifications';
 import Login from './components/Login';
 import SignupForm from './components/register';
 import Leaderboard from './components/Leaderboard';
+import LandingPage from './components/LandingPage';
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-900">
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/messages" element={<Messages />} />
