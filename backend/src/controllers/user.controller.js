@@ -219,13 +219,13 @@ const getcurrentUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
 const updateAccountDetails = asyncHandler(async (req, res) => {
-    const { fullname, email, usn, year } = req.body;
+    const { fullname, email, usn, year,skills,linkedin,github,leetcode,certifications,projects,bio,achievements,otherLinks} = req.body;
     if (!fullname || !email || !usn || !year) {
         throw new ApiError("Please provide all required fields", 400);
     }
     const user = await User.findByIdAndUpdate(
         req.user._id,
-        { fullname, email, usn, year },
+        { fullname, email, usn, year,skills,linkedin,github,leetcode,certifications,projects,bio,achievements,otherLinks },
         { new: true, runValidators: true }
     ).select("-password -refreshToken");
     if (!user) {
@@ -241,8 +241,6 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is missing")
     }
-
-    //TODO: delete old image - assignment
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
 
@@ -269,17 +267,17 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
 })
 
 const getUserProfile = asyncHandler(async(req, res) => {
-    const {username} = req.params
+    const {fullname} = req.params
 
-    if (!username?.trim()) {
+    if (!fullname?.trim()) {
         throw new ApiError(400, "username is missing")
     }
 
     const profile = await User.aggregate([
         {
             $match: {
-                username: username?.toLowerCase()
-            }
+    fullname: fullname.trim()
+}
         },
         {
             $lookup: {
@@ -317,13 +315,27 @@ const getUserProfile = asyncHandler(async(req, res) => {
         {
             $project: {
                 fullName: 1,
-                username: 1,
                 followersCount: 1,
                 followingCount: 1,
                 isfollower: 1,
                 avatar: 1,
                 coverImage: 1,
-                email: 1
+                email: 1,
+                usn: 1,
+                year: 1,
+                skills: 1,
+                linkedin: 1,
+                github: 1,
+                leetcode: 1,
+                certifications: 1,
+                projects: 1,
+                bio: 1,
+                achievements: 1,
+                otherLinks: 1,
+                createdAt: 1,
+                updatedAt: 1,
+                
+
                 //still fields are to be added
 
             }
@@ -337,7 +349,7 @@ const getUserProfile = asyncHandler(async(req, res) => {
     return res
     .status(200)
     .json(
-        new ApiResponse(200, channel[0], "User channel fetched successfully")
+        new ApiResponse(200, profile[0], "User channel fetched successfully")
     )
 })
 

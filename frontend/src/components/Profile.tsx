@@ -121,7 +121,8 @@ const Profile: FC = () => {
         setLoading(false);
       });
   }, []);
-
+useEffect(() => {
+  axios.get('api/v1/posts/')
   const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setEditForm(prev => ({ ...prev, [name]: value }));

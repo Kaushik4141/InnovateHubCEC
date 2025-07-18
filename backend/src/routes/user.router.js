@@ -19,7 +19,7 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar)
 
-router.route("/c/:username").get(verifyJWT, getUserProfile)
+router.route("/c/:fullname").get(verifyJWT, getUserProfile)
 
 
     
