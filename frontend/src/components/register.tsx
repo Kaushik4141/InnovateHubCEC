@@ -90,7 +90,7 @@ const SignupForm: React.FC = () => {
 
       await axios.post('/api/v1/users/register', payload, { withCredentials: true });
       setSuccess(true);
-      setTimeout(() => navigate('/signin'), 2000);
+      setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error: any) {
       console.error(error);
       setErrors({ general: error.response?.data?.message || 'Something went wrong' });

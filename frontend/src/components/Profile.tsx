@@ -7,6 +7,7 @@ import {
   Award, Eye, Heart, MessageCircle, Code, Trophy, Users,
   Plus, Settings, Share2, ExternalLink
 } from 'lucide-react';
+import EditProfileModal from './EditProfileModal.js';
 
 // ----- Type Definitions -----
 interface Certification {
@@ -90,14 +91,7 @@ const Profile: FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({
-    fullname: '',
-    email: '',
-    usn: '',
-    year: '',
-    bio: '',
-  });
+  const [showEditModal, setShowEditModal] = useState(false);
   const [showAvatarInput, setShowAvatarInput] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
@@ -106,13 +100,6 @@ const Profile: FC = () => {
     axios.get('/api/v1/users/current-user', { withCredentials: true })
       .then(res => {
         setUser(res.data.data);
-        setEditForm({
-          fullname: res.data.data.fullname || '',
-          email: res.data.data.email || '',
-          usn: res.data.data.usn || '',
-          year: res.data.data.year ? String(res.data.data.year) : '',
-          bio: res.data.data.bio || '',
-        });
         setLoading(false);
       })
       .catch(err => {
@@ -121,30 +108,6 @@ const Profile: FC = () => {
         setLoading(false);
       });
   }, []);
-useEffect(() => {
-  axios.get('api/v1/posts/')
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      const res = await axios.patch('/api/v1/users/update-account', {
-        fullname: editForm.fullname,
-        email: editForm.email,
-        usn: editForm.usn,
-        year: Number(editForm.year),
-        bio: editForm.bio,
-      }, { withCredentials: true });
-      setUser(res.data.data);
-      setIsEditing(false);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update profile');
-    }
-  };
 
   const handleAvatarClick = () => {
     if (avatarInputRef.current) {
@@ -223,7 +186,7 @@ useEffect(() => {
             <div className="flex items-center space-x-3">
               <button
                 className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
-                onClick={() => setIsEditing(true)}
+                onClick={() => setShowEditModal(true)}
               >
                 <Edit className="h-4 w-4 mr-2" /> Edit Profile
               </button>
@@ -251,64 +214,15 @@ useEffect(() => {
             {/* About */}
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <h3 className="text-lg font-semibold text-white mb-4">About</h3>
-              {isEditing ? (
-                <form onSubmit={handleEditSubmit} className="space-y-4">
-                  <input
-                    type="text"
-                    name="fullname"
-                    value={editForm.fullname}
-                    onChange={handleEditChange}
-                    placeholder="Full Name"
-                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
-                  />
-                  <input
-                    type="email"
-                    name="email"
-                    value={editForm.email}
-                    onChange={handleEditChange}
-                    placeholder="Email"
-                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
-                  />
-                  <input
-                    type="text"
-                    name="usn"
-                    value={editForm.usn}
-                    onChange={handleEditChange}
-                    placeholder="USN"
-                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
-                  />
-                  <input
-                    type="number"
-                    name="year"
-                    value={editForm.year}
-                    onChange={handleEditChange}
-                    placeholder="Year"
-                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
-                  />
-                  <textarea
-                    name="bio"
-                    value={editForm.bio}
-                    onChange={handleEditChange}
-                    placeholder="Bio"
-                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
-                  />
-                  <div className="flex space-x-2">
-                    <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded">Save</button>
-                    <button type="button" className="bg-gray-600 text-white px-4 py-2 rounded" onClick={() => setIsEditing(false)}>Cancel</button>
-                  </div>
-                  {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
-                </form>
-              ) : (
-                <>
-                  <p className="text-gray-300 mb-4 leading-relaxed">{user.bio || '—'}</p>
-                  <ContactLine Icon={Mail} text={user.email} />
-                  <div className="flex space-x-3 mt-4">
-                    {user.github && <SocialLink href={user.github} Icon={Github} />}
-                    {user.linkedin && <SocialLink href={user.linkedin} Icon={Linkedin} />}
-                    {user.otherLinks.map(l => <SocialLink key={l.url} href={l.url} Icon={ExternalLink} />)}
-                  </div>
-                </>
-              )}
+              <>
+                <p className="text-gray-300 mb-4 leading-relaxed">{user.bio || '—'}</p>
+                <ContactLine Icon={Mail} text={user.email} />
+                <div className="flex space-x-3 mt-4">
+                  {user.github && <SocialLink href={user.github} Icon={Github} />}
+                  {user.linkedin && <SocialLink href={user.linkedin} Icon={Linkedin} />}
+                  {user.otherLinks.map(l => <SocialLink key={l.url} href={l.url} Icon={ExternalLink} />)}
+                </div>
+              </>
             </div>
             {/* Skills */}
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -339,7 +253,7 @@ useEffect(() => {
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
                       <h3 className="text-xl font-semibold text-white">My Projects</h3>
-                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"onClick={() => navigate('/add-project')}>
+                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"onClick={() => navigate('/addpost')}>
                         <Plus className="h-4 w-4 mr-2" /> Add Project
                       </button>
                     </div>
@@ -363,6 +277,12 @@ useEffect(() => {
           </div>
         </div>
       </div>
+      <EditProfileModal
+        open={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        user={user}
+        onSave={updatedUser => setUser(prev => prev ? { ...prev, ...updatedUser, year: Number(updatedUser.year) } : prev)}
+      />
     </div>
   );
 };
