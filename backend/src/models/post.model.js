@@ -2,6 +2,11 @@ import e from "express";
 import mongoose from "mongoose";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 const postSchema = new mongoose.Schema({
+   postId: {
+    type: String,
+    unique: true,
+    default: () => new mongoose.Types.ObjectId().toString()
+  },
   postFile: {
       type: String,
       required: true,

@@ -91,6 +91,7 @@ const Profile: FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+
   useEffect(() => {
     axios.get('/api/v1/users/current-user', { withCredentials: true })
       .then(res => {
@@ -125,7 +126,7 @@ const Profile: FC = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white mb-2">{user.fullname}</h1>
-                <p className="text-lg text-purple-400 mb-1">{`${user.year}th Year CSE`}</p>
+                <p className="text-lg text-purple-400 mb-1">{`${user.year}th batch CSE`}</p>
                 <p className="text-gray-400 mb-2">Canara Engineering College</p>
                 <div className="flex items-center text-gray-400 text-sm space-x-4">
                  
