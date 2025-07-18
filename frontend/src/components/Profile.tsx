@@ -90,12 +90,29 @@ const Profile: FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    fullname: '',
+    email: '',
+    usn: '',
+    year: '',
+    bio: '',
+  });
+  const [showAvatarInput, setShowAvatarInput] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     axios.get('/api/v1/users/current-user', { withCredentials: true })
       .then(res => {
         setUser(res.data.data);
+        setEditForm({
+          fullname: res.data.data.fullname || '',
+          email: res.data.data.email || '',
+          usn: res.data.data.usn || '',
+          year: res.data.data.year ? String(res.data.data.year) : '',
+          bio: res.data.data.bio || '',
+        });
         setLoading(false);
       })
       .catch(err => {
@@ -104,6 +121,55 @@ const Profile: FC = () => {
         setLoading(false);
       });
   }, []);
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    try {
+      const res = await axios.patch('/api/v1/users/update-account', {
+        fullname: editForm.fullname,
+        email: editForm.email,
+        usn: editForm.usn,
+        year: Number(editForm.year),
+        bio: editForm.bio,
+      }, { withCredentials: true });
+      setUser(res.data.data);
+      setIsEditing(false);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update profile');
+    }
+  };
+
+  const handleAvatarClick = () => {
+    if (avatarInputRef.current) {
+      avatarInputRef.current.click();
+    }
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('avatar', file);
+    setAvatarUploading(true);
+    setError(null);
+    try {
+      const res = await axios.patch('/api/v1/users/avatar', formData, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setUser(res.data.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to update avatar');
+    } finally {
+      setAvatarUploading(false);
+    }
+  };
 
   if (loading) return <p className="text-center text-white">Loading…</p>;
   if (error)   return <p className="text-center text-red-500">{error}</p>;
@@ -117,16 +183,32 @@ const Profile: FC = () => {
         <div className="bg-gray-800 rounded-xl p-8 mb-6 border border-gray-700">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
             <div className="flex items-center mb-6 lg:mb-0">
-              <div className="w-24 h-24 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mr-6 overflow-hidden">
+              <div className="w-24 h-24 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mr-6 overflow-hidden relative cursor-pointer group" onClick={handleAvatarClick}>
                 {user.avatar ? (
                   <img src={user.avatar} alt={user.fullname} className="w-full h-full object-cover" />
                 ) : (
                   user.fullname.split(' ').map(n => n[0]).join('').toUpperCase()
                 )}
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-xs">Change Avatar</span>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={avatarInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleAvatarChange}
+                  disabled={avatarUploading}
+                />
+                {avatarUploading && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60">
+                    <span className="text-xs">Uploading...</span>
+                  </div>
+                )}
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-white mb-2">{user.fullname}</h1>
-                <p className="text-lg text-purple-400 mb-1">{`${user.year}th batch CSE`}</p>
+                <p className="text-lg text-purple-400 mb-1">{`${user.year}th Year CSE`}</p>
                 <p className="text-gray-400 mb-2">Canara Engineering College</p>
                 <div className="flex items-center text-gray-400 text-sm space-x-4">
                  
@@ -138,7 +220,10 @@ const Profile: FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center">
+              <button
+                className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
+                onClick={() => setIsEditing(true)}
+              >
                 <Edit className="h-4 w-4 mr-2" /> Edit Profile
               </button>
               <button className="bg-gray-700 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center">
@@ -165,13 +250,64 @@ const Profile: FC = () => {
             {/* About */}
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <h3 className="text-lg font-semibold text-white mb-4">About</h3>
-              <p className="text-gray-300 mb-4 leading-relaxed">{user.bio || '—'}</p>
-              <ContactLine Icon={Mail} text={user.email} />
-              <div className="flex space-x-3 mt-4">
-                {user.github && <SocialLink href={user.github} Icon={Github} />}
-                {user.linkedin && <SocialLink href={user.linkedin} Icon={Linkedin} />}
-                {user.otherLinks.map(l => <SocialLink key={l.url} href={l.url} Icon={ExternalLink} />)}
-              </div>
+              {isEditing ? (
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                  <input
+                    type="text"
+                    name="fullname"
+                    value={editForm.fullname}
+                    onChange={handleEditChange}
+                    placeholder="Full Name"
+                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
+                  />
+                  <input
+                    type="email"
+                    name="email"
+                    value={editForm.email}
+                    onChange={handleEditChange}
+                    placeholder="Email"
+                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
+                  />
+                  <input
+                    type="text"
+                    name="usn"
+                    value={editForm.usn}
+                    onChange={handleEditChange}
+                    placeholder="USN"
+                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
+                  />
+                  <input
+                    type="number"
+                    name="year"
+                    value={editForm.year}
+                    onChange={handleEditChange}
+                    placeholder="Year"
+                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
+                  />
+                  <textarea
+                    name="bio"
+                    value={editForm.bio}
+                    onChange={handleEditChange}
+                    placeholder="Bio"
+                    className="w-full px-3 py-2 rounded bg-gray-700 text-white"
+                  />
+                  <div className="flex space-x-2">
+                    <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded">Save</button>
+                    <button type="button" className="bg-gray-600 text-white px-4 py-2 rounded" onClick={() => setIsEditing(false)}>Cancel</button>
+                  </div>
+                  {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                </form>
+              ) : (
+                <>
+                  <p className="text-gray-300 mb-4 leading-relaxed">{user.bio || '—'}</p>
+                  <ContactLine Icon={Mail} text={user.email} />
+                  <div className="flex space-x-3 mt-4">
+                    {user.github && <SocialLink href={user.github} Icon={Github} />}
+                    {user.linkedin && <SocialLink href={user.linkedin} Icon={Linkedin} />}
+                    {user.otherLinks.map(l => <SocialLink key={l.url} href={l.url} Icon={ExternalLink} />)}
+                  </div>
+                </>
+              )}
             </div>
             {/* Skills */}
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -202,7 +338,7 @@ const Profile: FC = () => {
                   <div className="space-y-6">
                     <div className="flex justify-between items-center">
                       <h3 className="text-xl font-semibold text-white">My Projects</h3>
-                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center">
+                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"onClick={() => navigate('/add-project')}>
                         <Plus className="h-4 w-4 mr-2" /> Add Project
                       </button>
                     </div>

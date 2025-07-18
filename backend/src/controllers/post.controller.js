@@ -52,8 +52,17 @@ const getAllPost = asyncHandler(async (req, res) => {
       pipeline.push({ $sort: sortOptions });
     }
     pipeline.push(
-      { $skip: (parseInt(page) - 1) * parseInt(limit) },
-      { $limit: parseInt(limit) }
+  { $skip: (parseInt(page) - 1) * parseInt(limit) },
+  { $limit: parseInt(limit) },
+  {
+    $lookup: {
+      from: "users",
+      localField: "owner",
+      foreignField: "_id",
+      as: "owner"
+    }
+  },
+  { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } }
     );
     const result = await Post.aggregate(pipeline);
     return res.status(200).json(new ApiResponse(200, { result }, "Success"));

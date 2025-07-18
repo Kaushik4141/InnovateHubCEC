@@ -10,6 +10,8 @@ import Login from './components/Login';
 import SignupForm from './components/register';
 import Leaderboard from './components/Leaderboard';
 import LandingPage from './components/LandingPage';
+import AddPost from './components/addpost';
+
 function App() {
   return (
     <Router>
@@ -25,6 +27,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<SignupForm />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/addpost" element={<AddPost />} />
 
           {/* Add more routes as needed */}
         </Routes>
