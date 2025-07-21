@@ -6,10 +6,11 @@ import Header from './Header';
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); 
+  const apiBase = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    fetch('/api/v1/users/current-user', { credentials: 'include' })
+    fetch(`${apiBase}/api/v1/users/current-user`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : Promise.reject())
       .then(data => setIsLoggedIn(!!data?.data))
       .catch(() => setIsLoggedIn(false));

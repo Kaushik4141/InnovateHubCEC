@@ -8,13 +8,14 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await axios.post('/api/v1/users/login', { email, password }, { withCredentials: true });
+      await axios.post(`${apiBase}/api/v1/users/login`, { email, password }, { withCredentials: true });
       navigate('/profile');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');

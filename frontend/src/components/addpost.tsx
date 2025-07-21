@@ -14,6 +14,7 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL;
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -37,7 +38,7 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
       if (tags) {
         tags.split(',').map(tag => formData.append('tags', tag.trim()));
       }
-      await axios.post('/api/v1/posts/uploadPost', formData, {
+      await axios.post(`${apiBase}/api/v1/posts/uploadPost`, formData, {
         withCredentials: true,
         headers: { 'Content-Type': 'multipart/form-data' }
       });

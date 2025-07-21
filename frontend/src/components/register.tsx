@@ -25,6 +25,7 @@ interface FormErrors {
 
 const SignupForm: React.FC = () => {
   const navigate = useNavigate();
+  const apiBase = import.meta.env.VITE_API_URL;     
 
   const [formData, setFormData] = useState<FormData>({
     fullname: '',
@@ -88,7 +89,7 @@ const SignupForm: React.FC = () => {
         password: formData.password,
       };
 
-      await axios.post('/api/v1/users/register', payload, { withCredentials: true });
+      await axios.post(`${apiBase}/api/v1/users/register`, payload, { withCredentials: true });
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error: any) {

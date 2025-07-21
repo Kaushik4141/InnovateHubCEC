@@ -95,9 +95,10 @@ const Profile: FC = () => {
   const [showAvatarInput, setShowAvatarInput] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
+  const apiBase = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    axios.get('/api/v1/users/current-user', { withCredentials: true })
+    axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true })
       .then(res => {
         setUser(res.data.data);
         setLoading(false);
@@ -123,7 +124,7 @@ const Profile: FC = () => {
     setAvatarUploading(true);
     setError(null);
     try {
-      const res = await axios.patch('/api/v1/users/avatar', formData, {
+      const res = await axios.patch(`${apiBase}/api/v1/users/avatar`, formData, {
         withCredentials: true,
         headers: { 'Content-Type': 'multipart/form-data' },
       });

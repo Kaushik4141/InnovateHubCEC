@@ -19,13 +19,14 @@ const Feed: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const apiBase = import.meta.env.VITE_API_URL; 
 
   useEffect(() => {
     const fetchPosts = async () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get('/api/v1/posts/getAllPost', { withCredentials: true });
+        const res = await axios.get(`${apiBase}/api/v1/posts/getAllPost`, { withCredentials: true });
         // Defensive: ensure posts is always an array
         let postsData = [];
         if (Array.isArray(res.data.data)) {

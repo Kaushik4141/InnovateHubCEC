@@ -16,11 +16,12 @@ const Header = () => {
     { id: 1, text: "Priya Sharma liked your project", time: "2h ago", unread: true },
     { id: 2, text: "New competition: AI Innovation Challenge", time: "4h ago", unread: true },
     { id: 3, text: "Aditya Kumar accepted your connection", time: "1d ago", unread: false }
-  ];
+  ];  
+  const apiBase = import.meta.env.VITE_API_URL;
 
   const handleLogout = async () => {
     try {
-      await axios.post('/api/v1/users/logout', {}, { withCredentials: true });
+      await axios.post(`${apiBase}/api/v1/users/logout`, {}, { withCredentials: true });
       navigate('/login');
     } catch (error) {
       console.error('Logout failed', error);

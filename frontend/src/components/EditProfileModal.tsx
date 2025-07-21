@@ -63,6 +63,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, user
     coverimage: '',
   });
   const [error, setError] = useState<string | null>(null);
+  const apiBase = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     if (user) {
@@ -94,7 +95,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, user
     e.preventDefault();
     setError(null);
     try {
-      const res = await axios.patch('/api/v1/users/update-account', editForm, { withCredentials: true });
+      const res = await axios.patch(`${apiBase}/api/v1/users/update-account`, editForm, { withCredentials: true });
       onSave(res.data.data);
       onClose();
     } catch (err: any) {
