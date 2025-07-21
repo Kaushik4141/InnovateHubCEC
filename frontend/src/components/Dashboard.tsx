@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -7,10 +8,39 @@ import Projects from './Projects';
 import Competitions from './Competitions';
 import MentorsList from './MentorsList';
 
+
+interface User {
+  _id: string;
+  fullname: string;
+  usn: string;
+  year: number;
+  email: string;
+  avatar?: string;
+  coverimage?: string;
+  linkedin?: string;
+  github?: string;
+  leetcode?: string;
+  bio?: string;
+  skills: string[];
+  followers: Array<{ _id: string; fullname: string; avatar?: string }>;
+  following: Array<{ _id: string; fullname: string; avatar?: string }>;
+  createdAt: string;
+  stats?: {
+    profileViews?: number;
+    posts?: number;
+    connections?: number;
+    mentees?: number;
+    competitions?: number;
+  };
+}
+
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('feed');
   const navigate = useNavigate();
-
+  const apiBase = import.meta.env.VITE_API_URL;
+ const [user, setUser] = useState<User | null>(null);
+   const [loading, setLoading] = useState<boolean>(true);
+   const [error, setError] = useState<string | null>(null);
   const renderContent = () => {
     switch (activeTab) {
       case 'feed':
@@ -25,6 +55,20 @@ const Dashboard = () => {
         return <Feed />;
     }
   };
+  useEffect(() => {
+    axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true })
+      .then(res => {
+        setUser(res.data.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError('Could not load profile.');
+        setLoading(false);
+      });
+  }, []);
+
+
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">

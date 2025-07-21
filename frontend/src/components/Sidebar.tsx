@@ -1,14 +1,82 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React,{useState,useEffect} from 'react';
+import { useNavigate, } from 'react-router-dom';
 import { Home, Users, Trophy, Code, MessageCircle, Bookmark, TrendingUp, Calendar } from 'lucide-react';
+import axios from 'axios';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
+interface Certification {
+  title: string;
+  issuer?: string;
+  date?: string;
+}
+
+interface ProjectItem {
+  title: string;
+  description?: string;
+  link?: string;
+  date?: string;
+}
+
+interface Achievement {
+  title: string;
+  description?: string;
+  date?: string;
+}
+
+interface OtherLink {
+  title: string;
+  url: string;
+}
+interface User {
+  _id: string;
+  fullname: string;
+  usn: string;
+  year: number;
+  email: string;
+  avatar?: string;
+  coverimage?: string;
+  linkedin?: string;
+  github?: string;
+  leetcode?: string;
+  bio?: string;
+  skills: string[];
+  certifications: Certification[];
+  projects: ProjectItem[];
+  achievements: Achievement[];
+  otherLinks: OtherLink[];
+  followers: Array<{ _id: string; fullname: string; avatar?: string }>;
+  following: Array<{ _id: string; fullname: string; avatar?: string }>;
+  createdAt: string;
+  stats?: {
+    profileViews?: number;
+    posts?: number;
+    connections?: number;
+    mentees?: number;
+    competitions?: number;
+  };
+}
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const navigate = useNavigate();
+  const apiBase = import.meta.env.VITE_API_URL;
+  const [user, setUser] = useState<User | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    useEffect(() => {
+    axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true })
+      .then(res => {
+        setUser(res.data.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setError('Could not load profile.');
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <div className="lg:col-span-1">
@@ -18,27 +86,27 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
           <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3">
             YU
           </div>
-          <h3 className="font-semibold">Your Name</h3>
-          <p className="text-sm text-gray-400">3rd Year CSE</p>
+          <h3 className="font-semibold">{user?.fullname}</h3>
+          <p className="text-sm text-gray-400">{user?.year}</p>
           <p className="text-xs text-gray-500 mt-1">Canara Engineering College</p>
         </div>
         
         <div className="space-y-2 text-sm border-t border-gray-700 pt-4">
           <div className="flex justify-between">
             <span className="text-gray-400">Profile Views</span>
-            <span className="text-purple-400 font-medium">127</span>
+            <span className="text-purple-400 font-medium">0</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Projects</span>
-            <span className="text-purple-400 font-medium">5</span>
+            <span className="text-purple-400 font-medium">0</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Connections</span>
-            <span className="text-purple-400 font-medium">89</span>
+            <span className="text-purple-400 font-medium">0</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-400">Competitions Won</span>
-            <span className="text-purple-400 font-medium">2</span>
+            <span className="text-purple-400 font-medium">0</span>
           </div>
         </div>
         
