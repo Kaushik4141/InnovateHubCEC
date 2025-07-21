@@ -83,11 +83,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
       {/* Profile Card */}
       <div className="bg-gray-800 rounded-xl p-6 mb-6">
         <div className="text-center mb-4">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3">
-            YU
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3"> {user?.avatar ? (
+                  <img src={user.avatar} alt={user.fullname} className="w-full h-full object-cover" />
+                ) : (
+                  user?.fullname.split(' ').map(n => n[0]).join('').toUpperCase()
+                )}
+            
           </div>
           <h3 className="font-semibold">{user?.fullname}</h3>
-          <p className="text-sm text-gray-400">{user?.year}</p>
+          <p className="text-sm text-gray-400">{user?.year}th year</p>
           <p className="text-xs text-gray-500 mt-1">Canara Engineering College</p>
         </div>
         
