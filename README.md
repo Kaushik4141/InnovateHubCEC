@@ -1,3 +1,5 @@
+live link:https://innovatehubcec.vercel.app/
+
 🚀 InnovateHubCEC
 InnovateHubCEC is an online platform built for students of CEC to showcase their projects, share their innovations, and connect with peers and seniors working in domains they are interested in.
 
