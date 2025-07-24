@@ -135,6 +135,14 @@ const Profile: FC = () => {
       setAvatarUploading(false);
     }
   };
+  const Linkedinsyncpost = async () => {
+    try {
+      const res = await axios.post(`${apiBase}/api/v1/posts/linkedinpost`, {}, { withCredentials: true });
+      alert(res.data.message);
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to sync LinkedIn posts');
+    }
+  };
 
   if (loading) return <p className="text-center text-white">Loading…</p>;
   if (error)   return <p className="text-center text-red-500">{error}</p>;
@@ -257,6 +265,9 @@ const Profile: FC = () => {
                       <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"onClick={() => navigate('/addpost')}>
                         <Plus className="h-4 w-4 mr-2" /> Add Project
                       </button>
+                       <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center" onClick={Linkedinsyncpost}>
+                        <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
+                    </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {user.projects.map(p => (
