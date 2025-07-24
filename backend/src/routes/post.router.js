@@ -9,6 +9,7 @@ import {
   updatePost,
   postUpload,
 } from "../controllers/post.controller.js";
+import { linkpostUpload } from "../controllers/linkedinpost.controller.js";
 const router = Router();
 router.route("/uploadPost").post(
   verifyJWT,
@@ -24,4 +25,6 @@ router
 router.route("/postId/:postId").delete(deletePost);
 router.route("/postId/:postId").post(togglePublishStatus);
 router.route("/getAllPost").get(getAllPost);
+router.route("/linkedinpost").post(verifyJWT, linkpostUpload);
+
 export default router;
