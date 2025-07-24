@@ -19,7 +19,9 @@ const linkpostUpload = asyncHandler(async (req, res) => {
 
   
     
-  
+  if (existing) {
+    return res.status(400).json({ message: 'AI automation already triggered today.' });
+  }
   await DailyRequest.create({ userId, date: today });
 
 await axios.post('https://hook.us2.make.com/6t0w6jqtrcuwqpo4jitcc192r40u8p7b', { userId });
