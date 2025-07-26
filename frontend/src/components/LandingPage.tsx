@@ -18,11 +18,13 @@ const LandingPage = () => {
   }, []);
 
   if (isLoggedIn === null) {
-    return( <DotLottieReact
+    return(
+        <div style={{ width: 650, height: 650, margin: "0 auto" }}> <DotLottieReact
       src="https://lottie.host/c9b2a87a-1083-4eeb-aa81-b391fb1c48f0/zNHTKk02Ru.lottie"
       loop
       autoplay
-    />);
+    />
+    </div>);
   }
   if (isLoggedIn) {
     // If logged in, show the main header and maybe redirect or show dashboard
