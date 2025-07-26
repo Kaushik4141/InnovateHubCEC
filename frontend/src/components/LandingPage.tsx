@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowRight, Users, Trophy, Code, Brain, Palette, Cpu } from 'lucide-react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import Header from './Header';
 
 
@@ -17,7 +18,11 @@ const LandingPage = () => {
   }, []);
 
   if (isLoggedIn === null) {
-    return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1a1a2e] to-[#16213e] text-white">Loading...</div>;
+    return( <DotLottieReact
+      src="https://lottie.host/c9b2a87a-1083-4eeb-aa81-b391fb1c48f0/zNHTKk02Ru.lottie"
+      loop
+      autoplay
+    />);
   }
   if (isLoggedIn) {
     // If logged in, show the main header and maybe redirect or show dashboard
