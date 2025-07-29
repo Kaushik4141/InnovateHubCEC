@@ -1,38 +1,89 @@
 
-import mongoose from "mongoose";
+import { LinkedinPost } from "../models/linkedinpost.model.js";
 import {asyncHandler} from "../utils/asynchandler.js";
 import { ApiError } from "../utils/apierrorhandler.js";
 import axios from "axios";
+const APIFY_TOKEN = process.env.APIFY_TOKEN;
+const APIFY_RUN_URL = `https://api.apify.com/v2/acts/${process.env.APIFY_ACTOR_ID}/runs?token=${APIFY_TOKEN}`;
+const APIFY_DATASET_URL = `https://api.apify.com/v2/datasets/${process.env.APIFY_DATASET_ID}/items?token=${APIFY_TOKEN}`;
 
 
 
-const DailyRequest = mongoose.model('DailyRequest', new mongoose.Schema({
-  userId: String,
-  date: String 
-}));
-const linkpostUpload = asyncHandler(async (req, res) => {
+const linkpostUpload = asyncHandler( async(req, res) => {
     try {
-  const { userId } = req.body;
+        const { username } = req.body;
+        const userId = req.user._id; 
 
-  const today = new Date().toISOString().split('T')[0];
-  const existing = await DailyRequest.findOne({ userId, date: today });
+       
+        const actorInput = {
+            deepScrape: false,
+            limitPerSource: 10,
+            rawData: false,
+            urls: [username],
+        };
 
+        const runResponse = await axios.post(APIFY_RUN_URL, actorInput, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        });
+
+        const runId = runResponse.data.data.id;
+
+     
+        let isFinished = false;
+        let datasetId = null;
+        for (let i = 0; i < 10 && !isFinished; i++) {
+            const statusRes = await axios.get(`https://api.apify.com/v2/actor-runs/${runId}`, {
+                headers: { Authorization: `Bearer ${APIFY_TOKEN}` },
+            });
+
+            if (statusRes.data.data.status === "SUCCEEDED") {
+                isFinished = true;
+                datasetId = statusRes.data.data.defaultDatasetId;
+            } else {
+                await new Promise(r => setTimeout(r, 5000)); 
+            }
+        }
+
+        if (!isFinished || !datasetId) {
+            return res.status(500).json({ message: "Apify scraping timeout or failed." });
+        }
+
+        
+        const dataResponse = await axios.get(`https://api.apify.com/v2/datasets/${datasetId}/items`, {
+            params: { clean: true },
+            headers: { Authorization: `Bearer ${APIFY_TOKEN}` },
+        });
+
+        const scrapedData = dataResponse.data;
+
+       
+        const postsToSave = scrapedData.map(post => ({
+            owner: userId,
+            url: post.url,
+            text: post.text || "",
+           images: Array.isArray(post.images)
+    ? post.images
+    .map(img => ({ value: img }))
+    : [],
+            createdAt: post.date ? new Date(post.date) : new Date(),
+        }));
+
+        try {
+        await LinkedinPost.insertMany(postsToSave, { ordered: false });
+    } catch (err) {
   
-    
-  if (existing) {
-    return res.status(400).json({ message: 'AI automation already triggered today.' });
-  }
-  await DailyRequest.create({ userId, date: today });
-
-await axios.post('https://hook.us2.make.com/6t0w6jqtrcuwqpo4jitcc192r40u8p7b', { userId });
-
-  res.json({ message: 'AI automation triggered successfully.' });
-  } catch (e) {
-    throw new ApiError(500, e.message || 'Internal server error.' );
-  }
+        if (!(err.name === 'BulkWriteError' && err.code === 11000)) {
+            throw err;
+        }
+        console.warn("Some duplicates were skipped.");
+    }
+        res.status(200).json({ message: "Posts saved", count: postsToSave.length });
+    } catch (err) {
+        console.error("Error in /linkedinpost:", err);
+        res.status(500)
+        .json({ error: "Server error" });
+    }
 });
-
-export { linkpostUpload };
-
-
-
+export { linkpostUpload };  

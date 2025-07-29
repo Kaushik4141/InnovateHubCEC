@@ -164,6 +164,24 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, e.message || "Unable to update post");
   }
 });
+
+import { LinkedinPost } from "../models/linkedinpost.model.js";
+
+const getCombinedPosts = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const posts = await Post.find({ owner: userId }).sort({ createdAt: -1 });
+    const linkedinPosts = await LinkedinPost.find({ owner:userId }).sort({ createdAt: -1 });
+
+    return res.status(200).json(
+      new ApiResponse(200, { posts, linkedinPosts }, "Combined posts fetched successfully")
+    );
+  } catch (e) {
+    throw new ApiError(500, e.message);
+  }
+});
+
 export {
   postUpload,
   getPostById,
@@ -171,4 +189,5 @@ export {
   deletePost,
   togglePublishStatus,
   getAllPost,
+  getCombinedPosts,
 };
