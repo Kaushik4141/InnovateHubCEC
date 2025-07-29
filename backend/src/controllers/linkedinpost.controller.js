@@ -3,6 +3,7 @@ import { LinkedinPost } from "../models/linkedinpost.model.js";
 import {asyncHandler} from "../utils/asynchandler.js";
 import { ApiError } from "../utils/apierrorhandler.js";
 import axios from "axios";
+import { ApiResponse } from "../utils/apiresponsehandler.js";
 const APIFY_TOKEN = process.env.APIFY_TOKEN;
 const APIFY_RUN_URL = `https://api.apify.com/v2/acts/${process.env.APIFY_ACTOR_ID}/runs?token=${APIFY_TOKEN}`;
 const APIFY_DATASET_URL = `https://api.apify.com/v2/datasets/${process.env.APIFY_DATASET_ID}/items?token=${APIFY_TOKEN}`;
@@ -86,4 +87,16 @@ const linkpostUpload = asyncHandler( async(req, res) => {
         .json({ error: "Server error" });
     }
 });
-export { linkpostUpload };  
+const getlinkedinPosts = asyncHandler(async (req, res) => {
+    try {
+    const userId = req.user._id;
+    const linkedinPosts = await LinkedinPost.find({ owner:userId }).sort({ createdAt: -1 });
+    return res.status(200).json(
+      new ApiResponse(200, { linkedinPosts }, "posts fetched successfully")
+    );
+     } catch (e) {
+    throw new ApiError(500, e.message);
+  }
+});
+
+export { linkpostUpload, getlinkedinPosts };  
