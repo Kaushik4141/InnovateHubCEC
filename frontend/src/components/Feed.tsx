@@ -73,7 +73,7 @@ const Feed: React.FC = () => {
           )}
           {post.postFile && (
             <div className="mt-3">
-              {post.postFile.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+              {post.postFile.match(/\.(jpg|jpeg|png|gif|mp4)$/i) ? (
                 <img src={post.postFile} alt="Project file" className="max-h-64 rounded-lg border border-gray-700" />
               ) : (
                 <a href={post.postFile} target="_blank" rel="noopener noreferrer" className="text-purple-400 hover:underline text-sm">Download File</a>
