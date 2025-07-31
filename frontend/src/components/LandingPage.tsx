@@ -8,6 +8,7 @@ import Header from './Header';
 const LandingPage = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); 
+  const [minLoadingElapsed, setMinLoadingElapsed] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
@@ -17,14 +18,22 @@ const LandingPage = () => {
       .catch(() => setIsLoggedIn(false));
   }, []);
 
-  if (isLoggedIn === null) {
+  useEffect(() => {
+    const timer = setTimeout(() => setMinLoadingElapsed(true), 8000); // 2 seconds
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoggedIn === null || !minLoadingElapsed) {
     return(
-        <div style={{ width: 650, height: 650, margin: "0 auto" }}> <DotLottieReact
-      src="https://lottie.host/c9b2a87a-1083-4eeb-aa81-b391fb1c48f0/zNHTKk02Ru.lottie"
-      loop
-      autoplay
-    />
-    </div>);
+        <div style={{ width: 650, height: 650, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
+  <img
+    src="/loa.gif"
+    width="650"
+    height="650"
+    style={{ objectFit: "cover", borderRadius: "12px" }}
+    alt="Loading..."
+  />
+</div>);
   }
   if (isLoggedIn) {
     // If logged in, show the main header and maybe redirect or show dashboard
