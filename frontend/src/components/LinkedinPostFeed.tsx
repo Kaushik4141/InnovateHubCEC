@@ -25,7 +25,7 @@ const LinkedinPostFeed: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`${apiBase}/posts/linkedinPosts`, {
+        const res = await axios.get(`${apiBase}/api/v1/posts/linkedinPosts`, {
           withCredentials: true,
         });
         setPosts(Array.isArray(res.data) ? res.data : res.data.data || []);
