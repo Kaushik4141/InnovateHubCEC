@@ -29,10 +29,10 @@ const LinkedinPostFeed: React.FC = () => {
           withCredentials: true,
         });
         setPosts(
-            Array.isArray(res.data?.data?.linkedinPosts)
-              ? res.data.data.linkedinPosts
-              : []
-          );
+  Array.isArray(res.data?.data?.linkedinPosts)
+    ? res.data.data.linkedinPosts
+    : []
+);
       } catch (err: any) {
         setError(err.response?.data?.message || "Failed to load LinkedIn posts");
       } finally {
@@ -52,13 +52,31 @@ const LinkedinPostFeed: React.FC = () => {
       )}
       {posts.map((post) => (
         <div key={post._id} className="bg-neutral-800 rounded-lg p-6 shadow">
-          <div className="flex items-center mb-2">
-            {post.owner?.avatar && (
-              <img src={post.owner.avatar} alt="avatar" className="w-8 h-8 rounded-full mr-2" />
-            )}
-            <span className="font-semibold text-white">{post.owner?.fullname || "Unknown User"}</span>
-            <span className="ml-4 text-xs text-gray-400">{new Date(post.createdAt).toLocaleString()}</span>
-          </div>
+         <div className="flex items-center mb-3">
+                  {post.owner?.avatar ? (
+                    <img
+                      src={post.owner.avatar}
+                      alt={post.owner.fullname}
+                      className="w-10 h-10 rounded-full mr-3"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                      {post.owner?.fullname
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase() || "?"}
+                    </div>
+                  )}
+                  <div>
+                    <div className="font-semibold text-white">
+                      {post.owner?.fullname || "Unknown"}
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      {new Date(post.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
           <div className="mb-2 text-white">{post.text}</div>
           {post.images && post.images.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
