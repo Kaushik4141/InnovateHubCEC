@@ -19,8 +19,11 @@ app.use(cookieParser());
 //routes
 import userRouter from './routes/user.router.js';
 import postRouter from './routes/post.router.js';
+import leaderboardRouter from './routes/leaderboard.router.js';
 
 //routes declaration
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/posts', postRouter);
+app.use('/api/v1/leaderboard', leaderboardRouter);
+app
 export { app }

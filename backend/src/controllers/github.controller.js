@@ -1,66 +1,86 @@
-import { asyncHandler } from "../utils/asynchandler";
+import { asyncHandler } from "../utils/asynchandler.js";
 import { ApiError } from "../utils/apierrorhandler.js";
+import { ApiResponse } from "../utils/apiresponsehandler.js";
 import axios from "axios";
-const githubdata= asyncHandler(async (req, res) => {
-    try {
-        const { username } =await req.user.github;
 
+export const githubdata = asyncHandler(async (req, res) => {
+  const githubUrl = req.user?.github;
 
-const apiUrl = `https://github-contributions-api.jogruber.de/v4/${username}`;
-    }
-    catch (error) {
-      throw new ApiError(500, "Failed to fetch GitHub data");
-    }
-    try {
-        const response = await axios.get(apiUrl);
-         const data = await response.json();
-        if (!data) {
-            throw new ApiError(`API request failed with status: ${response.status}`);
-        }
+  if (!githubUrl || typeof githubUrl !== "string") {
+    throw new ApiError(400, "GitHub profile URL is not set for this user.");
+  }
+  const username = githubUrl.split("/").pop();
+  if (!username) {
+    throw new ApiError(
+      400,
+      "Could not extract a valid GitHub username from the URL."
+    );
+  }
 
-        const today = new Date();
-        const currentYear = today.getFullYear();
-        const currentMonth = today.getMonth() + 1;
-        const yesterday = new Date(today);
-        yesterday.setDate(today.getDate() - 1);
-        const lastMonthDate = new Date(today);
-        lastMonthDate.setMonth(today.getMonth() - 1);
-        const lastMonthYear = lastMonthDate.getFullYear();
-        const lastMonthNumber = lastMonthDate.getMonth() + 1;
-        const todaydata = today.toISOString().split('T')[0];
-        const yesterdaydata = yesterday.toISOString().split('T')[0];
-        const todayContribution = data.contributions.find(c => c.date === todaydata)?.count || 0;
-        const yesterdayContribution = data.contributions.find(c => c.date === yesterdaydata)?.count || 0;
-         const overallContributions = Object.values(data.total).reduce((sum, count) => sum + count, 0);
-         
-        const thisMonthContributions = data.contributions
-            .filter(c => {
-                const [year, month] = c.date.split('-').map(Number);
-                return year === currentYear && month === currentMonth;
-            })
-            .reduce((sum, c) => sum + c.count, 0);
+  const apiUrl = `https://github-contributions-api.jogruber.de/v4/${username}`;
 
-        const lastMonthContributions = data.contributions
-            .filter(c => {
-                const [year, month] = c.date.split('-').map(Number);
-                return year === lastMonthYear && month === lastMonthNumber;
-            })
-            .reduce((sum, c) => sum + c.count, 0);
-            
-        const thisYearContributions = data.total[currentYear.toString()] || 0;
+  const response = await axios.get(apiUrl);
+  const data = response.data;
 
-        const lastMonthName = lastMonthDate.toLocaleString('default', { month: 'long' });
-        // console.log(`Today's Contributions:`, todayContribution);
-        // console.log(`Yesterday's Contributions :`, yesterdayContribution);
-        // console.log(`This Month's Contributions:`, thisMonthContributions);
-        // console.log(`Last Month's Contributions :`, lastMonthContributions);
-        // console.log(`This Year's Contributions:`, thisYearContributions);
-        // console.log(`Overall Contributions:`, overallContributions);
+  if (!data || !data.contributions) {
+    throw new ApiError(
+      404,
+      "Contribution data could not be found for the user."
+    );
+  }
 
-    } catch (error) {
-        console.error("An error occurred:", error.message);
-        throw new ApiError(500, "Failed to fetch GitHub data");
-    }
-    return res.status(200).json(new ApiResponse(200, { data }, "GitHub data fetched successfully"));
+  const getMonthlyTotal = (year, month) =>
+    data.contributions
+      .filter((c) => {
+        const [cYear, cMonth] = c.date.split("-").map(Number);
+        return cYear === year && cMonth === month;
+      })
+      .reduce((sum, c) => sum + c.count, 0);
+
+  const today = new Date();
+  const yesterday = new Date(new Date().setDate(today.getDate() - 1));
+  const lastMonthDate = new Date(new Date().setMonth(today.getMonth() - 1));
+  const toISO = (d) => d.toISOString().slice(0, 10);
+
+  const stats = {
+    username,
+    today: {
+      date: toISO(today),
+      count:
+        data.contributions.find((c) => c.date === toISO(today))?.count || 0,
+    },
+    yesterday: {
+      date: toISO(yesterday),
+      count:
+        data.contributions.find((c) => c.date === toISO(yesterday))?.count || 0,
+    },
+    thisMonth: {
+      count: getMonthlyTotal(today.getFullYear(), today.getMonth() + 1),
+    },
+    lastMonth: {
+      name: lastMonthDate.toLocaleString("default", { month: "long" }),
+      year: lastMonthDate.getFullYear(),
+      count: getMonthlyTotal(
+        lastMonthDate.getFullYear(),
+        lastMonthDate.getMonth() + 1
+      ),
+    },
+    thisYear: {
+      year: today.getFullYear(),
+      count: data.total[today.getFullYear()] || 0,
+    },
+    overall: {
+      count: Object.values(data.total).reduce((sum, count) => sum + count, 0),
+    },
+  };
+  //console.log(stats);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        stats,
+        "GitHub contribution data fetched successfully"
+      )
+    );
 });
-export { githubdata };
