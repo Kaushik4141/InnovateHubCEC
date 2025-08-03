@@ -13,7 +13,8 @@ const getGithubLeaderboard = asyncHandler(async (req, res) => {
       "totalContributions", 
       "thisYearContributions", 
       "thisMonthContributions",
-      "todayContributions"
+      "lastMonthContributions",
+      "todayContributions",
     ];
 
   if (!validSortFields.includes(sortBy)) {
@@ -25,7 +26,8 @@ const getGithubLeaderboard = asyncHandler(async (req, res) => {
     .sort({ [sortBy]: -1 })
     .skip(skip)
     .limit(limit)
-    .select("-user -_id -__v"); 
+    .populate('user', 'fullname avatar')
+    .select("-_id -__v"); 
 
   const totalRecords = await GithubStats.countDocuments();
 

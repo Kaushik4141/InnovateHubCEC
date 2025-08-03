@@ -3,115 +3,54 @@ import Header from './Header';
 
 import { Trophy, Medal, Award, Star, TrendingUp, Code, Users, Target, Crown, Zap, BookOpen, Calendar } from 'lucide-react';
 
+import axios from 'axios';
+
 const Leaderboard = () => {
   const [activeCategory, setActiveCategory] = useState('overall');
+  const [contribType, setContribType] = useState<'overall' | 'thisMonth' | 'lastMonth' | 'thisYear'>('overall');
+  const [contribData, setContribData] = useState<any[]>([]);
+  const [contribLoading, setContribLoading] = useState(false);
+  const [contribError, setContribError] = useState<string|null>(null);
+  const apiBase = import.meta.env.VITE_API_URL;
 
-  const topPerformers = [
-    {
-      rank: 1,
-      name: 'Arjun Mehta',
-      avatar: 'AM',
-      points: 2450,
-      projects: 12,
-      competitions: 8,
-      badges: ['AI Expert', 'Innovation Leader', 'Top Contributor'],
-      trend: '+15%',
-      department: 'CSE',
-      level: 'Expert',
-      streak: 45
-    },
-    {
-      rank: 2,
-      name: 'Sneha Reddy',
-      avatar: 'SR',
-      points: 2280,
-      projects: 10,
-      competitions: 6,
-      badges: ['Web Dev Pro', 'Team Player', 'Mentor'],
-      trend: '+12%',
-      department: 'IT',
-      level: 'Advanced',
-      streak: 32
-    },
-    {
-      rank: 3,
-      name: 'Vikram Singh',
-      avatar: 'VS',
-      points: 2150,
-      projects: 9,
-      competitions: 7,
-      badges: ['IoT Specialist', 'Hardware Guru', 'Problem Solver'],
-      trend: '+8%',
-      department: 'ECE',
-      level: 'Advanced',
-      streak: 28
-    },
-    {
-      rank: 4,
-      name: 'Priya Sharma',
-      avatar: 'PS',
-      points: 1980,
-      projects: 8,
-      competitions: 5,
-      badges: ['ML Expert', 'Research Star'],
-      trend: '+10%',
-      department: 'CSE',
-      level: 'Intermediate',
-      streak: 21
-    },
-    {
-      rank: 5,
-      name: 'Rahul Kumar',
-      avatar: 'RK',
-      points: 1850,
-      projects: 7,
-      competitions: 4,
-      badges: ['Innovation Award', 'Tech Leader'],
-      trend: '+6%',
-      department: 'ECE',
-      level: 'Intermediate',
-      streak: 18
-    },
-    {
-      rank: 6,
-      name: 'Ananya Patel',
-      avatar: 'AP',
-      points: 1720,
-      projects: 6,
-      competitions: 3,
-      badges: ['Blockchain Expert', 'Startup Founder'],
-      trend: '+14%',
-      department: 'IT',
-      level: 'Intermediate',
-      streak: 25
-    },
-    {
-      rank: 7,
-      name: 'Karthik Nair',
-      avatar: 'KN',
-      points: 1650,
-      projects: 5,
-      competitions: 4,
-      badges: ['Mobile Dev', 'UI/UX Designer'],
-      trend: '+9%',
-      department: 'CSE',
-      level: 'Intermediate',
-      streak: 15
-    },
-    {
-      rank: 8,
-      name: 'Divya Iyer',
-      avatar: 'DI',
-      points: 1580,
-      projects: 7,
-      competitions: 2,
-      badges: ['Data Scientist', 'Research Assistant'],
-      trend: '+11%',
-      department: 'IT',
-      level: 'Intermediate',
-      streak: 22
-    }
-  ];
+  // Map dropdown type to backend sort fields
+  const contribSortMap = {
+    overall: 'totalContributions',
+    thisMonth: 'thisMonthContributions',
+    lastMonth: 'lastMonthContributions',
+    thisYear: 'thisYearContributions',
+  } as const;
+
+  React.useEffect(() => {
+    setContribLoading(true);
+    setContribError(null);
+    axios.get(`${apiBase}/api/v1/leaderboard/github?sortBy=${contribSortMap[contribType]}`, { withCredentials: true })
+      .then(res => {
+        setContribData(res.data?.data?.leaderboard?.slice(0, 10) || []);
+      })
+      .catch(e => {
+        setContribError('Failed to fetch contributions leaderboard');
+      })
+      .finally(() => setContribLoading(false));
+  }, [apiBase, contribType]);
+
+  // Map API data to topPerformers format for podium and rankings
+  const topPerformers = contribData.map((user: any, idx: number) => ({
+    rank: idx + 1,
+    name: user.user?.fullname || user.username || 'Unknown',
+    avatar: user.user?.avatar || user.user?.fullname?.slice(0, 2) || user.username?.slice(0, 2) || '?',
+    points: contribType === 'overall' ? user.totalContributions :
+           contribType === 'thisMonth' ? user.thisMonthContributions :
+           contribType === 'lastMonth' ? user.lastMonthContributions :
+           contribType === 'thisYear' ? user.thisYearContributions : 0,
+    projects: user.projects || 0, // If you have this data
+    competitions: user.competitions || 0, // If you have this data
+    badges: user.badges || [], // If you have this data
+    trend: user.trend || '', // If you have this data
+    department: user.department || '', // If you have this data
+    level: user.level || '', // If you have this data
+    streak: user.streak || 0 // If you have this data
+  }));
 
   const categories = [
     { id: 'overall', name: 'Overall', icon: Trophy },
@@ -168,10 +107,10 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 p-6">
+    <div className="min-h-screen bg-gray-900 text-white ">
+      <Header />
       <div className="max-w-7xl mx-auto space-y-8">
-        <Header />
-        <div className="text-center space-y-4">
+        <div className="text-center space-y-4 ">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
               <Trophy className="w-6 h-6 text-white" />
@@ -185,26 +124,28 @@ const Leaderboard = () => {
           </p>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex flex-wrap justify-center gap-2">
-          {categories.map((category) => {
-            const IconComponent = category.icon;
-            return (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 ${
-                  activeCategory === category.id
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/25'
-                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 hover:text-white border border-slate-700/50'
-                }`}
-              >
-                <IconComponent className="w-4 h-4" />
-                <span>{category.name}</span>
-              </button>
-            );
-          })}
-        </div>
+        
+
+       
+        <div className="relative flex justify-end mt-4 mb-6">
+  
+  <div className="relative w-52">
+    <select
+      className="peer w-full bg-slate-900 text-white border border-purple-500/50 rounded-xl px-5 py-3 pl-16 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none cursor-pointer hover:border-purple-400 hover:bg-slate-800"
+      value={contribType}
+      onChange={e => setContribType(e.target.value as any)}
+      style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
+    >
+      <option value="overall">Overall</option>
+      <option value="thisMonth">This Month</option>
+      <option value="lastMonth">Last Month</option>
+      <option value="thisYear">This Year</option>
+    </select>
+    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-purple-300 transition-transform duration-300 peer-focus:rotate-180">
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6"/></svg>
+    </span>
+  </div>
+</div>
 
         {/* Top 3 Podium */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -216,13 +157,22 @@ const Leaderboard = () => {
                 performer.rank === 2 ? 'md:order-1' : 'md:order-3'
               }`}
             >
+              
               <div className="flex justify-center mb-4">
                 {getRankIcon(performer.rank)}
               </div>
               
               <div className="relative mb-4">
                 <div className="w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                  {performer.avatar}
+                {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
+    <img
+      src={performer.avatar}
+      alt={performer.name}
+      className="w-20 h-20 rounded-full object-cover border border-slate-700"
+    />
+  ) : (
+    performer.avatar
+  )}
                 </div>
                 <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(performer.level)}`}>
                   {performer.level}
@@ -251,7 +201,7 @@ const Leaderboard = () => {
               </div>
 
               <div className="flex flex-wrap gap-1 justify-center">
-                {performer.badges.slice(0, 2).map((badge, idx) => (
+                {performer.badges.slice(0, 2).map((badge: string, idx: number) => (
                   <span
                     key={idx}
                     className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30"
@@ -264,27 +214,7 @@ const Leaderboard = () => {
           ))}
         </div>
 
-        {/* Achievements Section */}
-        <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700/50">
-          <h2 className="text-xl font-bold text-white mb-6 flex items-center space-x-2">
-            <Star className="w-5 h-5 text-yellow-400" />
-            <span>Recent Achievements</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {achievements.map((achievement, index) => {
-              const IconComponent = achievement.icon;
-              return (
-                <div key={index} className="bg-slate-700/30 rounded-xl p-4 border border-slate-600/30">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <IconComponent className={`w-5 h-5 ${achievement.color}`} />
-                    <span className="text-white font-medium text-sm">{achievement.title}</span>
-                  </div>
-                  <p className="text-slate-400 text-sm">{achievement.winner}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+       
 
         {/* Full Rankings */}
         <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
@@ -306,7 +236,15 @@ const Leaderboard = () => {
                     
                     <div className="relative">
                       <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-medium">
-                        {performer.avatar}
+                      {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
+    <img
+      src={performer.avatar}
+      alt={performer.name}
+      className="w-20 h-20 rounded-full object-cover border border-slate-700"
+    />
+  ) : (
+    performer.avatar
+  )}
                       </div>
                       <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         performer.rank <= 3 ? 'bg-yellow-400 text-black' : 'bg-slate-600 text-white'
@@ -355,7 +293,7 @@ const Leaderboard = () => {
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {performer.badges.map((badge, index) => (
+                  {performer.badges.map((badge: string, index: number) => (
                     <span
                       key={index}
                       className="px-3 py-1 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30"
