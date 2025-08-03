@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Header from './Header';
 
 import { Trophy, Medal, Award, Star, TrendingUp, Code, Users, Target, Crown, Zap, BookOpen, Calendar } from 'lucide-react';
 
@@ -169,7 +170,7 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen bg-slate-900 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
+        <Header />
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
