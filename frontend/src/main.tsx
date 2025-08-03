@@ -2,8 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import axios from 'axios';
-axios.defaults.withCredentials = true;
+import './cookiescheker.ts';
+
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

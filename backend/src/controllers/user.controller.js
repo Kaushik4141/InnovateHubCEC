@@ -67,15 +67,27 @@ const registerUser = asyncHandler(async (req, res, next) => {
     ...(avatarUrl && { avatar: avatarUrl }),
     ...(coverimageUrl && { coverimage: coverimageUrl }),
   });
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  )
   const createduserid = await User.findById(user._id).select(
     "-password -refreshToken"
   );
   if (!createduserid) {
     throw new ApiError("User not created", 500);
   }
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+  };
   return res
     .status(201)
-    .json(new ApiResponse(200, createduserid, "User registered successfully"));
+    .cookie("accessToken", accessToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, cookieOptions)
+    .json(new ApiResponse(200, {user: createduserid,
+      accessToken,
+      refreshToken}, "User registered successfully"));
 });
 
 const loginuser = asyncHandler(async (req, res, next) => {
