@@ -87,9 +87,11 @@ const linkpostUpload = asyncHandler(async (req, res) => {
 });
 const getlinkedinPosts = asyncHandler(async (req, res) => {
   try {
-    const linkedinPosts = await LinkedinPost.find({}).sort({
+    const linkedinPosts = await LinkedinPost.find({})
+    .sort({
       createdAt: -1,
-    });
+    })
+    .populate("owner", "fullname avatar");
     return res
       .status(200)
       .json(
