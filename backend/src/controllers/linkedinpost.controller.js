@@ -87,8 +87,7 @@ const linkpostUpload = asyncHandler(async (req, res) => {
 });
 const getlinkedinPosts = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user._id;
-    const linkedinPosts = await LinkedinPost.find({ owner: userId }).sort({
+    const linkedinPosts = await LinkedinPost.find({}).sort({
       createdAt: -1,
     });
     return res
