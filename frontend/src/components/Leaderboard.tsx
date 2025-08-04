@@ -49,7 +49,8 @@ const Leaderboard = () => {
     trend: user.trend || '', // If you have this data
     department: user.department || '', // If you have this data
     level: user.level || '', // If you have this data
-    streak: user.streak || 0 // If you have this data
+    streak: user.streak || 0, // If you have this data
+    github: user.github || '', // If you have this data
   }));
 
   const categories = [
@@ -154,7 +155,8 @@ const Leaderboard = () => {
               key={performer.rank}
               className={`${getRankBg(performer.rank)} rounded-2xl p-6 border text-center shadow-xl transition-all duration-300 hover:scale-105 ${
                 performer.rank === 1 ? 'md:order-2 transform md:scale-110' : 
-                performer.rank === 2 ? 'md:order-1' : 'md:order-3'
+                performer.rank === 2 ? 'md:order-1' : 
+                performer.rank === 3 ? 'md:order-3' : 'md:order-1'
               }`}
             >
               
@@ -181,6 +183,7 @@ const Leaderboard = () => {
               
               <h3 className="text-white font-bold text-lg mb-1">{performer.name}</h3>
               <p className="text-slate-400 text-sm mb-3">{performer.department}</p>
+              <p className="text-slate-400 text-sm mb-3">{performer.github}</p>
               
               <div className="space-y-2 mb-4">
                 <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
