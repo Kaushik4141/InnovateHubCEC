@@ -366,5 +366,8 @@ const getUserProfile = asyncHandler(async(req, res) => {
         new ApiResponse(200, profile[0], "User channel fetched successfully")
     )
 })
+const alive = asyncHandler(async(req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Server is alive!' });
+});
 
-export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile };
+export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile, alive };

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword} from "../controllers/user.controller.js";
+import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword,alive} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router= Router()
@@ -10,6 +10,8 @@ router.route("/register").post(
     ]),
     registerUser);
 router.route("/login").post(loginuser);
+router.route("/alive").get(alive);
+
 
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/refresh-token").post( refreshAccessToken);
