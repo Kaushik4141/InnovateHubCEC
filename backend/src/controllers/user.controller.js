@@ -328,7 +328,7 @@ const getUserProfile = asyncHandler(async(req, res) => {
         },
         {
             $project: {
-                fullName: 1,
+                fullname: 1,
                 followersCount: 1,
                 followingCount: 1,
                 isfollower: 1,

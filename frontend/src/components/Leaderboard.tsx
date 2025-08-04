@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 
 import { Trophy, Medal, Award, Star, TrendingUp, Code, Users, Target, Crown, Zap, BookOpen, Calendar } from 'lucide-react';
@@ -43,14 +44,13 @@ const Leaderboard = () => {
            contribType === 'thisMonth' ? user.thisMonthContributions :
            contribType === 'lastMonth' ? user.lastMonthContributions :
            contribType === 'thisYear' ? user.thisYearContributions : 0,
-    projects: user.projects || 0, // If you have this data
-    competitions: user.competitions || 0, // If you have this data
-    badges: user.badges || [], // If you have this data
-    trend: user.trend || '', // If you have this data
-    department: user.department || '', // If you have this data
-    level: user.level || '', // If you have this data
-    streak: user.streak || 0, // If you have this data
-    github: user.github || '', // If you have this data
+    projects: user.projects || 0, 
+    competitions: user.competitions || 0, 
+    badges: user.badges || [], 
+    trend: user.trend || '', 
+    department: user.department || '', 
+    level: user.level || '', 
+    streak: user.streak || 0,   
   }));
 
   const categories = [
@@ -106,7 +106,7 @@ const Leaderboard = () => {
         return 'text-green-400 bg-green-400/10 border-green-400/20';
     }
   };
-
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gray-900 text-white ">
       <Header />
@@ -159,39 +159,49 @@ const Leaderboard = () => {
                 performer.rank === 3 ? 'md:order-3' : 'md:order-1'
               }`}
             >
-              
               <div className="flex justify-center mb-4">
                 {getRankIcon(performer.rank)}
               </div>
-              
               <div className="relative mb-4">
-                <div className="w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
-    <img
-      src={performer.avatar}
-      alt={performer.name}
-      className="w-20 h-20 rounded-full object-cover border border-slate-700"
-    />
-  ) : (
-    performer.avatar
-  )}
-                </div>
+                <button
+                  className="w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-bold text-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+                  style={{ cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
+                  onClick={() => {
+                    if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
+                  }}
+                  aria-label={`View profile of ${performer.name}`}
+                >
+                  {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
+                    <img
+                      src={performer.avatar}
+                      alt={performer.name}
+                      className="w-20 h-20 rounded-full object-cover border border-slate-700"
+                    />
+                  ) : (
+                    performer.avatar
+                  )}
+                </button>
                 <div className={`absolute -bottom-2 left-1/2 transform -translate-x-1/2 px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(performer.level)}`}>
                   {performer.level}
                 </div>
               </div>
-              
-              <h3 className="text-white font-bold text-lg mb-1">{performer.name}</h3>
+              <button
+                className="text-white font-bold text-lg mb-1 hover:underline focus:outline-none"
+                style={{ background: 'none', border: 'none', cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
+                onClick={() => {
+                  if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
+                }}
+                aria-label={`View profile of ${performer.name}`}
+              >
+                {performer.name}
+              </button>
               <p className="text-slate-400 text-sm mb-3">{performer.department}</p>
-              <p className="text-slate-400 text-sm mb-3">{performer.github}</p>
-              
               <div className="space-y-2 mb-4">
                 <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                   {performer.points.toLocaleString()}
                 </div>
                 <div className="text-xs text-slate-400">points</div>
               </div>
-              
               <div className="flex items-center justify-center space-x-4 text-sm mb-4">
                 <div className="flex items-center space-x-1">
                   <Zap className="w-4 h-4 text-orange-400" />
@@ -217,8 +227,6 @@ const Leaderboard = () => {
           ))}
         </div>
 
-       
-
         {/* Full Rankings */}
         <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden">
           <div className="p-6 border-b border-slate-700/50">
@@ -227,7 +235,6 @@ const Leaderboard = () => {
               <span>Full Rankings</span>
             </h2>
           </div>
-          
           <div className="divide-y divide-slate-700/50">
             {topPerformers.map((performer) => (
               <div key={performer.rank} className="p-6 hover:bg-slate-700/30 transition-all duration-200">
@@ -236,29 +243,44 @@ const Leaderboard = () => {
                     <div className="flex items-center justify-center w-10">
                       {getRankIcon(performer.rank)}
                     </div>
-                    
                     <div className="relative">
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-medium">
-                      {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
-    <img
-      src={performer.avatar}
-      alt={performer.name}
-      className="w-20 h-20 rounded-full object-cover border border-slate-700"
-    />
-  ) : (
-    performer.avatar
-  )}
-                      </div>
+                      <button
+                        className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        style={{ cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
+                        onClick={() => {
+                          if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
+                        }}
+                        aria-label={`View profile of ${performer.name}`}
+                      >
+                        {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
+                          <img
+                            src={performer.avatar}
+                            alt={performer.name}
+                            className="w-12 h-12 rounded-full object-cover border border-slate-700"
+                          />
+                        ) : (
+                          performer.avatar
+                        )}
+                      </button>
                       <div className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                         performer.rank <= 3 ? 'bg-yellow-400 text-black' : 'bg-slate-600 text-white'
                       }`}>
                         {performer.rank}
                       </div>
                     </div>
-                    
+                    <button
+                      className="text-white font-semibold hover:underline ml-2 focus:outline-none"
+                      style={{ background: 'none', border: 'none', cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
+                      onClick={() => {
+                        if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
+                      }}
+                      aria-label={`View profile of ${performer.name}`}
+                    >
+                      {performer.name}
+                    </button>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <h3 className="text-white font-semibold">{performer.name}</h3>
+                       
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(performer.level)}`}>
                           {performer.level}
                         </span>

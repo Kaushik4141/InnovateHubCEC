@@ -11,6 +11,7 @@ import SignupForm from './components/register';
 import Leaderboard from './components/Leaderboard';
 import LandingPage from './components/LandingPage';
 import AddPost from './components/addpost';
+import UserProfileView from './components/UserProfileView';
 
 function App() {
   return (
@@ -28,8 +29,7 @@ function App() {
           <Route path="/register" element={<SignupForm />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/addpost" element={<AddPost />} />
-
-          {/* Add more routes as needed */}
+          <Route path="/profile/c/:fullname" element={<UserProfileView />} />
         </Routes>
       </div>
     </Router>
