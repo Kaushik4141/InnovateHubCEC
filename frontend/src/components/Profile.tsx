@@ -8,6 +8,7 @@ import {
   Plus, Settings, Share2, ExternalLink
 } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
+import Loader from './loading';
 
 // ----- Type Definitions -----
 interface Certification {
@@ -149,7 +150,7 @@ const Profile: FC = () => {
     }
   };
 
-  if (loading) return <p className="text-center text-white">Loading…</p>;
+  if (loading) return <Loader />;
   if (error)   return <p className="text-center text-red-500">{error}</p>;
   if (!user)  return <p className="text-center text-white">No user found.</p>;
 

@@ -65,7 +65,8 @@ const getAllPost = asyncHandler(async (req, res) => {
   { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } }
     );
     const result = await Post.aggregate(pipeline);
-    return res.status(200).json(new ApiResponse(200, { result }, "Success"));
+    const total = await Post.countDocuments();
+    return res.status(200).json(new ApiResponse(200, { result, total }, "Success"));
   } catch (e) {
     throw new ApiError(500, e.message);
   }

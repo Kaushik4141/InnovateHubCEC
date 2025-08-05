@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import { Calendar, Loader2, Github, Linkedin, Plus, Settings } from 'lucide-react';
 import axios from 'axios';
+import Loader from './loading';
 
 interface Post {
   _id: string;
@@ -88,9 +89,9 @@ const UserProfileView: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex flex-col">
         <Header />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="animate-spin h-10 w-10 text-purple-400" />
-        </div>
+        
+         <Loader />
+        
       </div>
     );
   }
@@ -110,7 +111,7 @@ const UserProfileView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f1c] text-white">
+    <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
 

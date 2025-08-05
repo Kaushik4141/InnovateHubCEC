@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import LinkedinPostFeed from "./LinkedinPostFeed"; // new component
 import { useNavigate } from "react-router-dom";
+import Loader from './loading'
 
 interface Post {
   _id: string;
@@ -22,8 +23,19 @@ const Feed: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'project' | 'post'>('project');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [total, setTotal] = useState(0);
   const apiBase = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (tab === 'project') {
+      setPosts([]);
+      setPage(1);
+      setHasMore(true);
+    }
+  }, [tab]);
 
   useEffect(() => {
     if (tab === 'project') {
@@ -31,17 +43,21 @@ const Feed: React.FC = () => {
         setLoading(true);
         setError(null);
         try {
-          const res = await axios.get(`${apiBase}/api/v1/posts/getAllPost`, {
+          const res = await axios.get(`${apiBase}/api/v1/posts/getAllPost?page=${page}&limit=10`, {
             withCredentials: true,
           });
-          // Defensive: ensure posts is always an array
           let postsData = [];
-          if (Array.isArray(res.data.data)) {
-            postsData = res.data.data;
-          } else if (res.data.data && Array.isArray(res.data.data.result)) {
+          if (res.data?.data?.result) {
             postsData = res.data.data.result;
+          } else if (Array.isArray(res.data.data)) {
+            postsData = res.data.data;
           }
-          setPosts(postsData);
+          setTotal(res.data.data.total);
+          setPosts(prev => {
+            const newPosts = page === 1 ? postsData : [...prev, ...postsData];
+            setHasMore(newPosts.length < res.data.data.total);
+            return newPosts;
+          });
         } catch (err: any) {
           setError(err.response?.data?.message || "Failed to load posts");
         } finally {
@@ -50,10 +66,37 @@ const Feed: React.FC = () => {
       };
       fetchPosts();
     }
-  }, [tab, apiBase]);
+  }, [tab, apiBase, page]);
+  const fetchPosts = async () => {
+  setLoading(true);
+  setError(null);
+  try {
+    const res = await axios.get(`${apiBase}/api/v1/posts/getAllPost?page=${page}&limit=10`, {
+      withCredentials: true,
+    });
+    let postsData = [];
+    if (res.data?.data?.result) {
+      postsData = res.data.data.result;
+    } else if (Array.isArray(res.data.data)) {
+      postsData = res.data.data;
+    }
+    setTotal(res.data.data.total);
+    setPosts(prev => {
+      const newPosts = page === 1 ? postsData : [...prev, ...postsData];
+      setHasMore(newPosts.length < res.data.data.total);
+      return newPosts;
+    });
+  } catch (err: any) {
+    setError(err.response?.data?.message || "Failed to load posts");
+  } finally {
+    setLoading(false);
+  }
+};
+
+console.log({ page, postsLength: posts.length, hasMore, total });
 
   if (tab === 'project' && loading)
-    return <div className="text-center text-white py-8">Loading posts...</div>;
+    return <Loader />;
   if (tab === 'project' && error)
     return <div className="text-center text-red-500 py-8">{error}</div>;
 
@@ -76,7 +119,7 @@ const Feed: React.FC = () => {
       <div className="space-y-8">
         {tab === 'project' ? (
           <>
-            {posts.length === 0 && (
+            {posts.length === 0 && !loading && (
               <div className="text-center text-gray-400">No posts found.</div>
             )}
             {posts.map((post) => (
@@ -173,13 +216,29 @@ const Feed: React.FC = () => {
                 )}
               </div>
             ))}
+            {loading && <Loader />}
+            {!loading && hasMore && (
+              <div className="text-center py-4">
+                <span className="text-gray-400">Scroll down to load more...</span>
+              </div>
+            )}
           </>
         ) : (
           <LinkedinPostFeed />
         )}
       </div>
+
+      {/* Infinite scroll logic */}
+      {tab === 'project' && hasMore && !loading && (
+        <div id="scroll-sentinel" style={{ height: 1 }} />
+      )}
     </div>
   );
-};
+}
+
+// Infinite scroll effect
+// Must be inside the Feed component
+// Already handled above
 
 export default Feed;
+

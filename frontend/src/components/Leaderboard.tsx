@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Loader from './loading';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 
@@ -7,6 +8,7 @@ import { Trophy, Medal, Award, Star, TrendingUp, Code, Users, Target, Crown, Zap
 import axios from 'axios';
 
 const Leaderboard = () => {
+  const [leaderboardType, setLeaderboardType] = useState<'github' | 'leetcode'>('github');
   const [activeCategory, setActiveCategory] = useState('overall');
   const [contribType, setContribType] = useState<'overall' | 'thisMonth' | 'lastMonth' | 'thisYear'>('overall');
   const [contribData, setContribData] = useState<any[]>([]);
@@ -25,33 +27,83 @@ const Leaderboard = () => {
   React.useEffect(() => {
     setContribLoading(true);
     setContribError(null);
-    axios.get(`${apiBase}/api/v1/leaderboard/github?sortBy=${contribSortMap[contribType]}`, { withCredentials: true })
+    setContribData([]); // Clear data on tab switch to avoid stale data
+    let url = '';
+    if (leaderboardType === 'github') {
+      url = `${apiBase}/api/v1/leaderboard/github?sortBy=${contribSortMap[contribType]}`;
+    } else {
+      url = `${apiBase}/api/v1/leaderboard/leetcode`;
+    }
+    axios.get(url, { withCredentials: true })
       .then(res => {
-        setContribData(res.data?.data?.leaderboard?.slice(0, 10) || []);
+        if (leaderboardType === 'github') {
+          setContribData(Array.isArray(res.data?.data?.leaderboard) ? res.data.data.leaderboard.slice(0, 10) : []);
+        } else {
+          // Defensive log for debugging
+          console.log('LeetCode leaderboard raw data:', res.data?.data?.leaderboard);
+          setContribData(Array.isArray(res.data?.data?.leaderboard) ? res.data.data.leaderboard.slice(0, 10) : []);
+        }
       })
       .catch(e => {
-        setContribError('Failed to fetch contributions leaderboard');
+        setContribError(`Failed to fetch ${leaderboardType === 'github' ? 'GitHub' : 'LeetCode'} leaderboard`);
+        console.error(e);
       })
       .finally(() => setContribLoading(false));
-  }, [apiBase, contribType]);
+  }, [apiBase, contribType, leaderboardType]);
 
-  // Map API data to topPerformers format for podium and rankings
-  const topPerformers = contribData.map((user: any, idx: number) => ({
-    rank: idx + 1,
-    name: user.user?.fullname || user.username || 'Unknown',
-    avatar: user.user?.avatar || user.user?.fullname?.slice(0, 2) || user.username?.slice(0, 2) || '?',
-    points: contribType === 'overall' ? user.totalContributions :
-           contribType === 'thisMonth' ? user.thisMonthContributions :
-           contribType === 'lastMonth' ? user.lastMonthContributions :
-           contribType === 'thisYear' ? user.thisYearContributions : 0,
-    projects: user.projects || 0, 
-    competitions: user.competitions || 0, 
-    badges: user.badges || [], 
-    trend: user.trend || '', 
-    department: user.department || '', 
-    level: user.level || '', 
-    streak: user.streak || 0,   
-  }));
+  const topPerformers = contribData.map((user: any, idx: number) => {
+    if (leaderboardType === 'leetcode') {
+      return {
+        rank: idx + 1,
+        name: user?.user?.fullname || user?.username || 'Unknown',
+        username: user?.username || '',
+        avatar: user?.user?.avatar || user?.user?.fullname?.slice?.(0, 2) || user?.username?.slice?.(0, 2) || '?',
+        points: typeof user?.totalSolved === 'number' ? user.totalSolved : 0,
+        projects: typeof user?.easySolved === 'number' ? user.easySolved : 0,
+        competitions: typeof user?.mediumSolved === 'number' ? user.mediumSolved : 0,
+        badges: [
+          `Hard: ${user?.hardSolved ?? 0}`,
+          `Acc. Rate: ${user?.acceptanceRate ?? 0}%`,
+          `World Ranking: ${user?.ranking ?? '-'}`,
+          `Reputation: ${user?.reputation ?? '-'}`,
+          `Contrib: ${user?.contributionPoints ?? '-'}`
+        ],
+        trend: '',
+        department: user?.user?.leetcode || user?.username || '',
+        level: '',
+        streak: '',
+        leetcodeProfile: user?.user?.leetcode,
+      };
+    } else {
+      return {
+        rank: idx + 1,
+        name: user?.user?.fullname || user?.username || 'Unknown',
+        username: user?.username || '',
+        avatar: user?.user?.avatar || user?.user?.fullname?.slice?.(0, 2) || user?.username?.slice?.(0, 2) || '?',
+        points: typeof (contribType === 'overall' ? user?.totalContributions :
+          contribType === 'thisMonth' ? user?.thisMonthContributions :
+          contribType === 'lastMonth' ? user?.lastMonthContributions :
+          contribType === 'thisYear' ? user?.thisYearContributions : 0) === 'number'
+          ? (contribType === 'overall' ? user?.totalContributions :
+            contribType === 'thisMonth' ? user?.thisMonthContributions :
+            contribType === 'lastMonth' ? user?.lastMonthContributions :
+            contribType === 'thisYear' ? user?.thisYearContributions : 0)
+          : 0,
+        projects: typeof user?.projects === 'number' ? user.projects : 0,
+        competitions: typeof user?.competitions === 'number' ? user.competitions : 0,
+        badges: Array.isArray(user?.badges) ? user.badges : [],
+        trend: user?.trend || '',
+        department: user?.department || '',
+        level: user?.level || '',
+        streak: typeof user?.streak === 'number' ? user.streak : 0,
+      };
+    }
+  });
+
+  const leaderboardTabs = [
+    { id: 'github', name: 'GitHub', icon: Code },
+    { id: 'leetcode', name: 'LeetCode', icon: Target },
+  ];
 
   const categories = [
     { id: 'overall', name: 'Overall', icon: Trophy },
@@ -107,10 +159,23 @@ const Leaderboard = () => {
     }
   };
   const navigate = useNavigate();
+  if (contribLoading) return <Loader />;
   return (
     <div className="min-h-screen bg-gray-900 text-white ">
       <Header />
       <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex justify-center gap-4 mt-8 mb-6">
+          {leaderboardTabs.map(tab => (
+            <button
+              key={tab.id}
+              className={`flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-colors ${leaderboardType === tab.id ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+              onClick={() => setLeaderboardType(tab.id as 'github' | 'leetcode')}
+            >
+              <tab.icon className="w-5 h-5" />
+              {tab.name}
+            </button>
+          ))}
+        </div>
         <div className="text-center space-y-4 ">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
@@ -195,6 +260,9 @@ const Leaderboard = () => {
               >
                 {performer.name}
               </button>
+              {performer.username && (
+                <div className="text-xs text-purple-300 font-mono mb-1">{performer.username}</div>
+              )}
               <p className="text-slate-400 text-sm mb-3">{performer.department}</p>
               <div className="space-y-2 mb-4">
                 <div className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -284,6 +352,9 @@ const Leaderboard = () => {
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(performer.level)}`}>
                           {performer.level}
                         </span>
+                        {performer.username && (
+                          <div className="text-xs text-purple-300 font-mono mb-1">{performer.username}</div>
+                        )}
                       </div>
                       <p className="text-slate-400 text-sm">{performer.department}</p>
                     </div>
