@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import {useNavigate } from "react-router-dom";
 
 interface LinkedinPost {
   _id: string;
@@ -19,6 +20,7 @@ const LinkedinPostFeed: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const apiBase = import.meta.env.VITE_API_URL;
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchLinkedinPosts = async () => {
@@ -60,13 +62,20 @@ const LinkedinPostFeed: React.FC = () => {
                       className="w-10 h-10 rounded-full mr-3"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
+                     <button
+                      className="text-white font-semibold hover:underline ml-2 focus:outline-none"
+                      style={{ background: 'none', border: 'none', cursor: post.owner?.fullname !== 'Unknown' ? 'pointer' : 'default' }}
+                      onClick={() => {
+                        if (post.owner?.fullname !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(post.owner?.fullname || '')}`);
+                      }}
+                      aria-label={`View profile of ${post.owner?.fullname}`}
+                    >
                       {post.owner?.fullname
                         ?.split(" ")
                         .map((n) => n[0])
                         .join("")
                         .toUpperCase() || "?"}
-                    </div>
+                    </button>
                   )}
                   <div>
                     <div className="font-semibold text-white">

@@ -53,7 +53,7 @@ const updateGithubStatsJob = async () => {
     }
 
     for (const user of usersToUpdate) {
-      const githubUrl = user.github;
+      const githubUrl = user.github ;
       if (!githubUrl) continue;
       
       const username = githubUrl.split("/").pop();
@@ -80,8 +80,8 @@ const updateGithubStatsJob = async () => {
     }
     console.log(`Job finished. Processed ${usersToUpdate.length} users.`);
   } catch (error) {
-    // console.error("Error during scheduled GitHub stats update:", error);
-    throw new ApiError(500, "Failed to update GitHub stats");
+    console.error("Error during scheduled GitHub stats update:", error);
+    //throw new ApiError(500, "Failed to update GitHub stats");
   }
 };
 export const startStatsUpdater = () => {

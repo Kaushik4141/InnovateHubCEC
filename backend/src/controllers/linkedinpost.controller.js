@@ -9,7 +9,7 @@ const APIFY_DATASET_URL = `https://api.apify.com/v2/datasets/${process.env.APIFY
 
 const linkpostUpload = asyncHandler(async (req, res) => {
   try {
-    const { username } = req.user.linkedin;
+    const  username = req.user.linkedin;
     const userId = req.user._id;
 
     const actorInput = {
