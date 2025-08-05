@@ -218,12 +218,7 @@ const UserProfileView: React.FC = () => {
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-semibold text-white">Posts</h3>
-                  <button
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
-                    onClick={() => navigate('/addpost')}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> New Post
-                  </button>
+                  
                 </div>
                
               </div>
