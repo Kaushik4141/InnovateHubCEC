@@ -138,7 +138,7 @@ const UserProfileView: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2 mt-4 md:mt-0">
-              <button className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700 text-sm">Edit Profile</button>
+              <button className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700 text-sm">Connect</button>
               <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">Share</button>
               <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
                 <Settings className="h-4 w-4" />
@@ -207,13 +207,8 @@ const UserProfileView: React.FC = () => {
             {activeTab === 'projects' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-semibold text-white">My Projects</h3>
-                  <button
-                    className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
-                    onClick={() => navigate('/addpost')}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Add Project
-                  </button>
+                  <h3 className="text-xl font-semibold text-white"> Projects</h3>
+                  
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {user.projects.map(p => (
