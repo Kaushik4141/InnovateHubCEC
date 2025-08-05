@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import Header from './Header';
+import { Calendar, Loader2, Github, Linkedin } from 'lucide-react';
 import axios from 'axios';
-import {
-  Mail, Phone, Github, Linkedin, Globe,
-  Award, MessageCircle, Code, ExternalLink
-} from 'lucide-react';
 
 interface User {
   _id: string;
@@ -16,149 +14,140 @@ interface User {
   skills: string[];
   certifications: any[];
   projects: any[];
-  phone?: string;
+  achievements: any[];
+  otherLinks: any[];
+  createdAt: string;
+  updatedAt: string;
+  bio?: string;
   github?: string;
   linkedin?: string;
-  website?: string;
-  bio?: string;
+  leetcode?: string;
+  followersCount: number;
+  followingCount: number;
+  isfollower: boolean;
 }
 
-const LinkedinStyleProfile: React.FC = () => {
-  const { fullname } = useParams();
+const UserProfileView: React.FC = () => {
+  const { fullname } = useParams<{ fullname: string }>();
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const apiBase = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const res = await axios.get(`http://localhost:5000/api/users/${fullname}`);
-      setUser(res.data);
-    };
-    fetchUser();
-  }, [fullname]);
+    if (!fullname) return;
+    setLoading(true);
+    setError(null);
+    axios
+      .get(${apiBase}/api/v1/users/c/${encodeURIComponent(fullname)}, {
+        withCredentials: true,
+      })
+      .then((res) => {
+        setUser(res.data?.data || null);
+      })
+      .catch(() => setError('User not found'))
+      .finally(() => setLoading(false));
+  }, [fullname, apiBase]);
 
-  if (!user) return <div className="text-center mt-10">Loading...</div>;
-
-  return (
-    <div className="bg-gray-100 min-h-screen">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="h-44 bg-blue-800 relative">
-          <div className="absolute -bottom-12 left-10">
-            <img
-              src={user.avatar || '/default-avatar.png'}
-              alt="Avatar"
-              className="h-28 w-28 rounded-full border-4 border-white object-cover"
-            />
-          </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="animate-spin h-10 w-10 text-purple-400" />
         </div>
-        <div className="pt-16 px-10 pb-6">
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{user.fullname}</h1>
-              <p className="text-sm text-gray-600">USN: {user.usn} • Year: {user.year}</p>
-              <p className="text-sm text-gray-500 mt-1">{user.bio || "Student | Tech Enthusiast | Learner"}</p>
-              <div className="flex flex-wrap items-center mt-2 gap-3 text-gray-600 text-sm">
-                {user.email && (
-                  <div className="flex items-center gap-1"><Mail size={16} /> {user.email}</div>
-                )}
-                {user.phone && (
-                  <div className="flex items-center gap-1"><Phone size={16} /> {user.phone}</div>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-3 mt-2">
-              <button className="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-md">Connect</button>
-              <button className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded-md">More</button>
-            </div>
+      </div>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-2">User Not Found</h2>
+            <p className="text-gray-400">{error}</p>
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* Main Sections */}
-      <div className="px-10 mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Section */}
-        <div className="col-span-2 space-y-6">
-          {/* About */}
-          <div className="bg-white shadow p-5 rounded-lg">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">About</h2>
-            <p className="text-gray-700">{user.bio || "No bio provided."}</p>
-          </div>
-
-          {/* Skills */}
-          <div className="bg-white shadow p-5 rounded-lg">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">Skills</h2>
-            <div className="flex flex-wrap gap-3">
-              {user.skills.map((skill, idx) => (
-                <span key={idx} className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">{skill}</span>
-              ))}
+  return (
+    <div className="min-h-screen bg-[#0f0f1c] text-white">
+      <Header />
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="bg-[#181f2c] p-6 rounded-xl border border-gray-700">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 rounded-full overflow-hidden">
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.fullname}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-purple-700 flex items-center justify-center text-2xl font-bold">
+                    {user.fullname.slice(0, 2).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold">{user.fullname}</h1>
+                <p className="text-purple-400">{user.year}8th Year CSE</p>
+                <p className="text-gray-400">Canara Engineering College</p>
+                <div className="flex items-center text-sm text-gray-400 mt-1">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Joined {new Date(user.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'long' })}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4 md:mt-0">
+              <button className="bg-purple-600 text-white px-4 py-1 rounded hover:bg-purple-700 text-sm">Connect</button>
+              <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">Share</button>
+              <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">
+                <span className="sr-only">Settings</span>
+              </button>
             </div>
           </div>
-
-          {/* Projects */}
-          <div className="bg-white shadow p-5 rounded-lg">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">Projects</h2>
-            {user.projects.length > 0 ? (
-              <ul className="space-y-3">
-                {user.projects.map((proj: any, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <Code size={18} className="text-gray-600" />
-                    <div>
-                      <h3 className="font-medium">{proj.title}</h3>
-                      <p className="text-sm text-gray-600">{proj.description}</p>
-                      {proj.link && (
-                        <a href={proj.link} target="_blank" className="text-blue-600 hover:underline text-sm inline-flex items-center gap-1">
-                          View <ExternalLink size={14} />
-                        </a>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500">No projects added.</p>
-            )}
-          </div>
-
-          {/* Certifications */}
-          <div className="bg-white shadow p-5 rounded-lg">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">Certifications</h2>
-            {user.certifications.length > 0 ? (
-              <ul className="space-y-3">
-                {user.certifications.map((cert: any, i) => (
-                  <li key={i} className="flex items-center gap-3">
-                    <Award size={18} className="text-yellow-600" />
-                    <div>
-                      <h3 className="font-medium">{cert.title}</h3>
-                      <p className="text-sm text-gray-600">{cert.organization}</p>
-                      {cert.link && (
-                        <a href={cert.link} target="_blank" className="text-blue-600 hover:underline text-sm inline-flex items-center gap-1">
-                          Verify <ExternalLink size={14} />
-                        </a>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500">No certifications listed.</p>
-            )}
+          <div className="grid grid-cols-2 md:grid-cols-6 text-center mt-6 gap-4">
+            <div><p className="text-purple-400 text-xl">0</p><p className="text-sm">Profile Views</p></div>
+            <div><p className="text-blue-400 text-xl">{user.projects.length}</p><p className="text-sm">Projects</p></div>
+            <div><p className="text-green-400 text-xl">{user.followersCount}</p><p className="text-sm">Followers</p></div>
+            <div><p className="text-yellow-400 text-xl">{user.followingCount}</p><p className="text-sm">Following</p></div>
+            <div><p className="text-red-400 text-xl">{user.achievements.length}</p><p className="text-sm">Achievements</p></div>
+            <div><p className="text-indigo-400 text-xl">{user.certifications.length}</p><p className="text-sm">Certifications</p></div>
           </div>
         </div>
 
-        {/* Right Section */}
-        <div className="space-y-6">
-          <div className="bg-white shadow p-5 rounded-lg">
-            <h2 className="text-xl font-semibold text-gray-800 mb-3">Contact Info</h2>
-            <ul className="space-y-2 text-gray-700">
-              {user.github && (
-                <li className="flex items-center gap-2"><Github size={18} /> <a href={user.github} target="_blank" className="hover:underline">{user.github}</a></li>
-              )}
-              {user.linkedin && (
-                <li className="flex items-center gap-2"><Linkedin size={18} /> <a href={user.linkedin} target="_blank" className="hover:underline">{user.linkedin}</a></li>
-              )}
-              {user.website && (
-                <li className="flex items-center gap-2"><Globe size={18} /> <a href={user.website} target="_blank" className="hover:underline">{user.website}</a></li>
-              )}
-            </ul>
+        <div className="grid md:grid-cols-2 gap-6 mt-6">
+          <div className="bg-[#181f2c] p-4 rounded-xl border border-gray-700">
+            <h2 className="text-lg font-semibold mb-2">About</h2>
+            <p className="text-gray-400 mb-2">{user.bio || '—'}</p>
+            <p className="text-sm text-gray-300 flex items-center gap-2">
+              ✉️ {user.email}
+            </p>
+            <div className="flex gap-3 mt-2 text-gray-400">
+              {user.github && <a href={user.github} target="_blank" rel="noreferrer"><Github className="inline-block w-4 h-4" /></a>}
+              {user.linkedin && <a href={user.linkedin} target="_blank" rel="noreferrer"><Linkedin className="inline-block w-4 h-4" /></a>}
+            </div>
+          </div>
+
+          <div className="bg-[#181f2c] p-4 rounded-xl border border-gray-700">
+            <h2 className="text-lg font-semibold mb-2">Skills</h2>
+            {user.skills.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {user.skills.map((skill, idx) => (
+                  <span key={idx} className="px-3 py-1 text-xs bg-purple-700/20 text-purple-300 rounded-full border border-purple-600/30">
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-400">No skills added.</p>
+            )}
           </div>
         </div>
       </div>
@@ -166,4 +155,4 @@ const LinkedinStyleProfile: React.FC = () => {
   );
 };
 
-export default LinkedinStyleProfile;
+export default UserProfileView;
