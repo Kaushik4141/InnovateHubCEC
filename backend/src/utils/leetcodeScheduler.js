@@ -8,5 +8,5 @@ export function startLeetcodeStatsScheduler() {
   setTimeout(async () => {
     await refreshAllLeetcodeStats();
     console.log("Initial leetcode stats refresh complete.");
-  }, 1000); 
+  },10*1000); 
 }

@@ -5,10 +5,17 @@ import { User } from "../models/user.model.js";
 import axios from "axios";
 import { ApiError } from "../utils/apierrorhandler.js";
 
+function extractLeetcodeUsername(urlOrUsername) {
+  if (!urlOrUsername) return '';
+  const match = urlOrUsername.match(/leetcode\.com\/u\/([^/]+)/i);
+  if (match) return match[1];
+  return urlOrUsername.split("/").pop();
+}
+
 const fetchLeetcodeStatsForUser = async (user) => {
-  if (!user.leetcode) return null;
-  const username = user.leetcode.split("/").pop();
-  console.log(username);
+  const username = extractLeetcodeUsername(user.leetcode);
+  if (!username) return null;
+  console.log('username', username);
   const url = `https://leetcode-stats-api.herokuapp.com/${username}`;
   try {
     const response = await axios.get(url);
@@ -35,15 +42,26 @@ const fetchLeetcodeStatsForUser = async (user) => {
       );
       return stats;
     }
-    return null;
+    return console.error(`Failed to fetch stats for ${username}:`, response.data.message);
   } catch (err) {
    return new ApiError(500, "Failed to fetch LeetCode stats");
   }
 };
 
 const refreshAllLeetcodeStats = async () => {
+  try{
   const users = await User.find({ leetcode: { $exists: true, $ne: null, $ne: "" } });
+  if (users.length === 0) {
+    console.log("No users with LeetCode profiles found.");
+    return;
+  }
   await Promise.all(users.map(fetchLeetcodeStatsForUser));
+   
+  }
+  catch (error) {
+    throw new ApiError(500, "Failed to refresh LeetCode stats for all users");
+  }
+  
 };
 
 
