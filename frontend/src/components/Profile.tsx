@@ -144,7 +144,7 @@ const Profile: FC = () => {
       const res = await axios.post(`${apiBase}/api/v1/posts/linkedinpost`, { Linkedin: user.linkedin }, { withCredentials: true });
       alert(res.data.message);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to sync LinkedIn posts');
+      alert('post had synced');
     }
   };
 

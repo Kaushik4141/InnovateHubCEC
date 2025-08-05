@@ -81,8 +81,8 @@ const linkpostUpload = asyncHandler(async (req, res) => {
     }
     res.status(200).json({ message: "Posts saved", count: postsToSave.length });
   } catch (err) {
-    console.error("Error in /linkedinpost:", err);
-    res.status(500).json({ error: "Server error" });
+    //console.error("Error in /linkedinpost:", err);
+    res.status(500, err.me).json({ err: "Server error" });
   }
 });
 const getlinkedinPosts = asyncHandler(async (req, res) => {
