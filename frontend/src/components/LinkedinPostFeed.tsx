@@ -62,17 +62,7 @@ const LinkedinPostFeed: React.FC = () => {
                       className="w-10 h-10 rounded-full mr-3"
                     />
                   ) : (
-                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                      {post.owner?.fullname
-                        ?.split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase() || "?"}
-            </div>
-                  )}
-                  <div>
-                    <div className="font-semibold text-white">
-                      <button
+                     <button
                       className="text-white font-semibold hover:underline ml-2 focus:outline-none"
                       style={{ background: 'none', border: 'none', cursor: post.owner?.fullname !== 'Unknown' ? 'pointer' : 'default' }}
                       onClick={() => {
@@ -80,8 +70,16 @@ const LinkedinPostFeed: React.FC = () => {
                       }}
                       aria-label={`View profile of ${post.owner?.fullname}`}
                     >
-                      {post.owner?.fullname || "Unknown"}
+                      {post.owner?.fullname
+                        ?.split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase() || "?"}
                     </button>
+                  )}
+                  <div>
+                    <div className="font-semibold text-white">
+                      {post.owner?.fullname || "Unknown"}
                     </div>
                     <div className="text-xs text-gray-400">
                       {new Date(post.createdAt).toLocaleString()}
