@@ -138,13 +138,7 @@ const UserProfileView: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2 mt-4 md:mt-0">
-             
-              <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">Share</button>
-              <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
-                <Settings className="h-4 w-4" />
-              </button>
-              {user._id !== loggedInUserId && (
-                <button
+<button
                   onClick={handleFollowToggle}
                   className={`${
                     user.isfollower ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
@@ -152,6 +146,12 @@ const UserProfileView: React.FC = () => {
                 >
                   {user.isfollower ? 'Unfollow' : 'Connect'}
                 </button>
+              <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">Share</button>
+              <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
+                <Settings className="h-4 w-4" />
+              </button>
+              {user._id !== loggedInUserId && (
+                
               )}
             </div>
           </div>
@@ -210,22 +210,7 @@ const UserProfileView: React.FC = () => {
                   <h3 className="text-xl font-semibold text-white"> Projects</h3>
                   
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {user.projects.map(p => (
-                    <div key={p.title} className="border border-gray-700 rounded-lg overflow-hidden">
-                      {p.coverimage && (
-                        <a href={p.link} target="_blank" rel="noreferrer">
-                          <img src={p.coverimage} alt={p.title} className="w-full h-48 object-cover" />
-                        </a>
-                      )}
-                      <div className="p-4">
-                        <h4 className="font-semibold text-white mb-2">{p.title}</h4>
-                        <p className="text-gray-400 text-sm mb-3">{p.description}</p>
-                        <a href={p.link} target="_blank" className="text-purple-400 hover:underline">View Project</a>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                
               </div>
             )}
 
@@ -240,22 +225,7 @@ const UserProfileView: React.FC = () => {
                     <Plus className="h-4 w-4 mr-2" /> New Post
                   </button>
                 </div>
-                <div className="space-y-4">
-                  {user.posts.length === 0 ? (
-                    <p className="text-gray-400">No posts yet.</p>
-                  ) : (
-                    user.posts.map(post => (
-                      <div key={post._id} className="border border-gray-700 p-4 rounded-lg">
-                        {post.coverImage && (
-                          <img src={post.coverImage} alt="Cover" className="w-full h-48 object-cover rounded-md mb-4" />
-                        )}
-                        <h4 className="text-lg font-bold text-white">{post.title}</h4>
-                        <p className="text-gray-400 text-sm mt-1">{new Date(post.createdAt).toLocaleDateString()}</p>
-                        <p className="text-gray-300 mt-2">{post.content.slice(0, 150)}...</p>
-                      </div>
-                    ))
-                  )}
-                </div>
+               
               </div>
             )}
 
