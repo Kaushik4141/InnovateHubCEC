@@ -15,7 +15,6 @@ function extractLeetcodeUsername(urlOrUsername) {
 const fetchLeetcodeStatsForUser = async (user) => {
   const username = extractLeetcodeUsername(user.leetcode);
   if (!username) return null;
-  console.log('username', username);
   const url = `https://leetcode-stats-api.herokuapp.com/${username}`;
   try {
     const response = await axios.get(url);
