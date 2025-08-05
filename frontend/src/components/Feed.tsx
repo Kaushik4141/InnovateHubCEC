@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import LinkedinPostFeed from "./LinkedinPostFeed"; // new component
+import { useNavigate } from "react-router-dom";
 
 interface Post {
   _id: string;
@@ -15,6 +16,7 @@ interface Post {
   };
   createdAt: string;
 }
+const navigate = useNavigate();
 
 const Feed: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -100,7 +102,16 @@ const Feed: React.FC = () => {
                   )}
                   <div>
                     <div className="font-semibold text-white">
+                      <button
+                        className="text-white font-semibold hover:underline ml-2 focus:outline-none"
+                        style={{ background: 'none', border: 'none', cursor: post.owner?.fullname !== 'Unknown' ? 'pointer' : 'default' }}
+                        onClick={() => {
+                          if (post.owner?.fullname !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(post.owner?.fullname || '')}`);
+                        }}
+                        aria-label={`View profile of ${post.owner?.fullname}`}
+                      >
                       {post.owner?.fullname || "Unknown"}
+                      </button>
                     </div>
                     <div className="text-xs text-gray-400">
                       {new Date(post.createdAt).toLocaleString()}
