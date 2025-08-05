@@ -19,7 +19,7 @@ const LandingPage = () => {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMinLoadingElapsed(true), 8000); // 2 seconds
+    const timer = setTimeout(() => setMinLoadingElapsed(true), 4400); 
     return () => clearTimeout(timer);
   }, []);
 
