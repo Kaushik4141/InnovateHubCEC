@@ -121,37 +121,62 @@ const UserProfileView: React.FC = () => {
             <div><p className="text-indigo-400 text-xl">{user.certifications.length}</p><p className="text-sm">Certifications</p></div>
           </div>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-6 mt-6">
-          <div className="bg-[#181f2c] p-4 rounded-xl border border-gray-700">
-            <h2 className="text-lg font-semibold mb-2">About</h2>
-            <p className="text-gray-400 mb-2">{user.bio || '—'}</p>
-            <p className="text-sm text-gray-300 flex items-center gap-2">
-              ✉️ {user.email}
-            </p>
-            <div className="flex gap-3 mt-2 text-gray-400">
-              {user.github && <a href={user.github} target="_blank" rel="noreferrer"><Github className="inline-block w-4 h-4" /></a>}
-              {user.linkedin && <a href={user.linkedin} target="_blank" rel="noreferrer"><Linkedin className="inline-block w-4 h-4" /></a>}
-            </div>
-          </div>
-
-          <div className="bg-[#181f2c] p-4 rounded-xl border border-gray-700">
-            <h2 className="text-lg font-semibold mb-2">Skills</h2>
-            {user.skills.length > 0 ? (
+{/* Skills */}
+            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-lg font-semibold text-white mb-4">Skills</h3>
               <div className="flex flex-wrap gap-2">
-                {user.skills.map((skill, idx) => (
-                  <span key={idx} className="px-3 py-1 text-xs bg-purple-700/20 text-purple-300 rounded-full border border-purple-600/30">
+                {user.skills.map(skill => (
+                  <span key={skill} className="px-3 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded-full text-sm">
                     {skill}
                   </span>
                 ))}
               </div>
-            ) : (
-              <p className="text-gray-400">No skills added.</p>
-            )}
+            </div>
+          </div>
+          {/* Main Content Tabs */}
+          <div className="lg:col-span-2">
+            <div className="bg-gray-800 rounded-xl border border-gray-700 mb-6">
+              <div className="flex border-b border-gray-700">
+                {['about','projects','activity'].map(tab => (
+                  <button key={tab}
+                    onClick={() => setActiveTab(tab as any)}
+                    className={`px-6 py-4 font-medium transition-colors ${activeTab===tab? 'text-purple-400 border-b-2 border-purple-400':'text-gray-400 hover:text-white'}`}
+                  >{tab.charAt(0).toUpperCase()+tab.slice(1)}</button>
+                ))}
+              </div>
+              <div className="p-6">
+                {activeTab==='about' && <p className="text-gray-300">{user.bio}</p>}
+                {activeTab==='projects' && (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-semibold text-white">My Projects</h3>
+                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"onClick={() => navigate('/addpost')}>
+                        <Plus className="h-4 w-4 mr-2" /> Add Project
+                      </button>
+                       <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={Linkedinsyncpost}>
+                        <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
+                    </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {user.projects.map(p => (
+                        <div key={p.title} className="border border-gray-700 rounded-lg overflow-hidden">
+                          {p.link && <a href={p.link} target="_blank"><img src={user.coverimage} alt={p.title} className="w-full h-48 object-cover" /></a>}
+                          <div className="p-4">
+                            <h4 className="font-semibold text-white mb-2">{p.title}</h4>
+                            <p className="text-gray-400 text-sm mb-3">{p.description}</p>
+                            <a href={p.link} className="text-purple-400 hover:underline">View Project</a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {activeTab==='activity' && <p className="text-gray-300">No recent activity.</p>}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
