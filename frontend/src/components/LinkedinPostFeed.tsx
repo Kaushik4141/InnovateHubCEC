@@ -62,25 +62,25 @@ const LinkedinPostFeed: React.FC = () => {
                       className="w-10 h-10 rounded-full mr-3"
                     />
                   ) : (
-                     <button
-                      className="text-white font-semibold hover:underline ml-2 focus:outline-none"
-                      style={{ background: 'none', border: 'none', cursor: post.owner?.fullname !== 'Unknown' ? 'pointer' : 'default' }}
-                      onClick={() => {
-                        if (post.owner?.fullname !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(post.owner?.fullname || '')}`);
-                      }}
-                      aria-label={`View profile of ${post.owner?.fullname}`}
-                    >
+                     <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-3">
                       {post.owner?.fullname
                         ?.split(" ")
                         .map((n) => n[0])
                         .join("")
                         .toUpperCase() || "?"}
-                    </button>
+                  </div>
                   )}
                   <div>
-                    <div className="font-semibold text-white">
+                    <button
+                      className="text-white font-semibold hover:underline ml-2 focus:outline-none"
+                      style={{ background: 'none', border: 'none', cursor: post.owner?.fullname!== 'Unknown' ? 'pointer' : 'default' }}
+                      onClick={() => {
+                        if (post.owner?.fullname !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(post.owner?.fullname || '')}`);
+                      }}
+                      aria-label={`View profile of ${post.owner?.fullname}`}
+                    >
                       {post.owner?.fullname || "Unknown"}
-                    </div>
+                    </button>
                     <div className="text-xs text-gray-400">
                       {new Date(post.createdAt).toLocaleString()}
                     </div>
