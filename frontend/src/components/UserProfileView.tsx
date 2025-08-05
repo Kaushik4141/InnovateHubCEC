@@ -147,12 +147,11 @@ const UserProfileView: React.FC = () => {
                   {user.isfollower ? 'Unfollow' : 'Connect'}
                 </button>
               <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">Share</button>
+              
               <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
                 <Settings className="h-4 w-4" />
               </button>
-              {user._id !== loggedInUserId && (
-                
-              )}
+              
             </div>
           </div>
 
