@@ -4,6 +4,21 @@ import Header from './Header';
 import { Calendar, Loader2, Github, Linkedin, Plus, Settings } from 'lucide-react';
 import axios from 'axios';
 
+interface Post {
+  _id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  coverImage?: string;
+}
+
+interface Project {
+  title: string;
+  description: string;
+  coverimage?: string;
+  link: string;
+}
+
 interface User {
   _id: string;
   usn: string;
@@ -13,8 +28,9 @@ interface User {
   avatar?: string;
   skills: string[];
   certifications: any[];
-  projects: any[];
+  projects: Project[];
   achievements: any[];
+  posts: Post[];
   otherLinks: any[];
   createdAt: string;
   updatedAt: string;
@@ -26,14 +42,22 @@ interface User {
   isfollower: boolean;
 }
 
+const getOrdinalSuffix = (n: number) => {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+};
+
 const UserProfileView: React.FC = () => {
   const { fullname } = useParams<{ fullname: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'activity'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'posts' | 'activity'>('about');
   const navigate = useNavigate();
   const apiBase = import.meta.env.VITE_API_URL;
+
+  const loggedInUserId = localStorage.getItem('userId'); // or get from auth context
 
   useEffect(() => {
     if (!fullname) return;
@@ -46,6 +70,19 @@ const UserProfileView: React.FC = () => {
       .catch(() => setError('User not found'))
       .finally(() => setLoading(false));
   }, [fullname, apiBase]);
+
+  const handleFollowToggle = async () => {
+    try {
+      await axios.post(
+        `${apiBase}/api/v1/users/${user?._id}/${user?.isfollower ? 'unfollow' : 'follow'}`,
+        {},
+        { withCredentials: true }
+      );
+      setUser((prev) => prev && { ...prev, isfollower: !prev.isfollower });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   if (loading) {
     return (
@@ -76,7 +113,8 @@ const UserProfileView: React.FC = () => {
     <div className="min-h-screen bg-[#0f0f1c] text-white">
       <Header />
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
-        {/* Profile Top Section */}
+
+        {/* Profile Header */}
         <div className="bg-[#181f2c] p-6 rounded-xl border border-gray-700">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-4">
@@ -91,7 +129,7 @@ const UserProfileView: React.FC = () => {
               </div>
               <div>
                 <h1 className="text-3xl font-bold">{user.fullname}</h1>
-                <p className="text-purple-400">{user.year}nd Year CSE</p>
+                <p className="text-purple-400">{getOrdinalSuffix(user.year)} Year CSE</p>
                 <p className="text-gray-400">Canara Engineering College</p>
                 <div className="flex items-center text-sm text-gray-400 mt-1">
                   <Calendar className="h-4 w-4 mr-1" />
@@ -105,8 +143,19 @@ const UserProfileView: React.FC = () => {
               <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
                 <Settings className="h-4 w-4" />
               </button>
+              {user._id !== loggedInUserId && (
+                <button
+                  onClick={handleFollowToggle}
+                  className={`${
+                    user.isfollower ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+                  } text-white px-4 py-1 rounded text-sm`}
+                >
+                  {user.isfollower ? 'Unfollow' : 'Connect'}
+                </button>
+              )}
             </div>
           </div>
+
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-6 text-center mt-6 gap-4">
             <div><p className="text-purple-400 text-xl">0</p><p className="text-sm">Profile Views</p></div>
@@ -118,52 +167,42 @@ const UserProfileView: React.FC = () => {
           </div>
         </div>
 
-        {/* About Section */}
-        <div className="bg-[#181f2c] p-6 rounded-xl border border-gray-700 space-y-4">
-          <h3 className="text-lg font-semibold text-white">About</h3>
-          <p className="text-gray-300">{user.bio || '—'}</p>
-          <div className="flex items-center gap-4 text-sm text-gray-300">
-            <span>{user.email}</span>
-            {user.github && (
-              <a href={user.github} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-white">
-                <Github className="w-4 h-4" /> GitHub
-              </a>
-            )}
-            {user.linkedin && (
-              <a href={user.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-white">
-                <Linkedin className="w-4 h-4" /> LinkedIn
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* Skills Section */}
-        <div className="bg-[#181f2c] p-6 rounded-xl border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Skills</h3>
-          <div className="flex flex-wrap gap-2">
-            {user.skills.map(skill => (
-              <span key={skill} className="px-3 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded-full text-sm">
-                {skill}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Tabs Section */}
+        {/* Tab Navigation */}
         <div className="bg-[#181f2c] rounded-xl border border-gray-700">
           <div className="flex border-b border-gray-700">
-            {['about', 'projects', 'activity'].map(tab => (
+            {['about', 'projects', 'posts', 'activity'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
-                className={`px-6 py-4 font-medium transition-colors ${activeTab === tab ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
+                className={`px-6 py-4 font-medium transition-colors ${
+                  activeTab === tab ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'
+                }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
           </div>
+
           <div className="p-6">
-            {activeTab === 'about' && <p className="text-gray-300">{user.bio || 'No bio provided yet.'}</p>}
+            {activeTab === 'about' && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-white">About</h3>
+                <p className="text-gray-300">{user.bio || '—'}</p>
+                <div className="flex items-center gap-4 text-sm text-gray-300">
+                  <span>{user.email}</span>
+                  {user.github && (
+                    <a href={user.github} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-white">
+                      <Github className="w-4 h-4" /> GitHub
+                    </a>
+                  )}
+                  {user.linkedin && (
+                    <a href={user.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-white">
+                      <Linkedin className="w-4 h-4" /> LinkedIn
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
 
             {activeTab === 'projects' && (
               <div className="space-y-6">
@@ -191,6 +230,36 @@ const UserProfileView: React.FC = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'posts' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold text-white">Posts</h3>
+                  <button
+                    className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
+                    onClick={() => navigate('/addpost')}
+                  >
+                    <Plus className="h-4 w-4 mr-2" /> New Post
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  {user.posts.length === 0 ? (
+                    <p className="text-gray-400">No posts yet.</p>
+                  ) : (
+                    user.posts.map(post => (
+                      <div key={post._id} className="border border-gray-700 p-4 rounded-lg">
+                        {post.coverImage && (
+                          <img src={post.coverImage} alt="Cover" className="w-full h-48 object-cover rounded-md mb-4" />
+                        )}
+                        <h4 className="text-lg font-bold text-white">{post.title}</h4>
+                        <p className="text-gray-400 text-sm mt-1">{new Date(post.createdAt).toLocaleDateString()}</p>
+                        <p className="text-gray-300 mt-2">{post.content.slice(0, 150)}...</p>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
