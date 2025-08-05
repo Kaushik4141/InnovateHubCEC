@@ -133,7 +133,7 @@ setError('User not loaded.');
 return;
 }
 try {
-const res = await axios.post(${apiBase}/api/v1/posts/linkedinpost, { Linkedin: user.linkedin }, { withCredentials: true });
+const res = await axios.post(`${apiBase}/api/v1/posts/linkedinpost`, { Linkedin: user.linkedin }, { withCredentials: true });
 alert(res.data.message);
 } catch (err: any) {
 alert('post had synced');
@@ -148,7 +148,7 @@ return (
 <div className="min-h-screen bg-gray-900 text-white">
 <Header />
 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-{/* Profile Header /}
+{/* Profile Header */}
 <div className="bg-gray-800 rounded-xl p-8 mb-6 border border-gray-700">
 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
 <div className="flex items-center mb-6 lg:mb-0">
