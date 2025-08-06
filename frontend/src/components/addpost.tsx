@@ -57,7 +57,7 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
 
   return (
     <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-xl border border-gray-700 space-y-4 max-w-lg mx-auto">
-      <h2 className="text-xl font-semibold text-white mb-2">Add Post</h2>
+      <h2 className="text-xl font-semibold text-white mb-2">Add Project</h2>
       <input
         type="file"
         accept="*"

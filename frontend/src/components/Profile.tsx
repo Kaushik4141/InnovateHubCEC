@@ -90,6 +90,9 @@ const Profile: FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'activity'>('about');
   const [user, setUser] = useState<User | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState<string|null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -110,6 +113,21 @@ const Profile: FC = () => {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (user && user._id) {
+      setProjectsLoading(true);
+      axios.get(`${apiBase}/api/v1/posts/user/${user._id}`, { withCredentials: true })
+        .then(res => {
+          setProjects(res.data);
+          setProjectsLoading(false);
+        })
+        .catch(err => {
+          setProjectsError('Could not load projects.');
+          setProjectsLoading(false);
+        });
+    }
+  }, [user]);
 
   const handleAvatarClick = () => {
     if (avatarInputRef.current) {
@@ -264,30 +282,49 @@ const Profile: FC = () => {
               <div className="p-6">
                 {activeTab==='about' && <p className="text-gray-300">{user.bio}</p>}
                 {activeTab==='projects' && (
-                  <div className="space-y-6">
-                    <div className="flex justify-between items-center">
-                      <h3 className="text-xl font-semibold text-white">My Projects</h3>
-                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"onClick={() => navigate('/addpost')}>
-                        <Plus className="h-4 w-4 mr-2" /> Add Project
-                      </button>
-                       <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={Linkedinsyncpost}>
-                        <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
-                    </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {user.projects.map(p => (
-                        <div key={p.title} className="border border-gray-700 rounded-lg overflow-hidden">
-                          {p.link && <a href={p.link} target="_blank"><img src={user.coverimage} alt={p.title} className="w-full h-48 object-cover" /></a>}
-                          <div className="p-4">
-                            <h4 className="font-semibold text-white mb-2">{p.title}</h4>
-                            <p className="text-gray-400 text-sm mb-3">{p.description}</p>
-                            <a href={p.link} className="text-purple-400 hover:underline">View Project</a>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h3 className="text-xl font-semibold text-white">My Projects</h3>
+      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={() => navigate('/addpost')}>
+        <Plus className="h-4 w-4 mr-2" /> Add Project
+      </button>
+      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={Linkedinsyncpost}>
+        <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
+      </button>
+    </div>
+    {projectsLoading ? (
+      <div>Loading projects...</div>
+    ) : projectsError ? (
+      <div className="text-red-400">{projectsError}</div>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {projects.length === 0 ? (
+          <div className="col-span-2 text-gray-400">No projects found.</div>
+        ) : (
+          projects.map((p: any) => (
+            <div key={p._id} className="border border-gray-700 rounded-lg overflow-hidden">
+              {p.postFile && (
+  p.postFile.match(/\.(mp4|webm|ogg)$/i) ? (
+    <video controls className="w-full h-48 object-cover">
+      <source src={p.postFile} type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+  ) : (
+    <img src={p.postFile} alt={p.description} className="w-full h-48 object-cover" />
+  )
+)}
+              <div className="p-4">
+                <h4 className="font-semibold text-white mb-2">{p.description}</h4>
+                <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>
+                {/* If you have a link or more fields, add them here */}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    )}
+  </div>
+)}
                 {activeTab==='activity' && <p className="text-gray-300">No recent activity.</p>}
               </div>
             </div>

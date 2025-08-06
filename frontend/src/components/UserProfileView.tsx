@@ -52,6 +52,9 @@ const getOrdinalSuffix = (n: number) => {
 const UserProfileView: React.FC = () => {
   const { fullname } = useParams<{ fullname: string }>();
   const [user, setUser] = useState<User | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState<string|null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'posts' | 'activity'>('about');
@@ -71,6 +74,21 @@ const UserProfileView: React.FC = () => {
       .catch(() => setError('User not found'))
       .finally(() => setLoading(false));
   }, [fullname, apiBase]);
+
+  useEffect(() => {
+    if (user && user._id) {
+      setProjectsLoading(true);
+      axios.get(`${apiBase}/api/v1/posts/user/${user._id}`, { withCredentials: true })
+        .then(res => {
+          setProjects(res.data);
+          setProjectsLoading(false);
+        })
+        .catch(err => {
+          setProjectsError('Could not load projects.');
+          setProjectsLoading(false);
+        });
+    }
+  }, [user]);
 
   const handleFollowToggle = async () => {
     try {
@@ -205,20 +223,47 @@ const UserProfileView: React.FC = () => {
             )}
 
             {activeTab === 'projects' && (
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-xl font-semibold text-white"> Projects</h3>
-                  
-                </div>
-                
+  <div className="space-y-6">
+    <div className="flex justify-between items-center">
+      <h3 className="text-xl font-semibold text-white"> Projects</h3>
+    </div>
+    {projectsLoading ? (
+      <div>Loading projects...</div>
+    ) : projectsError ? (
+      <div className="text-red-400">{projectsError}</div>
+    ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {projects.length === 0 ? (
+          <div className="col-span-2 text-gray-400">No projects found.</div>
+        ) : (
+          projects.map((p: any, idx: number) => (
+            <div key={idx} className="border border-gray-700 rounded-lg overflow-hidden">
+              {p.postFile && (
+                p.postFile.match(/\.(mp4|webm|ogg)$/i) ? (
+                  <video controls className="w-full h-48 object-cover">
+                    <source src={p.postFile} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : (
+                  <img src={p.postFile} alt={p.description} className="w-full h-48 object-cover" />
+                )
+              )}
+              <div className="p-4">
+                <h4 className="font-semibold text-white mb-2">{p.description || p.title}</h4>
+                <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>
               </div>
-            )}
+            </div>
+          ))
+        )}
+      </div>
+    )}
+  </div>
+)}
 
             {activeTab === 'posts' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-semibold text-white">Posts</h3>
-                  
                 </div>
                
               </div>
