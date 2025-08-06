@@ -303,16 +303,20 @@ const Profile: FC = () => {
         ) : (
           projects.map((p: any) => (
             <div key={p._id} className="border border-gray-700 rounded-lg overflow-hidden">
-              {p.postFile && (
-  p.postFile.match(/\.(mp4|webm|ogg)$/i) ? (
-    <video controls className="w-full h-48 object-cover">
-      <source src={p.postFile} type="video/mp4" />
-      Your browser does not support the video tag.
-    </video>
-  ) : (
-    <img src={p.postFile} alt={p.description} className="w-full h-48 object-cover" />
-  )
-)}
+              {Array.isArray(p.postFile) && p.postFile.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {p.postFile.map((fileUrl: string, idx: number) =>
+                    fileUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                      <video key={idx} controls className="w-full h-48 object-cover">
+                        <source src={fileUrl} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    ) : (
+                      <img key={idx} src={fileUrl} alt={p.description} className="w-full h-48 object-cover" />
+                    )
+                  )}
+                </div>
+              )}
               <div className="p-4">
                 <h4 className="font-semibold text-white mb-2">{p.description}</h4>
                 <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>

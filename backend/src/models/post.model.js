@@ -7,11 +7,10 @@ const postSchema = new mongoose.Schema({
     unique: true,
     default: () => new mongoose.Types.ObjectId().toString()
   },
-  postFile: {
+  postFile: [{
       type: String,
-      required: true,
-      unique: true,
-    },
+      required: true
+    }],
   description: {
     type: String,
     required: true

@@ -54,7 +54,7 @@ const UserProfileView: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
-  const [projectsError, setProjectsError] = useState<string|null>(null);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'posts' | 'activity'>('about');
@@ -107,9 +107,9 @@ const UserProfileView: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex flex-col">
         <Header />
-        
-         <Loader />
-        
+
+        <Loader />
+
       </div>
     );
   }
@@ -157,20 +157,19 @@ const UserProfileView: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-2 mt-4 md:mt-0">
-<button
-                  onClick={handleFollowToggle}
-                  className={`${
-                    user.isfollower ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
+              <button
+                onClick={handleFollowToggle}
+                className={`${user.isfollower ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'
                   } text-white px-4 py-1 rounded text-sm`}
-                >
-                  {user.isfollower ? 'Unfollow' : 'Connect'}
-                </button>
+              >
+                {user.isfollower ? 'Unfollow' : 'Connect'}
+              </button>
               <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">Share</button>
-              
+
               <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
                 <Settings className="h-4 w-4" />
               </button>
-              
+
             </div>
           </div>
 
@@ -192,9 +191,8 @@ const UserProfileView: React.FC = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
-                className={`px-6 py-4 font-medium transition-colors ${
-                  activeTab === tab ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'
-                }`}
+                className={`px-6 py-4 font-medium transition-colors ${activeTab === tab ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'
+                  }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
@@ -223,49 +221,53 @@ const UserProfileView: React.FC = () => {
             )}
 
             {activeTab === 'projects' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h3 className="text-xl font-semibold text-white"> Projects</h3>
-    </div>
-    {projectsLoading ? (
-      <div>Loading projects...</div>
-    ) : projectsError ? (
-      <div className="text-red-400">{projectsError}</div>
-    ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {projects.length === 0 ? (
-          <div className="col-span-2 text-gray-400">No projects found.</div>
-        ) : (
-          projects.map((p: any, idx: number) => (
-            <div key={idx} className="border border-gray-700 rounded-lg overflow-hidden">
-              {p.postFile && (
-                p.postFile.match(/\.(mp4|webm|ogg)$/i) ? (
-                  <video controls className="w-full h-48 object-cover">
-                    <source src={p.postFile} type="video/mp4" />
-                    Your browser does not support the video tag.
-                  </video>
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-xl font-semibold text-white"> Projects</h3>
+                </div>
+                {projectsLoading ? (
+                  <div>Loading projects...</div>
+                ) : projectsError ? (
+                  <div className="text-red-400">{projectsError}</div>
                 ) : (
-                  <img src={p.postFile} alt={p.description} className="w-full h-48 object-cover" />
-                )
-              )}
-              <div className="p-4">
-                <h4 className="font-semibold text-white mb-2">{p.description || p.title}</h4>
-                <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {projects.length === 0 ? (
+                      <div className="col-span-2 text-gray-400">No projects found.</div>
+                    ) : (
+                      projects.map((p: any, idx: number) => (
+                        <div key={idx} className="border border-gray-700 rounded-lg overflow-hidden">
+                          {Array.isArray(p.postFile) && p.postFile.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {p.postFile.map((fileUrl: string, fileIdx: number) =>
+                                fileUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                                  <video key={fileIdx} controls className="w-full h-48 object-cover">
+                                    <source src={fileUrl} type="video/mp4" />
+                                    Your browser does not support the video tag.
+                                  </video>
+                                ) : (
+                                  <img key={fileIdx} src={fileUrl} alt={p.description} className="w-full h-48 object-cover" />
+                                )
+                              )}
+                            </div>
+                          )}
+                          <div className="p-4">
+                            <h4 className="font-semibold text-white mb-2">{p.description || p.title}</h4>
+                            <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))
-        )}
-      </div>
-    )}
-  </div>
-)}
+            )}
 
             {activeTab === 'posts' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
                   <h3 className="text-xl font-semibold text-white">Posts</h3>
                 </div>
-               
+
               </div>
             )}
 

@@ -8,7 +8,7 @@ interface AddPostProps {
 
 const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
   const navigate = useNavigate();
-  const [postFile, setPostFile] = useState<File | null>(null);
+  const [postFiles, setPostFiles] = useState<File[]>([]);
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +18,9 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      setPostFile(e.target.files[0]);
+      const filesArray = Array.from(e.target.files);
+      //console.log('FILES SELECTED:', filesArray.length, filesArray.map(f => f.name));
+      setPostFiles(filesArray);
     }
   };
 
@@ -26,24 +28,38 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
     e.preventDefault();
     setError(null);
     setSuccess(false);
-    if (!postFile || !description) {
-      setError('File and description are required.');
+    if (!postFiles.length || !description) {
+      setError('At least one file and description are required.');
       return;
     }
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('postFile', postFile);
+      console.log('ABOUT TO APPEND FILES:', postFiles.length, postFiles.map(f => f.name));
+      postFiles.forEach((file, index) => {
+        console.log(`Appending file ${index + 1}:`, file.name, file.size, 'bytes');
+        formData.append('postFile', file);
+      });
       formData.append('description', description);
       if (tags) {
         tags.split(',').map(tag => formData.append('tags', tag.trim()));
+      }
+      
+      // Debug: Log all FormData entries
+      console.log('FINAL FORMDATA ENTRIES:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(key, ':', value.name, value.size, 'bytes');
+        } else {
+          console.log(key, ':', value);
+        }
       }
       await axios.post(`${apiBase}/api/v1/posts/uploadPost`, formData, {
         withCredentials: true,
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setSuccess(true);
-      setPostFile(null);
+      setPostFiles([]);
       setDescription('');
       setTags('');
       if (onSuccess) onSuccess();
@@ -61,9 +77,17 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
       <input
         type="file"
         accept="*"
+        multiple
         onChange={handleFileChange}
         className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
       />
+      {postFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2 mt-2">
+          {postFiles.map((file, idx) => (
+            <span key={idx} className="text-xs bg-gray-700 px-2 py-1 rounded text-white">{file.name}</span>
+          ))}
+        </div>
+      )}
       <textarea
         value={description}
         onChange={e => setDescription(e.target.value)}

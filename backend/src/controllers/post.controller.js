@@ -8,17 +8,18 @@ const postUpload = asyncHandler(async (req, res) => {
   try {
     const { description } = req.body;
     const userid = req.user._id;
-    const postFileLocalPath = req.files?.postFile?.[0]?.path;
-    if (!postFileLocalPath) throw new ApiError(400, "Post file required");
+    const files = req.files?.postFile;
+    if (!files || files.length === 0) throw new ApiError(400, "Post file(s) required");
     
-    const uploadPostOnCloudinary = await uploadOnCloudinary(postFileLocalPath);
-   
-    if (!(uploadPostOnCloudinary))
-      throw new ApiError(400, "Upload video error");
+    const uploadedUrls = [];
+    for (const file of files) {
+      const uploadResult = await uploadOnCloudinary(file.path);
+      if (!uploadResult) throw new ApiError(400, "Upload error");
+      uploadedUrls.push(uploadResult.url);
+    }
     const postPublish = await Post.create({
-      postFile: uploadPostOnCloudinary.url,
+      postFile: uploadedUrls,
       description,
-      cloudinaryPostID: uploadPostOnCloudinary.public_id,
       owner: userid,
     });
     if (!postPublish)

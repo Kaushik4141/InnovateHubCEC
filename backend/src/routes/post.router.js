@@ -19,7 +19,7 @@ const router = Router();
 router.route("/uploadPost").post(
   verifyJWT,
   upload.fields([
-    { name: "postFile", maxCount: 1 },
+    { name: "postFile", maxCount: 10 }, 
   ]),
   postUpload
 );
