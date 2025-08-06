@@ -15,6 +15,14 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  liveLink: {
+    type: String,
+    required: false
+  },
+  githubLink: {
+    type: String,
+    required: false
+  },
  views: {
     type: Number,
     default: 0

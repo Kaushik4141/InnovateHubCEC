@@ -13,7 +13,8 @@ import {
 } from "../controllers/post.controller.js";
 import {
    linkpostUpload,
-   getlinkedinPosts
+   getlinkedinPosts,
+   getlinkedinPostsByUser
   } from "../controllers/linkedinpost.controller.js";
 const router = Router();
 router.route("/uploadPost").post(
@@ -34,6 +35,7 @@ router.route("/linkedinpost").post(verifyJWT, linkpostUpload);
 router.route("/combinedPosts").get(verifyJWT, getCombinedPosts);
 router.route("/linkedinPosts").get(verifyJWT, getlinkedinPosts);
 router.route("/user/:userId").get(verifyJWT, getPostByUserId);
+router.route("/linkedinPosts/:userId").get(verifyJWT, getlinkedinPostsByUser);
 
 
 export default router;

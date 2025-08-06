@@ -88,11 +88,14 @@ const SocialLink: FC<{ href: string; Icon: FC<any> }> = ({ href, Icon }) => (
 // ----- Main Component -----
 const Profile: FC = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'activity'>('about');
+  const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'posts' | 'activity'>('about');
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [projectsError, setProjectsError] = useState<string|null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [postsLoading, setPostsLoading] = useState(false);
+  const [postsError, setPostsError] = useState<string|null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -117,17 +120,41 @@ const Profile: FC = () => {
   useEffect(() => {
     if (user && user._id) {
       setProjectsLoading(true);
+      console.log('Fetching projects for user:', user._id);
       axios.get(`${apiBase}/api/v1/posts/user/${user._id}`, { withCredentials: true })
         .then(res => {
-          setProjects(res.data);
+          console.log('Projects API Response:', res.data);
+          console.log('Projects data type:', typeof res.data, 'Is array:', Array.isArray(res.data));
+         
+          const projectsData = Array.isArray(res.data) ? res.data : (res.data.data || []);
+          setProjects(projectsData);
           setProjectsLoading(false);
         })
         .catch(err => {
-          setProjectsError('Could not load projects.');
+          console.error('Projects API Error:', err);
+          setProjectsError('Failed to load projects');
           setProjectsLoading(false);
         });
     }
-  }, [user]);
+  }, [user, apiBase]);
+
+  useEffect(() => {
+    if (user && user._id) {
+      setPostsLoading(true);
+      axios.get(`${apiBase}/api/v1/posts/linkedinPosts/${user._id}`, { withCredentials: true })
+        .then(res => {
+          console.log('LinkedIn Posts API Response:', res.data);
+          const postsData = res.data?.data?.linkedinPosts || res.data?.linkedinPosts || [];
+          setPosts(postsData);
+          setPostsLoading(false);
+        })
+        .catch(err => {
+          console.error('LinkedIn Posts API Error:', err);
+          setPostsError('Failed to load LinkedIn posts');
+          setPostsLoading(false);
+        });
+    }
+  }, [user, apiBase]);
 
   const handleAvatarClick = () => {
     if (avatarInputRef.current) {
@@ -272,7 +299,7 @@ const Profile: FC = () => {
           <div className="lg:col-span-2">
             <div className="bg-gray-800 rounded-xl border border-gray-700 mb-6">
               <div className="flex border-b border-gray-700">
-                {['about','projects','activity'].map(tab => (
+                {['about','projects','posts','activity'].map(tab => (
                   <button key={tab}
                     onClick={() => setActiveTab(tab as any)}
                     className={`px-6 py-4 font-medium transition-colors ${activeTab===tab? 'text-purple-400 border-b-2 border-purple-400':'text-gray-400 hover:text-white'}`}
@@ -287,9 +314,6 @@ const Profile: FC = () => {
       <h3 className="text-xl font-semibold text-white">My Projects</h3>
       <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={() => navigate('/addpost')}>
         <Plus className="h-4 w-4 mr-2" /> Add Project
-      </button>
-      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={Linkedinsyncpost}>
-        <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
       </button>
     </div>
     {projectsLoading ? (
@@ -329,6 +353,63 @@ const Profile: FC = () => {
     )}
   </div>
 )}
+                {activeTab==='posts' && (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xl font-semibold text-white">My Posts</h3>
+                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={Linkedinsyncpost}>
+                        <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
+                      </button>
+                    </div>
+                    {postsLoading ? (
+                      <div>Loading posts...</div>
+                    ) : postsError ? (
+                      <div className="text-red-400">{postsError}</div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {posts.length === 0 ? (
+                          <div className="col-span-2 text-gray-400">No LinkedIn posts found.</div>
+                        ) : (
+                          posts.map((p: any) => (
+                            <div key={p._id} className="border border-gray-700 rounded-lg overflow-hidden">
+                              {/* LinkedIn post images */}
+                              {Array.isArray(p.images) && p.images.length > 0 && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {p.images.map((img: any, idx: number) => (
+                                    <div key={idx}>
+                                      <img
+                                        src={img.value}
+                                        alt={`LinkedIn post image ${idx + 1}`}
+                                        className="w-full h-48 object-cover rounded-lg border border-gray-700"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="p-4">
+                                <h4 className="font-semibold text-white mb-2">{p.text || 'LinkedIn Post'}</h4>
+                                {p.url && (
+                                  <a
+                                    href={p.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:underline text-sm mb-2 inline-block"
+                                  >
+                                    View on LinkedIn
+                                  </a>
+                                )}
+                                <p className="text-gray-500 text-xs">{new Date(p.createdAt).toLocaleDateString()}</p>
+                                {p.owner && (
+                                  <p className="text-gray-400 text-xs mt-1">By: {p.owner.fullname || 'Unknown'}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
                 {activeTab==='activity' && <p className="text-gray-300">No recent activity.</p>}
               </div>
             </div>

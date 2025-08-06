@@ -10,7 +10,7 @@ interface Post {
   description: string;
   link?: string;
   tags?: string[];
-  postFile?: string;
+  postFile?: string | string[];
   owner?: {
     fullname: string;
     avatar?: string;
@@ -67,33 +67,26 @@ const Feed: React.FC = () => {
       fetchPosts();
     }
   }, [tab, apiBase, page]);
-  const fetchPosts = async () => {
-  setLoading(true);
-  setError(null);
-  try {
-    const res = await axios.get(`${apiBase}/api/v1/posts/getAllPost?page=${page}&limit=10`, {
-      withCredentials: true,
-    });
-    let postsData = [];
-    if (res.data?.data?.result) {
-      postsData = res.data.data.result;
-    } else if (Array.isArray(res.data.data)) {
-      postsData = res.data.data;
-    }
-    setTotal(res.data.data.total);
-    setPosts(prev => {
-      const newPosts = page === 1 ? postsData : [...prev, ...postsData];
-      setHasMore(newPosts.length < res.data.data.total);
-      return newPosts;
-    });
-  } catch (err: any) {
-    setError(err.response?.data?.message || "Failed to load posts");
-  } finally {
-    setLoading(false);
-  }
-};
 
-console.log({ page, postsLength: posts.length, hasMore, total });
+  // Infinite scroll effect for project posts
+  useEffect(() => {
+    if (tab !== 'project' || !hasMore || loading) return;
+    
+    const handleScroll = () => {
+      const sentinel = document.getElementById('scroll-sentinel');
+      if (!sentinel) return;
+      
+      const rect = sentinel.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 100) {
+        setPage(prev => prev + 1);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [tab, hasMore, loading]);
+
+  console.log({ page, postsLength: posts.length, hasMore, total });
 
   if (tab === 'project' && loading)
     return <Loader />;
@@ -176,29 +169,65 @@ console.log({ page, postsLength: posts.length, hasMore, total });
                 )}
                 {post.postFile && (
                   <div className="mt-3">
-                    {/\.(jpg|jpeg|png|gif)$/i.test(post.postFile) ? (
-                      <img
-                        src={post.postFile}
-                        alt="Project file"
-                        className="max-h-64 rounded-lg border border-gray-700"
-                      />
-                    ) : /\.(mp4|webm|ogg)$/i.test(post.postFile) ? (
-                      <video
-                        controls
-                        src={post.postFile}
-                        className="max-h-64 rounded-lg border border-gray-700"
-                      >
-                        Your browser does not support the video tag.
-                      </video>
+                    {Array.isArray(post.postFile) ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {post.postFile.map((fileUrl: string, idx: number) => (
+                          <div key={idx}>
+                            {/\.(jpg|jpeg|png|gif)$/i.test(fileUrl) ? (
+                              <img
+                                src={fileUrl}
+                                alt={`Project file ${idx + 1}`}
+                                className="w-full max-h-64 object-cover rounded-lg border border-gray-700"
+                              />
+                            ) : /\.(mp4|webm|ogg)$/i.test(fileUrl) ? (
+                              <video
+                                controls
+                                src={fileUrl}
+                                className="w-full max-h-64 rounded-lg border border-gray-700"
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                            ) : (
+                              <a
+                                href={fileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-purple-400 hover:underline text-sm block"
+                              >
+                                Download File {idx + 1}
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <a
-                        href={post.postFile}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-purple-400 hover:underline text-sm"
-                      >
-                        Download File
-                      </a>
+                      // Fallback for single file (backward compatibility)
+                      <div>
+                        {/\.(jpg|jpeg|png|gif)$/i.test(post.postFile) ? (
+                          <img
+                            src={post.postFile}
+                            alt="Project file"
+                            className="max-h-64 rounded-lg border border-gray-700"
+                          />
+                        ) : /\.(mp4|webm|ogg)$/i.test(post.postFile) ? (
+                          <video
+                            controls
+                            src={post.postFile}
+                            className="max-h-64 rounded-lg border border-gray-700"
+                          >
+                            Your browser does not support the video tag.
+                          </video>
+                        ) : (
+                          <a
+                            href={post.postFile}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-400 hover:underline text-sm"
+                          >
+                            Download File
+                          </a>
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
@@ -228,9 +257,9 @@ console.log({ page, postsLength: posts.length, hasMore, total });
         )}
       </div>
 
-      {/* Infinite scroll logic */}
+      {/* Infinite scroll sentinel */}
       {tab === 'project' && hasMore && !loading && (
-        <div id="scroll-sentinel" style={{ height: 1 }} />
+        <div id="scroll-sentinel" style={{ height: 1, visibility: 'hidden' }} />
       )}
     </div>
   );
