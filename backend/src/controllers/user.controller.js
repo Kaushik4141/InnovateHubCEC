@@ -18,6 +18,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 };
 
 const registerUser = asyncHandler(async (req, res, next) => {
+  try{
   //data from frontend
   //validation
   //check if user already exists:usn,email
@@ -88,9 +89,14 @@ const registerUser = asyncHandler(async (req, res, next) => {
     .json(new ApiResponse(200, {user: createduserid,
       accessToken,
       refreshToken}, "User registered successfully"));
-});
+    }
 
+catch (e) {
+  throw new ApiError(400, e.message || "User registration failed");
+}
+});
 const loginuser = asyncHandler(async (req, res, next) => {
+  try {
   //data from frontend
   //validation by email
   //check if user exists email
@@ -139,8 +145,13 @@ const loginuser = asyncHandler(async (req, res, next) => {
         "User logged in successfully"
       )
     );
+  }
+catch (e) {
+    throw new ApiError(400, e.message || "User login failed");
+  }
 });
 const logoutUser = asyncHandler(async (req, res) => {
+  try {
   await User.findByIdAndUpdate(
     req.user._id,
     {
@@ -160,8 +171,12 @@ const logoutUser = asyncHandler(async (req, res) => {
     .clearCookie("accessToken", cookieOptions)
     .clearCookie("refreshToken", cookieOptions)
     .json(new ApiResponse(200, {}, "User logged Out"))
+  } catch (e) {
+    throw new ApiError(500, e.message || "User logout failed");
+  } 
 })
 const refreshAccessToken = asyncHandler(async (req, res) => {
+  
     const incomingRefreshToken =req.cookies.refreshToken || req.body.refreshToken
 
     if (!incomingRefreshToken) {

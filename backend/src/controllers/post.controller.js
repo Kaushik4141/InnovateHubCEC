@@ -3,6 +3,7 @@ import { ApiError } from "../utils/apierrorhandler.js";
 import { ApiResponse } from "../utils/apiresponsehandler.js";
 import { deleteFile, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { asyncHandler } from "../utils/asynchandler.js";
+
 const postUpload = asyncHandler(async (req, res) => {
   try {
     const { description } = req.body;
@@ -165,6 +166,15 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, e.message || "Unable to update post");
   }
 });
+const getPostByUserId = asyncHandler(async (req, res) => {
+ try {
+    const posts = await Post.find({ owner: req.params.userId });
+    res.json(posts);
+  } catch (e) {
+    throw new ApiError(500, e.message|| "Failed to fetch posts for user");
+  }
+});
+
 
 import { LinkedinPost } from "../models/linkedinpost.model.js";
 
@@ -191,4 +201,5 @@ export {
   togglePublishStatus,
   getAllPost,
   getCombinedPosts,
+  getPostByUserId
 };

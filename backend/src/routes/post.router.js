@@ -9,6 +9,7 @@ import {
   updatePost,
   postUpload,
   getCombinedPosts,
+  getPostByUserId,
 } from "../controllers/post.controller.js";
 import {
    linkpostUpload,
@@ -32,6 +33,7 @@ router.route("/getAllPost").get(getAllPost);
 router.route("/linkedinpost").post(verifyJWT, linkpostUpload);
 router.route("/combinedPosts").get(verifyJWT, getCombinedPosts);
 router.route("/linkedinPosts").get(verifyJWT, getlinkedinPosts);
+router.route("/user/:userId").get(verifyJWT, getPostByUserId);
 
 
 export default router;
