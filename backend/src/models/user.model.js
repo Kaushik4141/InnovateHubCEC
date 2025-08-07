@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default: "../public/default_avatar.png" 
+    default: "../public/default_avatar.png"
   },
   coverimage: {
     type: String,
@@ -84,6 +84,13 @@ const userSchema = new mongoose.Schema({
   skills: [{
     type: String,
     trim: true
+  }],
+  followRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  notifications: [{
+    type: { type: String, enum: ['follow-request', 'other'], default: 'follow-request' },
+    from: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    date: { type: Date, default: Date.now },
+    read: { type: Boolean, default: false }
   }],
   bio: {
     type: String,

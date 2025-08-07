@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword,alive} from "../controllers/user.controller.js";
+import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword,alive,getNotifications,requestFollow,acceptFollow,rejectFollow} from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router= Router()
@@ -22,6 +22,10 @@ router.route("/update-account").patch(verifyJWT, updateAccountDetails)
 router.route("/avatar").patch(verifyJWT, upload.single("avatar"), updateUserAvatar)
 
 router.route("/c/:fullname").get(verifyJWT, getUserProfile)
+router.route("/notifications").get(verifyJWT, getNotifications)
+router.route("/:id/request-follow").post(verifyJWT, requestFollow)
+router.route("/:id/accept-follow").post(verifyJWT, acceptFollow)
+router.route("/:id/reject-follow").post(verifyJWT, rejectFollow)
 
 
     
