@@ -387,6 +387,8 @@ const requestFollow = asyncHandler(async (req, res) => {
   try {
     const fromUserId = req.user._id;
     const toUserId = req.params.id;
+   
+   
 
     if (fromUserId.equals(toUserId))
       return res
@@ -394,15 +396,17 @@ const requestFollow = asyncHandler(async (req, res) => {
         .json(new ApiError(400, { error: "You can't follow yourself." }, "You can't follow yourself."));
 
     const toUser = await User.findById(toUserId);
-    if (!toUser) return
-    res
-    .status(404)
-    .json(new ApiError(404, { error: "User not found." }, "User not found."));
+    if (!toUser) {
+      return res
+        .status(404)
+        .json(new ApiError(404, { error: "User not found." }, "User not found."));
+    }
 
-    if (toUser.followRequests.includes(fromUserId) || toUser.followers.includes(fromUserId))
+    if (toUser.followRequests.includes(fromUserId) || toUser.followers.includes(fromUserId)){
       return res  
         .status(400)
         .json(new ApiError(400, { error: "Already requested or following." }, "Already requested or following."));
+    }
 
     toUser.followRequests.push(fromUserId);
     toUser.notifications.push({ type: 'follow-request', from: fromUserId });
@@ -419,6 +423,7 @@ const acceptFollow = asyncHandler(async (req, res) => {
   try {
   const myUserId = req.user._id;
   const fromUserId = req.params.id;
+ 
 
   const me = await User.findById(myUserId);
   const fromUser = await User.findById(fromUserId);
