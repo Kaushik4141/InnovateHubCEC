@@ -10,6 +10,8 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
   const navigate = useNavigate();
   const [postFiles, setPostFiles] = useState<File[]>([]);
   const [description, setDescription] = useState('');
+  const [liveLink, setLiveLink] = useState('');
+  const [githubLink, setGithubLink] = useState('');
   const [tags, setTags] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,12 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
         formData.append('postFile', file);
       });
       formData.append('description', description);
+      if (liveLink) {
+        formData.append('liveLink', liveLink);
+      }
+      if (githubLink) {
+        formData.append('githubLink', githubLink);
+      }
       if (tags) {
         tags.split(',').map(tag => formData.append('tags', tag.trim()));
       }
@@ -95,6 +103,20 @@ const AddPost: React.FC<AddPostProps> = ({ onSuccess }) => {
         className="w-full px-3 py-2 rounded bg-gray-700 text-white"
         rows={3}
         required
+      />
+      <input
+        type="url"
+        value={liveLink}
+        onChange={e => setLiveLink(e.target.value)}
+        placeholder="Live Demo Link (optional)"
+        className="w-full px-3 py-2 rounded bg-gray-700 text-white placeholder-gray-400"
+      />
+      <input
+        type="url"
+        value={githubLink}
+        onChange={e => setGithubLink(e.target.value)}
+        placeholder="GitHub Repository Link (optional)"
+        className="w-full px-3 py-2 rounded bg-gray-700 text-white placeholder-gray-400"
       />
       <input
         type="text"

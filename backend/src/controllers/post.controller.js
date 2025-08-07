@@ -6,7 +6,7 @@ import { asyncHandler } from "../utils/asynchandler.js";
 
 const postUpload = asyncHandler(async (req, res) => {
   try {
-    const { description } = req.body;
+    const { description, liveLink, githubLink } = req.body;
     const userid = req.user._id;
     const files = req.files?.postFile;
     if (!files || files.length === 0) throw new ApiError(400, "Post file(s) required");
@@ -20,6 +20,8 @@ const postUpload = asyncHandler(async (req, res) => {
     const postPublish = await Post.create({
       postFile: uploadedUrls,
       description,
+      liveLink: liveLink || undefined,
+      githubLink: githubLink || undefined,
       owner: userid,
     });
     if (!postPublish)

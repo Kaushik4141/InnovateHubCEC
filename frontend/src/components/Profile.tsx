@@ -5,7 +5,8 @@ import Header from './Header';
 import {
   Edit, MapPin, Calendar, Mail, Phone, Github, Linkedin, Globe,
   Award, Eye, Heart, MessageCircle, Code, Trophy, Users,
-  Plus, Settings, Share2, ExternalLink
+  Plus, Settings, Share2, ExternalLink,
+  LucideSquareDashedBottomCode
 } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 import Loader from './loading';
@@ -279,6 +280,7 @@ const Profile: FC = () => {
                 <div className="flex space-x-3 mt-4">
                   {user.github && <SocialLink href={user.github} Icon={Github} />}
                   {user.linkedin && <SocialLink href={user.linkedin} Icon={Linkedin} />}
+                  {user.leetcode && <SocialLink href={user.leetcode} Icon={LucideSquareDashedBottomCode} />}
                   {user.otherLinks.map(l => <SocialLink key={l.url} href={l.url} Icon={ExternalLink} />)}
                 </div>
               </>
@@ -344,7 +346,33 @@ const Profile: FC = () => {
               <div className="p-4">
                 <h4 className="font-semibold text-white mb-2">{p.description}</h4>
                 <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>
-                {/* If you have a link or more fields, add them here */}
+                {(p.liveLink || p.githubLink) && (
+                  <div className="flex gap-2 mb-3">
+                    {p.liveLink && (
+                      <a
+                        href={p.liveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-full transition-colors"
+                      >
+                        <Globe className="h-3 w-3 mr-1" />
+                        Live Demo
+                      </a>
+                    )}
+                    {p.githubLink && (
+                      <a
+                        href={p.githubLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-full transition-colors"
+                      >
+                        <Github className="h-3 w-3 mr-1" />
+                        GitHub
+                      </a>
+                    )}
+                  </div>
+                )}
+                <p className="text-gray-500 text-xs">{new Date(p.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
           ))

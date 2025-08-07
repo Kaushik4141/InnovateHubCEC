@@ -16,6 +16,8 @@ interface Post {
     avatar?: string;
   };
   createdAt: string;
+  liveLink?: string;
+  githubLink?: string;
 }
 
 const Feed: React.FC = () => {
@@ -157,6 +159,31 @@ const Feed: React.FC = () => {
                   {post.title}
                 </h3>
                 <p className="text-gray-200 mb-3">{post.description}</p>
+                {/* Live Link and GitHub Link buttons */}
+                {(post.liveLink || post.githubLink) && (
+                  <div className="flex gap-2 mb-3">
+                    {post.liveLink && (
+                      <a
+                        href={post.liveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-full transition-colors"
+                      >
+                        🌐 Live Demo
+                      </a>
+                    )}
+                    {post.githubLink && (
+                      <a
+                        href={post.githubLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-full transition-colors"
+                      >
+                         GitHub
+                      </a>
+                    )}
+                  </div>
+                )}
                 {post.link && (
                   <a
                     href={post.link}
