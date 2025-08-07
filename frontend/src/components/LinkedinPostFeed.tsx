@@ -131,7 +131,7 @@ interface LinkedinPost {
   createdAt: string;
 }
 
-const LinkedinPostFeed: React.FC = () => {
+const LinkedinPostFeed: React.FC<{ userId?: string }> = ({ userId }) => {
   const [posts, setPosts] = useState<LinkedinPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,10 +145,9 @@ const LinkedinPostFeed: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await axios.get(`${apiBase}/api/v1/posts/linkedinPosts?page=${page}&limit=10`, {
-          withCredentials: true,
-        });
-        const postsData = Array.isArray(res.data?.data?.linkedinPosts) ? res.data.data.linkedinPosts : [];
+        const url = userId ? `${apiBase}/posts/linkedinPosts/${userId}` : `${apiBase}/posts/linkedinPosts`;
+        const response = await axios.get(`${url}?page=${page}&limit=10`, { withCredentials: true });
+        const postsData = Array.isArray(response.data?.data?.linkedinPosts) ? response.data.data.linkedinPosts : [];
         setPosts(prev => page === 1 ? postsData : [...prev, ...postsData]);
         setHasMore(postsData.length === 10);
       } catch (err: any) {
