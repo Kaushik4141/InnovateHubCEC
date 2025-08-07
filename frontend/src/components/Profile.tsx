@@ -12,19 +12,19 @@ import EditProfileModal from './EditProfileModal';
 import Loader from './loading';
 
 // Component for handling expandable text with read more/less functionality
-const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({ 
-  text, 
-  maxLength = 150 
+const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
+  text,
+  maxLength = 150
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const shouldTruncate = text.length > maxLength;
-  
+
   if (!shouldTruncate) {
     return <p className="text-gray-300 mb-4 leading-relaxed whitespace-pre-wrap">{text}</p>;
   }
-  
+
   const displayText = isExpanded ? text : text.slice(0, maxLength) + '...';
-  
+
   return (
     <div className="mb-4 text-gray-300">
       <p className="leading-relaxed whitespace-pre-wrap">{displayText}</p>
@@ -43,9 +43,9 @@ const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
 const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }) => {
   const [showAll, setShowAll] = useState(false);
   const imageCount = images.length;
-  
+
   if (imageCount === 0) return null;
-  
+
   const getGridLayout = () => {
     switch (imageCount) {
       case 1:
@@ -60,10 +60,10 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }
         return "grid-cols-2";
     }
   };
-  
+
   const getImageClass = (index: number) => {
     const baseClass = "w-full h-full object-cover cursor-pointer transition-transform hover:scale-105";
-    
+
     switch (imageCount) {
       case 1:
         return `${baseClass} max-h-96 rounded-lg`;
@@ -85,10 +85,10 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }
         return `${baseClass} h-32 rounded-br-lg relative`;
     }
   };
-  
+
   const displayImages = showAll ? images : images.slice(0, 4);
   const remainingCount = imageCount - 4;
-  
+
   return (
     <div className="mb-4">
       <div className={`grid ${getGridLayout()} gap-1 max-w-full`}>
@@ -102,7 +102,7 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }
             />
             {/* Overlay for additional images */}
             {!showAll && index === 3 && remainingCount > 0 && (
-              <div 
+              <div
                 className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer rounded-br-lg"
                 onClick={() => setShowAll(true)}
               >
@@ -209,14 +209,14 @@ const Profile: FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [projects, setProjects] = useState<any[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
-  const [projectsError, setProjectsError] = useState<string|null>(null);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
-  const [postsError, setPostsError] = useState<string|null>(null);
+  const [postsError, setPostsError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  
+
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
@@ -243,7 +243,7 @@ const Profile: FC = () => {
         .then(res => {
           console.log('Projects API Response:', res.data);
           console.log('Projects data type:', typeof res.data, 'Is array:', Array.isArray(res.data));
-         
+
           const projectsData = Array.isArray(res.data) ? res.data : (res.data.data || []);
           setProjects(projectsData);
           setProjectsLoading(false);
@@ -314,8 +314,8 @@ const Profile: FC = () => {
   };
 
   if (loading) return <Loader />;
-  if (error)   return <p className="text-center text-red-500">{error}</p>;
-  if (!user)  return <p className="text-center text-white">No user found.</p>;
+  if (error) return <p className="text-center text-red-500">{error}</p>;
+  if (!user) return <p className="text-center text-white">No user found.</p>;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -418,21 +418,21 @@ const Profile: FC = () => {
           <div className="lg:col-span-2">
             <div className="bg-gray-800 rounded-xl border border-gray-700 mb-6">
               <div className="flex border-b border-gray-700">
-                {['about','projects','posts','activity'].map(tab => (
+                {['about', 'projects', 'posts', 'activity'].map(tab => (
                   <button key={tab}
                     onClick={() => setActiveTab(tab as any)}
-                    className={`px-6 py-4 font-medium transition-colors ${activeTab===tab? 'text-purple-400 border-b-2 border-purple-400':'text-gray-400 hover:text-white'}`}
-                  >{tab.charAt(0).toUpperCase()+tab.slice(1)}</button>
+                    className={`px-6 py-4 font-medium transition-colors ${activeTab === tab ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
+                  >{tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
                 ))}
               </div>
               <div className="p-6">
-                {activeTab==='about' && 
+                {activeTab === 'about' &&
                   <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
                     <h3 className="text-lg font-semibold text-white mb-4">About</h3>
                     <ExpandableText text={user.bio || ''} maxLength={200} />
                   </div>
                 }
-                {activeTab==='projects' && (
+                {activeTab === 'projects' && (
                   <div className="space-y-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xl font-semibold text-white">My Projects</h3>
@@ -491,7 +491,7 @@ const Profile: FC = () => {
                     )}
                   </div>
                 )}
-                {activeTab==='posts' && (
+                {activeTab === 'posts' && (
                   <div className="space-y-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xl font-semibold text-white">My Posts</h3>
@@ -509,23 +509,34 @@ const Profile: FC = () => {
                           <div className="text-center text-gray-400 py-8">No LinkedIn posts found.</div>
                         ) : (
                           posts.map((post: any) => (
-                          <div key={post._id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-md">
-                            {post.images && post.images.length > 0 && (
-                              <LinkedInImageGrid images={post.images} />
-                            )}
-                            <ExpandableText text={post.text || ''} maxLength={150} />
-                            <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm mt-2 inline-block">
-                              View on LinkedIn
-                            </a>
-                            <p className="text-gray-500 text-xs mt-2">{new Date(post.createdAt).toLocaleDateString()}</p>
-                          </div>
+                            <div key={post._id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-md">
+                              {Array.isArray(post.images) && post.images.length > 0 && (
+                                <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {post.images.map((fileUrl: string, fileIdx: number) =>
+                                    fileUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                                      <video key={fileIdx} controls className="w-full max-h-64 rounded-lg border border-gray-700">
+                                        <source src={fileUrl} />
+                                        Your browser does not support the video tag.
+                                      </video>
+                                    ) : (
+                                      <img key={fileIdx} src={fileUrl} alt={post.title} className="w-full max-h-64 object-cover rounded-lg border border-gray-700" />
+                                    )
+                                  )}
+                                </div>
+                              )}
+                              <ExpandableText text={post.text || ''} maxLength={150} />
+                              <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm mt-2 inline-block">
+                                View on LinkedIn
+                              </a>
+                              <p className="text-gray-500 text-xs mt-2">{new Date(post.createdAt).toLocaleDateString()}</p>
+                            </div>
                           ))
                         )}
                       </div>
                     )}
                   </div>
                 )}
-                {activeTab==='activity' && <div className="text-center text-gray-400 py-8">Activity feed coming soon.</div>}
+                {activeTab === 'activity' && <div className="text-center text-gray-400 py-8">Activity feed coming soon.</div>}
               </div>
             </div>
             {showEditModal && (
