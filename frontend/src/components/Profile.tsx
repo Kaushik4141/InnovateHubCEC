@@ -1,11 +1,12 @@
 import React, { useState, useEffect, FC } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Header from './Header';
 import {
   Edit, Calendar, Mail, Github, Linkedin, Globe,
   Plus, Settings, Share2, ExternalLink,
-  LucideSquareDashedBottomCode
+  Code,
+
 } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 import Loader from './loading';
@@ -202,6 +203,7 @@ const SocialLink: FC<{ href: string; Icon: FC<any> }> = ({ href, Icon }) => (
 
 // ----- Main Component -----
 const Profile: FC = () => {
+  const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'about' | 'projects' | 'posts' | 'activity'>('about');
   const [user, setUser] = useState<User | null>(null);
@@ -220,7 +222,8 @@ const Profile: FC = () => {
   const apiBase = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true })
+    const url = userId ? `${apiBase}/api/v1/users/u/${userId}` : `${apiBase}/api/v1/users/current-user`;
+    axios.get(url, { withCredentials: true })
       .then(res => {
         setUser(res.data.data);
         setLoading(false);
@@ -394,11 +397,7 @@ const Profile: FC = () => {
                 <div className="flex space-x-3 mt-4">
                   {user.github && <SocialLink href={user.github} Icon={Github} />}
                   {user.linkedin && <SocialLink href={user.linkedin} Icon={Linkedin} />}
-                  {user.leetcode && (
-                    <a href={user.leetcode} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13.483 0a1.374 1.374 0 0 0-.961.438L7.116 5.844a1.38 1.38 0 0 0-.438.961V16.2a1.38 1.38 0 0 0 .438.961l5.405 5.405a1.373 1.373 0 0 0 .961.438h7.032a1.374 1.374 0 0 0 .961-.438l5.405-5.405a1.38 1.38 0 0 0 .438-.961V7.795a1.38 1.38 0 0 0-.438-.961L21.476.438a1.374 1.374 0 0 0-.961-.438h-7.032zM14.87 21.61l-3.535-3.536a1.38 1.38 0 0 1-.438-.961V7.795a1.38 1.38 0 0 1 .438-.961l3.535-3.535h5.657l3.536 3.535v9.24l-3.536 3.536h-5.657zM16.253 12l-2.121-2.121a1.38 1.38 0 0 0-1.952 0l-.707.707a1.38 1.38 0 0 0 0 1.952L13.48 14.54l-2.121 2.121a1.38 1.38 0 0 0 0 1.952l.707.707a1.38 1.38 0 0 0 1.952 0L16.253 17l2.121 2.121a1.38 1.38 0 0 0 1.952 0l.707-.707a1.38 1.38 0 0 0 0-1.952L18.91 14.54l2.121-2.121a1.38 1.38 0 0 0 0-1.952l-.707-.707a1.38 1.38 0 0 0-1.952 0L16.253 12z"/></svg>
-                    </a>
-                  )}
+                  {user.leetcode && <SocialLink href={user.leetcode} Icon={Code} />}
                   {user.otherLinks.map(l => <SocialLink key={l.url} href={l.url} Icon={ExternalLink} />)}
                 </div>
               </>
