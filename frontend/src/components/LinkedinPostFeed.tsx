@@ -3,6 +3,121 @@ import axios from "axios";
 import {useNavigate } from "react-router-dom";
 import Loader from "./loading";
 
+// Component for handling expandable text with read more/less functionality
+const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({ 
+  text, 
+  maxLength = 150 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const shouldTruncate = text.length > maxLength;
+  
+  if (!shouldTruncate) {
+    return <div className="mb-2 text-white whitespace-pre-wrap">{text}</div>;
+  }
+  
+  const displayText = isExpanded ? text : text.slice(0, maxLength) + '...';
+  
+  return (
+    <div className="mb-2 text-white">
+      <div className="whitespace-pre-wrap">{displayText}</div>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="mt-1 text-blue-400 hover:text-blue-300 text-sm font-medium focus:outline-none transition-colors"
+        aria-label={isExpanded ? 'Show less' : 'Show more'}
+      >
+        {isExpanded ? 'Read less' : 'Read more'}
+      </button>
+    </div>
+  );
+};
+
+// LinkedIn-style image grid component
+const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }) => {
+  const [showAll, setShowAll] = useState(false);
+  const imageCount = images.length;
+  
+  if (imageCount === 0) return null;
+  
+  const getGridLayout = () => {
+    switch (imageCount) {
+      case 1:
+        return "grid-cols-1";
+      case 2:
+        return "grid-cols-2";
+      case 3:
+        return "grid-cols-2";
+      case 4:
+        return "grid-cols-2";
+      default:
+        return "grid-cols-2";
+    }
+  };
+  
+  const getImageClass = (index: number) => {
+    const baseClass = "w-full h-full object-cover cursor-pointer transition-transform hover:scale-105";
+    
+    switch (imageCount) {
+      case 1:
+        return `${baseClass} max-h-96 rounded-lg`;
+      case 2:
+        return `${baseClass} h-64 ${index === 0 ? 'rounded-l-lg' : 'rounded-r-lg'}`;
+      case 3:
+        if (index === 0) {
+          return `${baseClass} h-64 row-span-2 rounded-l-lg`;
+        }
+        return `${baseClass} h-32 ${index === 1 ? 'rounded-tr-lg' : 'rounded-br-lg'}`;
+      case 4:
+        const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg', 'rounded-br-lg'];
+        return `${baseClass} h-32 ${corners[index]}`;
+      default:
+        if (index < 3) {
+          const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg'];
+          return `${baseClass} h-32 ${corners[index]}`;
+        }
+        return `${baseClass} h-32 rounded-br-lg relative`;
+    }
+  };
+  
+  const displayImages = showAll ? images : images.slice(0, 4);
+  const remainingCount = imageCount - 4;
+  
+  return (
+    <div className="mb-4">
+      <div className={`grid ${getGridLayout()} gap-1 max-w-full`}>
+        {displayImages.map((img, index) => (
+          <div key={index} className="relative overflow-hidden">
+            <img
+              src={img.value}
+              alt={`Post image ${index + 1}`}
+              className={getImageClass(index)}
+              onClick={() => window.open(img.value, '_blank')}
+            />
+            {/* Overlay for additional images */}
+            {!showAll && index === 3 && remainingCount > 0 && (
+              <div 
+                className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer rounded-br-lg"
+                onClick={() => setShowAll(true)}
+              >
+                <span className="text-white text-xl font-semibold">
+                  +{remainingCount}
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {showAll && imageCount > 4 && (
+        <button
+          onClick={() => setShowAll(false)}
+          className="mt-2 text-blue-400 hover:text-blue-300 text-sm font-medium focus:outline-none transition-colors"
+        >
+          Show less
+        </button>
+      )}
+    </div>
+  );
+};
+
 interface LinkedinPost {
   _id: string;
   owner: {
@@ -99,13 +214,9 @@ const LinkedinPostFeed: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="mb-2 text-white">{post.text}</div>
+          {post.text && <ExpandableText text={post.text} maxLength={200} />}
           {post.images && post.images.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-2">
-              {post.images.map((img, idx) => (
-                <img key={idx} src={img.value} alt="LinkedIn post" className="max-h-48 rounded" />
-              ))}
-            </div>
+            <LinkedInImageGrid images={post.images} />
           )}
           <button
             className="mt-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition"

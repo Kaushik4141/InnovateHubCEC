@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Loader from './loading';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
@@ -16,7 +16,7 @@ const Leaderboard = () => {
   const [contribError, setContribError] = useState<string|null>(null);
   const apiBase = import.meta.env.VITE_API_URL;
 
-  // Map dropdown type to backend sort fields
+  
   const contribSortMap = {
     overall: 'totalContributions',
     thisMonth: 'thisMonthContributions',
@@ -158,8 +158,11 @@ const Leaderboard = () => {
         return 'text-green-400 bg-green-400/10 border-green-400/20';
     }
   };
+
   const navigate = useNavigate();
+
   if (contribLoading) return <Loader />;
+
   return (
     <div className="min-h-screen bg-gray-900 text-white ">
       <Header />
@@ -190,28 +193,24 @@ const Leaderboard = () => {
           </p>
         </div>
 
-        
-
-       
         <div className="relative flex justify-end mt-4 mb-6">
-  
-  <div className="relative w-52">
-    <select
-      className="peer w-full bg-slate-900 text-white border border-purple-500/50 rounded-xl px-5 py-3 pl-16 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none cursor-pointer hover:border-purple-400 hover:bg-slate-800"
-      value={contribType}
-      onChange={e => setContribType(e.target.value as any)}
-      style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
-    >
-      <option value="overall">Overall</option>
-      <option value="thisMonth">This Month</option>
-      <option value="lastMonth">Last Month</option>
-      <option value="thisYear">This Year</option>
-    </select>
-    <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-purple-300 transition-transform duration-300 peer-focus:rotate-180">
-      <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6"/></svg>
-    </span>
-  </div>
-</div>
+          <div className="relative w-52">
+            <select
+              className="peer w-full bg-slate-900 text-white border border-purple-500/50 rounded-xl px-5 py-3 pl-16 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none cursor-pointer hover:border-purple-400 hover:bg-slate-800"
+              value={contribType}
+              onChange={e => setContribType(e.target.value as any)}
+              style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none' }}
+            >
+              <option value="overall">Overall</option>
+              <option value="thisMonth">This Month</option>
+              <option value="lastMonth">Last Month</option>
+              <option value="thisYear">This Year</option>
+            </select>
+            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-purple-300 transition-transform duration-300 peer-focus:rotate-180">
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6"/></svg>
+            </span>
+          </div>
+        </div>
 
         {/* Top 3 Podium */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

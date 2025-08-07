@@ -3,13 +3,127 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 import {
-  Edit, MapPin, Calendar, Mail, Phone, Github, Linkedin, Globe,
-  Award, Eye, Heart, MessageCircle, Code, Trophy, Users,
+  Edit, Calendar, Mail, Github, Linkedin, Globe,
   Plus, Settings, Share2, ExternalLink,
   LucideSquareDashedBottomCode
 } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 import Loader from './loading';
+
+// Component for handling expandable text with read more/less functionality
+const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({ 
+  text, 
+  maxLength = 150 
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const shouldTruncate = text.length > maxLength;
+  
+  if (!shouldTruncate) {
+    return <p className="text-gray-300 mb-4 leading-relaxed whitespace-pre-wrap">{text}</p>;
+  }
+  
+  const displayText = isExpanded ? text : text.slice(0, maxLength) + '...';
+  
+  return (
+    <div className="mb-4 text-gray-300">
+      <p className="leading-relaxed whitespace-pre-wrap">{displayText}</p>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="mt-1 text-blue-400 hover:text-blue-300 text-sm font-medium focus:outline-none transition-colors"
+        aria-label={isExpanded ? 'Show less' : 'Show more'}
+      >
+        {isExpanded ? 'Read less' : 'Read more'}
+      </button>
+    </div>
+  );
+};
+
+// LinkedIn-style image grid component
+const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }) => {
+  const [showAll, setShowAll] = useState(false);
+  const imageCount = images.length;
+  
+  if (imageCount === 0) return null;
+  
+  const getGridLayout = () => {
+    switch (imageCount) {
+      case 1:
+        return "grid-cols-1";
+      case 2:
+        return "grid-cols-2";
+      case 3:
+        return "grid-cols-2";
+      case 4:
+        return "grid-cols-2";
+      default:
+        return "grid-cols-2";
+    }
+  };
+  
+  const getImageClass = (index: number) => {
+    const baseClass = "w-full h-full object-cover cursor-pointer transition-transform hover:scale-105";
+    
+    switch (imageCount) {
+      case 1:
+        return `${baseClass} max-h-96 rounded-lg`;
+      case 2:
+        return `${baseClass} h-64 ${index === 0 ? 'rounded-l-lg' : 'rounded-r-lg'}`;
+      case 3:
+        if (index === 0) {
+          return `${baseClass} h-64 row-span-2 rounded-l-lg`;
+        }
+        return `${baseClass} h-32 ${index === 1 ? 'rounded-tr-lg' : 'rounded-br-lg'}`;
+      case 4:
+        const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg', 'rounded-br-lg'];
+        return `${baseClass} h-32 ${corners[index]}`;
+      default:
+        if (index < 3) {
+          const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg'];
+          return `${baseClass} h-32 ${corners[index]}`;
+        }
+        return `${baseClass} h-32 rounded-br-lg relative`;
+    }
+  };
+  
+  const displayImages = showAll ? images : images.slice(0, 4);
+  const remainingCount = imageCount - 4;
+  
+  return (
+    <div className="mb-4">
+      <div className={`grid ${getGridLayout()} gap-1 max-w-full`}>
+        {displayImages.map((img, index) => (
+          <div key={index} className="relative overflow-hidden">
+            <img
+              src={img.value}
+              alt={`Post image ${index + 1}`}
+              className={getImageClass(index)}
+              onClick={() => window.open(img.value, '_blank')}
+            />
+            {/* Overlay for additional images */}
+            {!showAll && index === 3 && remainingCount > 0 && (
+              <div 
+                className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer rounded-br-lg"
+                onClick={() => setShowAll(true)}
+              >
+                <span className="text-white text-xl font-semibold">
+                  +{remainingCount}
+                </span>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      {showAll && imageCount > 4 && (
+        <button
+          onClick={() => setShowAll(false)}
+          className="mt-2 text-blue-400 hover:text-blue-300 text-sm font-medium focus:outline-none transition-colors"
+        >
+          Show less
+        </button>
+      )}
+    </div>
+  );
+};
 
 // ----- Type Definitions -----
 interface Certification {
@@ -100,7 +214,7 @@ const Profile: FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showAvatarInput, setShowAvatarInput] = useState(false);
+  
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
@@ -275,7 +389,7 @@ const Profile: FC = () => {
             <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
               <h3 className="text-lg font-semibold text-white mb-4">About</h3>
               <>
-                <p className="text-gray-300 mb-4 leading-relaxed">{user.bio || '—'}</p>
+                <ExpandableText text={user.bio || ''} maxLength={200} />
                 <ContactLine Icon={Mail} text={user.email} />
                 <div className="flex space-x-3 mt-4">
                   {user.github && <SocialLink href={user.github} Icon={Github} />}
@@ -309,81 +423,74 @@ const Profile: FC = () => {
                 ))}
               </div>
               <div className="p-6">
-                {activeTab==='about' && <p className="text-gray-300">{user.bio}</p>}
+                {activeTab==='about' && 
+                  <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                    <h3 className="text-lg font-semibold text-white mb-4">About</h3>
+                    <ExpandableText text={user.bio || ''} maxLength={200} />
+                  </div>
+                }
                 {activeTab==='projects' && (
-  <div className="space-y-6">
-    <div className="flex justify-between items-center">
-      <h3 className="text-xl font-semibold text-white">My Projects</h3>
-      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={() => navigate('/addpost')}>
-        <Plus className="h-4 w-4 mr-2" /> Add Project
-      </button>
-    </div>
-    {projectsLoading ? (
-      <div>Loading projects...</div>
-    ) : projectsError ? (
-      <div className="text-red-400">{projectsError}</div>
-    ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {projects.length === 0 ? (
-          <div className="col-span-2 text-gray-400">No projects found.</div>
-        ) : (
-          projects.map((p: any) => (
-            <div key={p._id} className="border border-gray-700 rounded-lg overflow-hidden">
-              {Array.isArray(p.postFile) && p.postFile.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {p.postFile.map((fileUrl: string, idx: number) =>
-                    fileUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-                      <video key={idx} controls className="w-full h-48 object-cover">
-                        <source src={fileUrl} type="video/mp4" />
-                        Your browser does not support the video tag.
-                      </video>
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-xl font-semibold text-white">My Projects</h3>
+                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={() => navigate('/addpost')}>
+                        <Plus className="h-4 w-4 mr-2" /> Add Project
+                      </button>
+                    </div>
+                    {projectsLoading ? (
+                      <div>Loading projects...</div>
+                    ) : projectsError ? (
+                      <div className="text-red-400">{projectsError}</div>
                     ) : (
-                      <img key={idx} src={fileUrl} alt={p.description} className="w-full h-48 object-cover" />
-                    )
-                  )}
-                </div>
-              )}
-              <div className="p-4">
-                <h4 className="font-semibold text-white mb-2">{p.description}</h4>
-                <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>
-                {(p.liveLink || p.githubLink) && (
-                  <div className="flex gap-2 mb-3">
-                    {p.liveLink && (
-                      <a
-                        href={p.liveLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-full transition-colors"
-                      >
-                        <Globe className="h-3 w-3 mr-1" />
-                        Live Demo
-                      </a>
-                    )}
-                    {p.githubLink && (
-                      <a
-                        href={p.githubLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-full transition-colors"
-                      >
-                        <Github className="h-3 w-3 mr-1" />
-                        GitHub
-                      </a>
+                      <div className="space-y-6">
+                        {projects.length === 0 ? (
+                          <div className="text-center text-gray-400 py-8">No projects found.</div>
+                        ) : (
+                          projects.map((p: any) => (
+                            <div key={p._id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-md">
+                              <h4 className="font-semibold text-white mb-2">{p.title}</h4>
+                              {p.postFile && (
+                                <LinkedInImageGrid images={Array.isArray(p.postFile) ? p.postFile.map((f: string) => ({ value: f })) : [{ value: p.postFile }]} />
+                              )}
+                              <ExpandableText text={p.description || ''} maxLength={150} />
+                              <p className="text-gray-400 text-sm my-3">Views: {p.views || 0}</p>
+                              {(p.liveLink || p.githubLink) && (
+                                <div className="flex gap-2 mb-3">
+                                  {p.liveLink && (
+                                    <a
+                                      href={p.liveLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-full transition-colors"
+                                    >
+                                      <Globe className="h-3 w-3 mr-1" />
+                                      Live Demo
+                                    </a>
+                                  )}
+                                  {p.githubLink && (
+                                    <a
+                                      href={p.githubLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-full transition-colors"
+                                    >
+                                      <Github className="h-3 w-3 mr-1" />
+                                      GitHub
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                              <p className="text-gray-500 text-xs">{new Date(p.createdAt).toLocaleDateString()}</p>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     )}
                   </div>
                 )}
-                <p className="text-gray-500 text-xs">{new Date(p.createdAt).toLocaleDateString()}</p>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    )}
-  </div>
-)}
                 {activeTab==='posts' && (
                   <div className="space-y-6">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xl font-semibold text-white">My Posts</h3>
                       <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={Linkedinsyncpost}>
                         <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
@@ -394,62 +501,44 @@ const Profile: FC = () => {
                     ) : postsError ? (
                       <div className="text-red-400">{postsError}</div>
                     ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-6">
                         {posts.length === 0 ? (
-                          <div className="col-span-2 text-gray-400">No LinkedIn posts found.</div>
+                          <div className="text-center text-gray-400 py-8">No LinkedIn posts found.</div>
                         ) : (
-                          posts.map((p: any) => (
-                            <div key={p._id} className="border border-gray-700 rounded-lg overflow-hidden">
-                              {/* LinkedIn post images */}
-                              {Array.isArray(p.images) && p.images.length > 0 && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  {p.images.map((img: any, idx: number) => (
-                                    <div key={idx}>
-                                      <img
-                                        src={img.value}
-                                        alt={`LinkedIn post image ${idx + 1}`}
-                                        className="w-full h-48 object-cover rounded-lg border border-gray-700"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              <div className="p-4">
-                                <h4 className="font-semibold text-white mb-2">{p.text || 'LinkedIn Post'}</h4>
-                                {p.url && (
-                                  <a
-                                    href={p.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-blue-400 hover:underline text-sm mb-2 inline-block"
-                                  >
-                                    View on LinkedIn
-                                  </a>
-                                )}
-                                <p className="text-gray-500 text-xs">{new Date(p.createdAt).toLocaleDateString()}</p>
-                                {p.owner && (
-                                  <p className="text-gray-400 text-xs mt-1">By: {p.owner.fullname || 'Unknown'}</p>
-                                )}
-                              </div>
-                            </div>
+                          posts.map((post: any) => (
+                          <div key={post._id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-md">
+                            {post.images && post.images.length > 0 && (
+                              <LinkedInImageGrid images={post.images} />
+                            )}
+                            <ExpandableText text={post.text || ''} maxLength={150} />
+                            <a href={post.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm mt-2 inline-block">
+                              View on LinkedIn
+                            </a>
+                            <p className="text-gray-500 text-xs mt-2">{new Date(post.createdAt).toLocaleDateString()}</p>
+                          </div>
                           ))
                         )}
                       </div>
                     )}
                   </div>
                 )}
-                {activeTab==='activity' && <p className="text-gray-300">No recent activity.</p>}
+                {activeTab==='activity' && <div className="text-center text-gray-400 py-8">Activity feed coming soon.</div>}
               </div>
             </div>
+            {showEditModal && (
+              <EditProfileModal
+                open={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                user={user}
+                onSave={(updatedUser) => {
+                  const updatedYear = { ...updatedUser, year: Number(updatedUser.year) };
+                  setUser(prevUser => prevUser ? { ...prevUser, ...updatedYear } : null);
+                }}
+              />
+            )}
           </div>
         </div>
       </div>
-      <EditProfileModal
-        open={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        user={user}
-        onSave={updatedUser => setUser(prev => prev ? { ...prev, ...updatedUser, year: Number(updatedUser.year) } : prev)}
-      />
     </div>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from './Header';
-import { Calendar, Loader2, Github, Linkedin, Plus, Settings } from 'lucide-react';
+import { Calendar, Loader2, Github, Linkedin, Plus, Settings, Globe } from 'lucide-react';
 import axios from 'axios';
 import Loader from './loading';
 
@@ -18,6 +18,8 @@ interface Project {
   description: string;
   coverimage?: string;
   link: string;
+  githubLink?: string;
+  liveLink?: string;
 }
 
 interface User {
@@ -250,8 +252,35 @@ const UserProfileView: React.FC = () => {
                               )}
                             </div>
                           )}
+                          
                           <div className="p-4">
                             <h4 className="font-semibold text-white mb-2">{p.description || p.title}</h4>
+                            {(p.liveLink || p.githubLink) && (
+                  <div className="flex gap-2 mb-3">
+                    {p.liveLink && (
+                      <a
+                        href={p.liveLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-full transition-colors"
+                      >
+                        <Globe className="h-3 w-3 mr-1" />
+                        Live Demo
+                      </a>
+                    )}
+                    {p.githubLink && (
+                      <a
+                        href={p.githubLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded-full transition-colors"
+                      >
+                        <Github className="h-3 w-3 mr-1" />
+                        GitHub
+                      </a>
+                    )}
+                  </div>
+                )}
                             <p className="text-gray-400 text-sm mb-3">Views: {p.views || 0}</p>
                           </div>
                         </div>

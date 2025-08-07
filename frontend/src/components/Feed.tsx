@@ -1,8 +1,136 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import LinkedinPostFeed from "./LinkedinPostFeed"; // new component
+import LinkedinPostFeed from "./LinkedinPostFeed"; 
 import { useNavigate } from "react-router-dom";
 import Loader from './loading'
+
+const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
+  const [showAll, setShowAll] = useState(false);
+  const imageFiles = files.filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file));
+  const videoFiles = files.filter(file => /\.(mp4|webm|ogg)$/i.test(file));
+  const otherFiles = files.filter(file => !/\.(jpg|jpeg|png|gif|mp4|webm|ogg)$/i.test(file));
+  
+  const imageCount = imageFiles.length;
+  
+  if (imageCount === 0 && videoFiles.length === 0 && otherFiles.length === 0) return null;
+  
+  const getGridLayout = () => {
+    switch (imageCount) {
+      case 1:
+        return "grid-cols-1";
+      case 2:
+        return "grid-cols-2";
+      case 3:
+        return "grid-cols-2";
+      case 4:
+        return "grid-cols-2";
+      default:
+        return "grid-cols-2";
+    }
+  };
+  
+  const getImageClass = (index: number) => {
+    const baseClass = "w-full h-full object-cover cursor-pointer transition-transform hover:scale-105 border border-gray-700";
+    
+    switch (imageCount) {
+      case 1:
+        return `${baseClass} max-h-96 rounded-lg`;
+      case 2:
+        return `${baseClass} h-64 ${index === 0 ? 'rounded-l-lg' : 'rounded-r-lg'}`;
+      case 3:
+        if (index === 0) {
+          return `${baseClass} h-64 row-span-2 rounded-l-lg`;
+        }
+        return `${baseClass} h-32 ${index === 1 ? 'rounded-tr-lg' : 'rounded-br-lg'}`;
+      case 4:
+        const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg', 'rounded-br-lg'];
+        return `${baseClass} h-32 ${corners[index]}`;
+      default:
+        if (index < 3) {
+          const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg'];
+          return `${baseClass} h-32 ${corners[index]}`;
+        }
+        return `${baseClass} h-32 rounded-br-lg relative`;
+    }
+  };
+  
+  const displayImages = showAll ? imageFiles : imageFiles.slice(0, 4);
+  const remainingCount = imageCount - 4;
+  
+  return (
+    <div className="mt-3">
+      {/* Images Grid */}
+      {imageCount > 0 && (
+        <div className="mb-4">
+          <div className={`grid ${getGridLayout()} gap-1 max-w-full`}>
+            {displayImages.map((fileUrl, index) => (
+              <div key={index} className="relative overflow-hidden">
+                <img
+                  src={fileUrl}
+                  alt={`Project image ${index + 1}`}
+                  className={getImageClass(index)}
+                  onClick={() => window.open(fileUrl, '_blank')}
+                />
+                {/* Overlay for additional images */}
+                {!showAll && index === 3 && remainingCount > 0 && (
+                  <div 
+                    className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer rounded-br-lg"
+                    onClick={() => setShowAll(true)}
+                  >
+                    <span className="text-white text-xl font-semibold">
+                      +{remainingCount}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {showAll && imageCount > 4 && (
+            <button
+              onClick={() => setShowAll(false)}
+              className="mt-2 text-blue-400 hover:text-blue-300 text-sm font-medium focus:outline-none transition-colors"
+            >
+              Show less
+            </button>
+          )}
+        </div>
+      )}
+      
+      {/* Videos */}
+      {videoFiles.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          {videoFiles.map((fileUrl, idx) => (
+            <video
+              key={idx}
+              controls
+              src={fileUrl}
+              className="w-full max-h-64 rounded-lg border border-gray-700"
+            >
+              Your browser does not support the video tag.
+            </video>
+          ))}
+        </div>
+      )}
+      
+      {/* Other Files */}
+      {otherFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {otherFiles.map((fileUrl, idx) => (
+            <a
+              key={idx}
+              href={fileUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded-lg transition-colors"
+            >
+              📎 Download File {idx + 1}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface Post {
   _id: string;
@@ -70,7 +198,6 @@ const Feed: React.FC = () => {
     }
   }, [tab, apiBase, page]);
 
-  // Infinite scroll effect for project posts
   useEffect(() => {
     if (tab !== 'project' || !hasMore || loading) return;
     
@@ -159,7 +286,6 @@ const Feed: React.FC = () => {
                   {post.title}
                 </h3>
                 <p className="text-gray-200 mb-3">{post.description}</p>
-                {/* Live Link and GitHub Link buttons */}
                 {(post.liveLink || post.githubLink) && (
                   <div className="flex gap-2 mb-3">
                     {post.liveLink && (
@@ -195,68 +321,9 @@ const Feed: React.FC = () => {
                   </a>
                 )}
                 {post.postFile && (
-                  <div className="mt-3">
-                    {Array.isArray(post.postFile) ? (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {post.postFile.map((fileUrl: string, idx: number) => (
-                          <div key={idx}>
-                            {/\.(jpg|jpeg|png|gif)$/i.test(fileUrl) ? (
-                              <img
-                                src={fileUrl}
-                                alt={`Project file ${idx + 1}`}
-                                className="w-full max-h-64 object-cover rounded-lg border border-gray-700"
-                              />
-                            ) : /\.(mp4|webm|ogg)$/i.test(fileUrl) ? (
-                              <video
-                                controls
-                                src={fileUrl}
-                                className="w-full max-h-64 rounded-lg border border-gray-700"
-                              >
-                                Your browser does not support the video tag.
-                              </video>
-                            ) : (
-                              <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-purple-400 hover:underline text-sm block"
-                              >
-                                Download File {idx + 1}
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      // Fallback for single file (backward compatibility)
-                      <div>
-                        {/\.(jpg|jpeg|png|gif)$/i.test(post.postFile) ? (
-                          <img
-                            src={post.postFile}
-                            alt="Project file"
-                            className="max-h-64 rounded-lg border border-gray-700"
-                          />
-                        ) : /\.(mp4|webm|ogg)$/i.test(post.postFile) ? (
-                          <video
-                            controls
-                            src={post.postFile}
-                            className="max-h-64 rounded-lg border border-gray-700"
-                          >
-                            Your browser does not support the video tag.
-                          </video>
-                        ) : (
-                          <a
-                            href={post.postFile}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-purple-400 hover:underline text-sm"
-                          >
-                            Download File
-                          </a>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <ProjectImageGrid 
+                    files={Array.isArray(post.postFile) ? post.postFile : [post.postFile]} 
+                  />
                 )}
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
@@ -284,17 +351,13 @@ const Feed: React.FC = () => {
         )}
       </div>
 
-      {/* Infinite scroll sentinel */}
+     
       {tab === 'project' && hasMore && !loading && (
         <div id="scroll-sentinel" style={{ height: 1, visibility: 'hidden' }} />
       )}
     </div>
   );
 }
-
-// Infinite scroll effect
-// Must be inside the Feed component
-// Already handled above
 
 export default Feed;
 
