@@ -512,16 +512,24 @@ const Profile: FC = () => {
                             <div key={post._id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-md">
                               {Array.isArray(post.images) && post.images.length > 0 && (
                                 <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                  {post.images.map((fileUrl: string, fileIdx: number) =>
-                                    fileUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                                  {post.images.map((item: any, fileIdx: number) => {
+                                    const url = typeof item === 'string' ? item : item?.value;
+                                    if (!url) return null;
+                                    const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
+                                    return isVideo ? (
                                       <video key={fileIdx} controls className="w-full max-h-64 rounded-lg border border-gray-700">
-                                        <source src={fileUrl} />
+                                        <source src={url} />
                                         Your browser does not support the video tag.
                                       </video>
                                     ) : (
-                                      <img key={fileIdx} src={fileUrl} alt={post.title} className="w-full max-h-64 object-cover rounded-lg border border-gray-700" />
-                                    )
-                                  )}
+                                      <img
+                                        key={fileIdx}
+                                        src={url}
+                                        alt={post.title || `Post image ${fileIdx + 1}`}
+                                        className="w-full max-h-64 object-cover rounded-lg border border-gray-700"
+                                      />
+                                    );
+                                  })}
                                 </div>
                               )}
                               <ExpandableText text={post.text || ''} maxLength={150} />
