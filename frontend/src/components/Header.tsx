@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, MessageCircle, User, Home, Users, Briefcase, BookOpen,
@@ -11,13 +11,53 @@ const Header = () => {
   const navigate = useNavigate();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
-  const notifications = [
-    { id: 1, text: "Priya Sharma liked your project", time: "2h ago", unread: true },
-    { id: 2, text: "New competition: AI Innovation Challenge", time: "4h ago", unread: true },
-    { id: 3, text: "Aditya Kumar accepted your connection", time: "1d ago", unread: false }
-  ];  
+  const [notifications, setNotifications] = useState<any[]>([]);
   const apiBase = import.meta.env.VITE_API_URL;
+
+  const fetchNotifications = async () => {
+    try {
+      const res = await axios.get(`${apiBase}/api/v1/users/notifications`, {
+        withCredentials: true,
+      });
+      setNotifications(res.data?.data?.notifications || []);
+    } catch (e) {
+      console.error('Failed to fetch notifications', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [apiBase]);
+
+  useEffect(() => {
+    if (showNotifications) fetchNotifications();
+  }, [showNotifications]);
+
+  const handleAccept = async (fromUserId: string) => {
+    try {
+      await axios.post(
+        `${apiBase}/api/v1/users/${fromUserId}/accept-follow`,
+        {},
+        { withCredentials: true }
+      );
+      setNotifications((prev) => prev.filter((n: any) => n.from?._id !== fromUserId));
+    } catch (e) {
+      console.error('Accept follow failed', e);
+    }
+  };
+
+  const handleReject = async (fromUserId: string) => {
+    try {
+      await axios.post(
+        `${apiBase}/api/v1/users/${fromUserId}/reject-follow`,
+        {},
+        { withCredentials: true }
+      );
+      setNotifications((prev) => prev.filter((n: any) => n.from?._id !== fromUserId));
+    } catch (e) {
+      console.error('Reject follow failed', e);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -104,7 +144,11 @@ const Header = () => {
               >
                 <Bell className="h-5 w-5" />
                 <span className="text-xs mt-1">Notifications</span>
-                <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full h-4 w-4 flex items-center justify-center">3</span>
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                    {Math.min(notifications.length, 99)}
+                  </span>
+                )}
               </button>
               
               {showNotifications && (
@@ -113,10 +157,46 @@ const Header = () => {
                     <h3 className="font-semibold text-white">Notifications</h3>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
-                    {notifications.map((notification) => (
-                      <div key={notification.id} className={`p-4 border-b border-gray-700 hover:bg-gray-700 cursor-pointer ${notification.unread ? 'bg-gray-750' : ''}`}>
-                        <p className="text-sm text-white">{notification.text}</p>
-                        <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                    {notifications.length === 0 && (
+                      <div className="p-4 text-sm text-gray-400">No notifications</div>
+                    )}
+                    {notifications.map((n: any) => (
+                      <div key={n._id} className="p-4 border-b border-gray-700 hover:bg-gray-700">
+                        {n.type === 'follow-request' ? (
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={n.from?.avatar}
+                              alt={n.from?.fullname || 'User'}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                            <div className="flex-1">
+                              <p className="text-sm text-white">
+                                <span className="font-medium">{n.from?.fullname}</span> wants to connect.
+                              </p>
+                              <div className="mt-2 flex gap-2">
+                                <button
+                                  onClick={() => handleAccept(n.from._id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() => handleReject(n.from._id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm text-white">Notification</p>
+                            {n.date && (
+                              <p className="text-xs text-gray-400 mt-1">{new Date(n.date).toLocaleString()}</p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
