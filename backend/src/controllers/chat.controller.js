@@ -41,6 +41,7 @@ export const getRoomMessages = asyncHandler(async (req, res) => {
   }
   const msgs = await Message.find(q)
     .populate("sender", "fullname avatar")
+    .populate({ path: 'replyTo', select: 'content type sender createdAt', populate: { path: 'sender', select: 'fullname avatar' } })
     .sort({ createdAt: -1 })
     .limit(Number(limit));
   return res
@@ -66,6 +67,7 @@ export const getPrivateMessages = asyncHandler(async (req, res) => {
   if (before) q.createdAt = { $lt: new Date(before) };
   const msgs = await Message.find(q)
     .populate("sender", "fullname avatar")
+    .populate({ path: 'replyTo', select: 'content type sender createdAt', populate: { path: 'sender', select: 'fullname avatar' } })
     .sort({ createdAt: -1 })
     .limit(Number(limit));
   return res

@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiresponsehandler.js";
 import jwt from "jsonwebtoken";
+
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -70,7 +71,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
     });
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
       user._id
-    )
+    );
     const createduserid = await User.findById(user._id).select(
       "-password -refreshToken"
     );
@@ -97,6 +98,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
     throw new ApiError(400, e.message || "User registration failed");
   }
 });
+
 const loginuser = asyncHandler(async (req, res, next) => {
   try {
     //data from frontend
@@ -152,6 +154,7 @@ const loginuser = asyncHandler(async (req, res, next) => {
     throw new ApiError(400, e.message || "User login failed");
   }
 });
+
 const logoutUser = asyncHandler(async (req, res) => {
   try {
     await User.findByIdAndUpdate(
@@ -177,6 +180,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, e.message || "User logout failed");
   }
 })
+
 const refreshAccessToken = asyncHandler(async (req, res) => {
 
   const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
@@ -225,6 +229,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 
 })
+
 const changeCurrrentPassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body || {};
   if (!currentPassword || !newPassword) {
@@ -244,11 +249,13 @@ const changeCurrrentPassword = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "Password changed successfully"))
 })
+
 const getcurrentUser = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, req.user, "Current user fetched successfully"))
 })
+
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullname, email, usn, year, skills, linkedin, github, leetcode, certifications, projects, bio, achievements, otherLinks } = req.body;
   if (!fullname || !email || !usn || !year) {
@@ -266,6 +273,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, user, "User details updated successfully"));
 });
+
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path
 
@@ -383,12 +391,11 @@ const getUserProfile = asyncHandler(async (req, res) => {
       new ApiResponse(200, profile[0], "User channel fetched successfully")
     )
 })
+
 const requestFollow = asyncHandler(async (req, res) => {
   try {
     const fromUserId = req.user._id;
     const toUserId = req.params.id;
-   
-   
 
     if (fromUserId.equals(toUserId))
       return res
@@ -402,8 +409,8 @@ const requestFollow = asyncHandler(async (req, res) => {
         .json(new ApiError(404, { error: "User not found." }, "User not found."));
     }
 
-    if (toUser.followRequests.includes(fromUserId) || toUser.followers.includes(fromUserId)){
-      return res  
+    if (toUser.followRequests.includes(fromUserId) || toUser.followers.includes(fromUserId)) {
+      return res
         .status(400)
         .json(new ApiError(400, { error: "Already requested or following." }, "Already requested or following."));
     }
@@ -419,33 +426,33 @@ const requestFollow = asyncHandler(async (req, res) => {
     throw new ApiError(500, e.message || "Failed to follow user");
   }
 });
+
 const acceptFollow = asyncHandler(async (req, res) => {
   try {
-  const myUserId = req.user._id;
-  const fromUserId = req.params.id;
- 
+    const myUserId = req.user._id;
+    const fromUserId = req.params.id;
 
-  const me = await User.findById(myUserId);
-  const fromUser = await User.findById(fromUserId);
+    const me = await User.findById(myUserId);
+    const fromUser = await User.findById(fromUserId);
 
-  if (!me || !fromUser) 
-    return res
-  .status(404)
-  .json(new ApiError(404, { error: "User not found." }, "User not found."));
+    if (!me || !fromUser)
+      return res
+        .status(404)
+        .json(new ApiError(404, { error: "User not found." }, "User not found."));
 
-  me.followRequests = me.followRequests.filter(id => !id.equals(fromUserId));
-  if (!me.followers.includes(fromUserId)) me.followers.push(fromUserId);
-  if (!fromUser.following.includes(myUserId)) fromUser.following.push(myUserId);
+    me.followRequests = me.followRequests.filter(id => !id.equals(fromUserId));
+    if (!me.followers.includes(fromUserId)) me.followers.push(fromUserId);
+    if (!fromUser.following.includes(myUserId)) fromUser.following.push(myUserId);
 
-  await me.save();
-  await fromUser.save();
+    await me.save();
+    await fromUser.save();
 
-  res
-  .status(200)
-  .json(new ApiResponse(200, { success: true }, "Follow request accepted successfully"));
-} catch (e) {
-  throw new ApiError(500, e.message || "Failed to accept follow request");
-}
+    res
+      .status(200)
+      .json(new ApiResponse(200, { success: true }, "Follow request accepted successfully"));
+  } catch (e) {
+    throw new ApiError(500, e.message || "Failed to accept follow request");
+  }
 });
 
 const rejectFollow = asyncHandler(async (req, res) => {
@@ -456,10 +463,10 @@ const rejectFollow = asyncHandler(async (req, res) => {
     const me = await User.findById(myUserId);
     const fromUser = await User.findById(fromUserId);
 
-    if (!me || !fromUser) 
+    if (!me || !fromUser)
       return res
-      .status(404)
-      .json(new ApiError(404, { error: "User not found." }, "User not found."));
+        .status(404)
+        .json(new ApiError(404, { error: "User not found." }, "User not found."));
 
     me.followRequests = me.followRequests.filter(id => !id.equals(fromUserId));
     await me.save();
@@ -472,20 +479,61 @@ const rejectFollow = asyncHandler(async (req, res) => {
   }
 });
 
-
 const getNotifications = asyncHandler(async (req, res) => {
   try {
-  const me = await User
-  .findById(req.user._id)
-  .populate('notifications.from', 'fullname avatar');
-  res
-  .status(200)
-  .json(new ApiResponse(200, { notifications: me.notifications }, "Notifications fetched successfully"));
-} catch (e) {
-  throw new ApiError(500, e.message || "Failed to fetch notifications");
-}});
+    const me = await User
+      .findById(req.user._id)
+      .populate('notifications.from', 'fullname avatar');
+    res
+      .status(200)
+      .json(new ApiResponse(200, { notifications: me.notifications }, "Notifications fetched successfully"));
+  } catch (e) {
+    throw new ApiError(500, e.message || "Failed to fetch notifications");
+  }
+});
 
 const alive = asyncHandler(async (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is alive!' });
 });
-export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile, requestFollow, acceptFollow, rejectFollow, alive, getNotifications };
+
+const searchUsers = asyncHandler(async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) {
+      return res.status(200).json(new ApiResponse(200, [], "OK"));
+    }
+    const meId = req.user?._id;
+    const regex = new RegExp(q, "i");
+    const users = await User.find({
+      $and: [
+        { _id: { $ne: meId } },
+        { $or: [{ fullname: regex }, { email: regex }, { usn: regex }] },
+      ],
+    })
+      .select("_id fullname avatar")
+      .limit(20);
+    return res
+      .status(200)
+      .json(new ApiResponse(200, users, "Users fetched successfully"));
+  } catch (e) {
+    throw new ApiError(500, e.message || "Failed to search users");
+  }
+});
+const getUserMin = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params;
+    const u = await User.findById(id).select("_id fullname avatar");
+    if (!u) {
+      return res
+        .status(404)
+        .json(new ApiError(404, { error: "User not found." }, "User not found."));
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, u, "User fetched successfully"));
+  } catch (e) {
+    throw new ApiError(500, e.message || "Failed to fetch user");
+  }
+});
+
+export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile, requestFollow, acceptFollow, rejectFollow, alive, getNotifications, searchUsers, getUserMin };

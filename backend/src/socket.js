@@ -92,7 +92,7 @@ export function initSocket(httpServer) {
       socket.emit("leftRoom", { roomId });
     });
 
-    socket.on("roomMessage", async ({ roomId, content, type = "text" }) => {
+    socket.on("roomMessage", async ({ roomId, content, type = "text", replyTo = null, clientId = null }) => {
       if (!roomId || !content) return;
       try {
         const doc = await Message.create({
@@ -100,7 +100,21 @@ export function initSocket(httpServer) {
           roomId,
           content,
           type,
+          replyTo: replyTo || null,
         });
+        let replyPayload = null;
+        if (replyTo) {
+          const ref = await Message.findById(replyTo).populate('sender', 'fullname avatar').select('content type sender createdAt');
+          if (ref) {
+            replyPayload = {
+              _id: ref._id,
+              content: ref.content,
+              type: ref.type,
+              sender: ref.sender,
+              createdAt: ref.createdAt,
+            };
+          }
+        }
         const payload = {
           _id: doc._id,
           sender: { _id: userId, fullname: socket.user.fullname, avatar: socket.user.avatar },
@@ -108,6 +122,8 @@ export function initSocket(httpServer) {
           content,
           type,
           createdAt: doc.createdAt,
+          replyTo: replyPayload,
+          clientId: clientId || null,
         };
         io.to(roomId).emit("roomMessage", payload);
       } catch (e) {
@@ -115,7 +131,7 @@ export function initSocket(httpServer) {
       }
     });
 
-    socket.on("privateMessage", async ({ toUserId, content, type = "text" }) => {
+    socket.on("privateMessage", async ({ toUserId, content, type = "text", replyTo = null, clientId = null }) => {
       if (!toUserId || !content) return;
       try {
         const doc = await Message.create({
@@ -123,7 +139,21 @@ export function initSocket(httpServer) {
           receiverUser: toUserId,
           content,
           type,
+          replyTo: replyTo || null,
         });
+        let replyPayload = null;
+        if (replyTo) {
+          const ref = await Message.findById(replyTo).populate('sender', 'fullname avatar').select('content type sender createdAt');
+          if (ref) {
+            replyPayload = {
+              _id: ref._id,
+              content: ref.content,
+              type: ref.type,
+              sender: ref.sender,
+              createdAt: ref.createdAt,
+            };
+          }
+        }
         const payload = {
           _id: doc._id,
           sender: { _id: userId, fullname: socket.user.fullname, avatar: socket.user.avatar },
@@ -131,6 +161,8 @@ export function initSocket(httpServer) {
           content,
           type,
           createdAt: doc.createdAt,
+          replyTo: replyPayload,
+          clientId: clientId || null,
         };
        
         const recipientSockets = getUserSockets(toUserId);
