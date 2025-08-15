@@ -20,12 +20,14 @@ app.use(cookieParser());
 import userRouter from './routes/user.router.js';
 import postRouter from './routes/post.router.js';
 import leaderboardRouter from './routes/leaderboard.router.js';
+import chatRouter from './routes/chat.router.js';
 import { startLeetcodeStatsScheduler } from './utils/leetcodeScheduler.js';
 
 //routes declaration
 app.use('/api/v1/users', userRouter);
 app.use('/api/v1/posts', postRouter);
 app.use('/api/v1/leaderboard', leaderboardRouter);
+app.use('/api/v1/chat', chatRouter);
 
 startLeetcodeStatsScheduler();
 
