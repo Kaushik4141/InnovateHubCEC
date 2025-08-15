@@ -10,24 +10,23 @@ const getGithubLeaderboard = asyncHandler(async (req, res) => {
 
   const sortBy = req.query.sortBy || "totalContributions";
   const validSortFields = [
-      "totalContributions", 
-      "thisYearContributions", 
-      "thisMonthContributions",
-      "lastMonthContributions",
-      "todayContributions",
-    ];
+    "totalContributions",
+    "thisYearContributions",
+    "thisMonthContributions",
+    "lastMonthContributions",
+    "todayContributions",
+  ];
 
   if (!validSortFields.includes(sortBy)) {
     throw new ApiError(400, "Invalid sort field.");
   }
 
-  
   const leaderboard = await GithubStats.find({})
     .sort({ [sortBy]: -1 })
     .skip(skip)
     .limit(limit)
-    .populate('user', 'fullname avatar')
-    .select("-_id -__v"); 
+    .populate("user", "fullname avatar")
+    .select("-_id -__v");
 
   const totalRecords = await GithubStats.countDocuments();
 
