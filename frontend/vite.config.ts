@@ -9,10 +9,10 @@ export default defineConfig({
   },
   server: {   
     proxy: {
-      '/api/v1': 'http://localhost:8000',
+      '/api/v1': 'https://innovatehubcec.onrender.com',
       // Proxy Socket.IO in dev to deployed backend (update to your local backend if needed)
       '/socket.io': {
-        target: 'http://localhost:8000',
+        target: 'https://innovatehubcec.onrender.com',
         ws: true,
         changeOrigin: true,
       },
