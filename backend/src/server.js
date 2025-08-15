@@ -2,11 +2,16 @@ import "../src/loadENV.js";
 import connectDB from "./db/server.js";
 import {app} from './app.js';
 import { startStatsUpdater } from "./controllers/github.controller.js";
+import http from 'http';
+import { initSocket } from './socket.js';
 
 connectDB()
 .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
-        console.log(` Server is running at port : ${process.env.PORT}`);
+    const PORT = process.env.PORT || 8000;
+    const server = http.createServer(app);
+    initSocket(server);
+    server.listen(PORT, () => {
+        console.log(` Server is running at port : ${PORT}`);
         startStatsUpdater();
     })
 })
