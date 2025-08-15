@@ -1,5 +1,7 @@
 {
-    "rewrites": [
-      { "source": "/(.*)", "destination": "/" }
-    ]
-  }
+  "rewrites": [
+    { "source": "/api/v1/:path*", "destination": "https://innovatehubcec.vercel.app/api/v1/:path*" },
+    { "source": "/socket.io/:path*", "destination": "https://innovatehubcec.vercel.app/socket.io/:path*" },
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}

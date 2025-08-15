@@ -8,7 +8,7 @@ const Chat: React.FC = () => {
   const { socket, onlineUsers, sendPrivateMessage, sendRoomMessage, joinRoom, leaveRoom } = useChat();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [scope, setScope] = useState<'room'|'dm'>('room');
+  const [scope, setScope] = useState<'room' | 'dm'>('room');
   const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState('');
@@ -29,8 +29,8 @@ const Chat: React.FC = () => {
 
   // Load lists
   useEffect(() => {
-    listRooms().then(setRooms).catch(() => {});
-    listContacts().then(setContacts).catch(() => {});
+    listRooms().then(setRooms).catch(() => { });
+    listContacts().then(setContacts).catch(() => { });
   }, []);
 
   // Scroll bottom when messages change
@@ -150,7 +150,7 @@ const Chat: React.FC = () => {
           <ul className="space-y-1">
             {rooms.map(r => (
               <li key={r._id}>
-                <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope==='room' && activeId===r._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
+                <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
                   #{r.name}
                 </button>
               </li>
@@ -162,9 +162,9 @@ const Chat: React.FC = () => {
           <ul className="space-y-1">
             {contacts.map(c => (
               <li key={c.user._id}>
-                <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope==='dm' && activeId===c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
+                <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
                   <span className={`h-2 w-2 rounded-full ${c.online ? 'bg-green-400' : 'bg-gray-500'}`}></span>
-                  <img src={c.user.avatar} className="h-6 w-6 rounded-full object-cover" onError={(e)=>{(e.target as HTMLImageElement).style.display='none'}} />
+                  <img src={c.user.avatar} className="h-6 w-6 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
                   <span>{c.user.fullname}</span>
                 </button>
               </li>
@@ -181,13 +181,13 @@ const Chat: React.FC = () => {
             const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
             const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
             const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-            const avatar = isOwn ? 'ME' : (scope==='dm' ? (contacts.find(c=>c.user._id===activeId)?.user.avatar || 'U') : (typeof m.sender==='object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
+            const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.avatar || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
             const mid = messageDomId(m, idx);
             return (
               <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
                 <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                    {typeof avatar === 'string' ? avatar.toString().slice(0,2) : 'U'}
+                    {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
                   </div>
                   <div className={`px-4 py-2 rounded-lg shadow transition-transform duration-150 ${isOwn ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
                     {m.replyTo && (
@@ -253,8 +253,8 @@ const Chat: React.FC = () => {
             </label>
             <input
               value={input}
-              onChange={e=>setInput(e.target.value)}
-              onKeyDown={e=>{ if(e.key==='Enter') handleSend(); }}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
               placeholder={activeId ? 'Type a message' : 'Select a chat to start messaging'}
               disabled={!activeId}
               className="flex-1 bg-gray-800 rounded px-3 py-2 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
