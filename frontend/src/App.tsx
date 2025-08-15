@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
 import Messages from './components/Messages';
@@ -12,6 +11,7 @@ import Leaderboard from './components/Leaderboard';
 import LandingPage from './components/LandingPage';
 import AddPost from './components/addpost';
 import UserProfileView from './components/UserProfileView';
+import Chat from './components/Chat';
 
 function App() {
   return (
@@ -22,6 +22,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/chat" element={<Chat />} />
           <Route path="/network" element={<Network />} />
           <Route path="/jobs" element={<Jobs />} />
           <Route path="/notifications" element={<Notifications />} />

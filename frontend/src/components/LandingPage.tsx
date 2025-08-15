@@ -134,7 +134,7 @@ const LandingPage = () => {
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-white font-semibold">500+ Active Students</p>
+                    <p className="text-white font-semibold">50+ Active Students</p>
                     <p className="text-gray-400 text-sm">Building the future together</p>
                   </div>
                 </div>

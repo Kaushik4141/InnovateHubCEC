@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Header from "./Header";
 import {
   Calendar,
@@ -15,6 +15,7 @@ import Loader from "./loading";
 const UserProfileView = () => {
   const apiBase = import.meta.env.VITE_API_URL;
   const { fullname } = useParams<{ fullname: string }>();
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -436,12 +437,20 @@ const UserProfileView = () => {
                   </p>
                   {/* Connect button (if not self) */}
                   {currentUser && user && (
-                    <div className="mt-2">
+                    <div className="mt-2 flex gap-2">
                       <ConnectButton
                         viewedUser={user}
                         currentUser={currentUser}
                         refreshUser={refreshViewedUser}
                       />
+                      {currentUser._id !== user._id && (
+                        <button
+                          className="px-4 py-2 rounded bg-purple-600 text-white hover:bg-purple-700"
+                          onClick={() => navigate(`/messages?to=${user._id}`)}
+                        >
+                          Message
+                        </button>
+                      )}
                     </div>
                   )}
                   <p className="text-gray-400">Canara Engineering College</p>

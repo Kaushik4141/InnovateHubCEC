@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, MessageCircle, User, Home, Users, Briefcase, BookOpen,
   ChevronDown, Settings, LogOut, Plus,
-  Trophy
+  Trophy,Handshake,
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -102,11 +102,11 @@ const Header = () => {
               <span className="text-xs mt-1">Home</span>
             </button>
             <button 
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/chat')}
               className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
               >
-                <Home className="h-5 w-5" />
-                <span className="text-xs mt-1">Register</span>
+                <Handshake className="h-5 w-5" />
+                <span className="text-xs mt-1">Chat</span>
                    </button>
             <button 
               onClick={() => navigate('/network')}
