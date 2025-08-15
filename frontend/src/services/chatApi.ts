@@ -11,6 +11,7 @@ export type Message = {
   type: 'text'|'image'|'video';
   createdAt?: string;
   replyTo?: { _id: string; content: string; type: 'text'|'image'|'video'; sender?: any; createdAt?: string } | null;
+  clientId?: string | null;
 };
 
 export async function listRooms() {

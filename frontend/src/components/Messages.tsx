@@ -27,6 +27,7 @@ const Messages = () => {
   const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
+  const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
   // Load contacts on mount
   useEffect(() => {
@@ -94,7 +95,20 @@ const Messages = () => {
       if (!selectedChat) return;
       const senderId = typeof m.sender === 'string' ? m.sender : m.sender?._id;
       if (senderId === selectedChat || m.receiverUser === selectedChat) {
-        setThread(prev => [...prev, m]);
+        setThread(prev => {
+          // Replace optimistic message if clientId matches
+          if ((m as any).clientId) {
+            const idx = prev.findIndex(p => (p as any).clientId === (m as any).clientId);
+            if (idx !== -1) {
+              const next = prev.slice();
+              next[idx] = { ...prev[idx], ...m } as any;
+              return next;
+            }
+          }
+          // Prevent duplicate by _id
+          if ((m as any)._id && prev.some(p => (p as any)._id === (m as any)._id)) return prev;
+          return [...prev, m];
+        });
       }
     };
     socket.on('privateMessage', onPm);
@@ -113,7 +127,8 @@ const Messages = () => {
     if (!selectedChat) return;
     const content = newMessage.trim();
     if (!content) return;
-    sendPrivateMessage(selectedChat, content, 'text', (replyTo as any)?._id || null);
+    const cid = genClientId();
+    sendPrivateMessage(selectedChat, content, 'text', (replyTo as any)?._id || null, cid);
     // optimistic update
     const optimistic: ChatMsg = {
       content,
@@ -121,6 +136,7 @@ const Messages = () => {
       receiverUser: selectedChat,
       createdAt: new Date().toISOString(),
       sender: 'me',
+      clientId: cid,
       replyTo: replyTo
         ? {
             _id: (replyTo as any)._id,
@@ -142,13 +158,15 @@ const Messages = () => {
     try {
       const up = await uploadChatFile(file);
       // send url as content
-      sendPrivateMessage(selectedChat, up.url, up.type, (replyTo as any)?._id || null);
+      const cid = genClientId();
+      sendPrivateMessage(selectedChat, up.url, up.type, (replyTo as any)?._id || null, cid);
       const optimistic: ChatMsg = {
         content: up.url,
         type: up.type,
         receiverUser: selectedChat,
         createdAt: new Date().toISOString(),
         sender: 'me',
+        clientId: cid,
         replyTo: replyTo
           ? {
               _id: (replyTo as any)._id,

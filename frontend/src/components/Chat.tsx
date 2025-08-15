@@ -18,6 +18,7 @@ const Chat: React.FC = () => {
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
   const activeTitle = useMemo(() => {
     if (!activeId) return '';
@@ -39,11 +40,35 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (!socket) return;
     const onRoom = (msg: Msg) => {
-      if (scope === 'room' && msg.roomId === activeId) setMessages(prev => [...prev, msg]);
+      if (!(scope === 'room' && msg.roomId === activeId)) return;
+      setMessages(prev => {
+        if ((msg as any).clientId) {
+          const idx = prev.findIndex(p => (p as any).clientId === (msg as any).clientId);
+          if (idx !== -1) {
+            const next = prev.slice();
+            next[idx] = { ...prev[idx], ...msg } as any;
+            return next;
+          }
+        }
+        if ((msg as any)._id && prev.some(p => (p as any)._id === (msg as any)._id)) return prev;
+        return [...prev, msg];
+      });
     };
     const onDM = (msg: Msg) => {
       const target = typeof msg.sender === 'string' ? msg.sender : (msg.sender as any)._id;
-      if (scope === 'dm' && (msg.receiverUser === activeId || target === activeId)) setMessages(prev => [...prev, msg]);
+      if (!(scope === 'dm' && (msg.receiverUser === activeId || target === activeId))) return;
+      setMessages(prev => {
+        if ((msg as any).clientId) {
+          const idx = prev.findIndex(p => (p as any).clientId === (msg as any).clientId);
+          if (idx !== -1) {
+            const next = prev.slice();
+            next[idx] = { ...prev[idx], ...msg } as any;
+            return next;
+          }
+        }
+        if ((msg as any)._id && prev.some(p => (p as any)._id === (msg as any)._id)) return prev;
+        return [...prev, msg];
+      });
     };
     socket.on('roomMessage', onRoom);
     socket.on('privateMessage', onDM);
@@ -73,13 +98,15 @@ const Chat: React.FC = () => {
     if (!input.trim() || !activeId) return;
     const content = input.trim();
     if (scope === 'room') {
-      sendRoomMessage(activeId, content, 'text', (replyTo as any)?._id || null);
+      const cid = genClientId();
+      sendRoomMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
       // optimistic
-      setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
     } else {
-      sendPrivateMessage(activeId, content, 'text', (replyTo as any)?._id || null);
+      const cid = genClientId();
+      sendPrivateMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
       // optimistic
-      setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
     }
     setInput('');
     setReplyTo(null);
@@ -90,11 +117,13 @@ const Chat: React.FC = () => {
     if (!file || !activeId) return;
     const up = await uploadChatFile(file);
     if (scope === 'room') {
-      sendRoomMessage(activeId, up.url, up.type, (replyTo as any)?._id || null);
-      setMessages(prev => [...prev, { content: up.url, type: up.type, roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      const cid = genClientId();
+      sendRoomMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
+      setMessages(prev => [...prev, { content: up.url, type: up.type, roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
     } else {
-      sendPrivateMessage(activeId, up.url, up.type, (replyTo as any)?._id || null);
-      setMessages(prev => [...prev, { content: up.url, type: up.type, receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      const cid = genClientId();
+      sendPrivateMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
+      setMessages(prev => [...prev, { content: up.url, type: up.type, receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
     }
     e.target.value = '';
     setReplyTo(null);
@@ -114,8 +143,8 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex">
-      <aside className="w-72 border-r border-gray-800 p-4 space-y-4">
+    <div className="h-screen bg-gray-900 text-white flex overflow-hidden">
+      <aside className="w-72 border-r border-gray-800 p-4 space-y-4 h-full overflow-y-auto">
         <div>
           <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
           <ul className="space-y-1">
@@ -143,7 +172,7 @@ const Chat: React.FC = () => {
           </ul>
         </div>
       </aside>
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
         <header className="h-14 flex items-center px-4 border-b border-gray-800">
           <h1 className="text-lg font-semibold">{activeTitle || 'Select a chat'}</h1>
         </header>
@@ -234,7 +263,7 @@ const Chat: React.FC = () => {
           </div>
         </footer>
       </main>
-      <aside className="w-56 border-l border-gray-800 p-4">
+      <aside className="w-56 border-l border-gray-800 p-4 h-full overflow-y-auto">
         <h2 className="text-sm uppercase text-gray-400 mb-2">Online</h2>
         <ul className="space-y-1">
           {Array.from(onlineUsers).map(id => (<li key={id} className="text-gray-300 text-sm">{id}</li>))}

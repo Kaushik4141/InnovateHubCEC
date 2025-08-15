@@ -10,6 +10,7 @@ export type ChatMessage = {
     type: 'text' | 'image' | 'video';
     createdAt?: string;
     replyTo?: { _id: string; content: string; type: 'text'|'image'|'video'; sender?: any; createdAt?: string } | null;
+    clientId?: string | null;
 };
 
 type ChatContextType = {
@@ -18,8 +19,8 @@ type ChatContextType = {
     onlineUsers: Set<string>;
     joinRoom: (roomId: string) => void;
     leaveRoom: (roomId: string) => void;
-    sendRoomMessage: (roomId: string, content: string, type?: ChatMessage['type'], replyToId?: string | null) => void;
-    sendPrivateMessage: (toUserId: string, content: string, type?: ChatMessage['type'], replyToId?: string | null) => void;
+    sendRoomMessage: (roomId: string, content: string, type?: ChatMessage['type'], replyToId?: string | null, clientId?: string | null) => void;
+    sendPrivateMessage: (toUserId: string, content: string, type?: ChatMessage['type'], replyToId?: string | null, clientId?: string | null) => void;
 };
 
 const ChatContext = createContext<ChatContextType | null>(null);
@@ -84,10 +85,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         onlineUsers,
         joinRoom: (roomId: string) => socket?.emit('joinRoom', { roomId }),
         leaveRoom: (roomId: string) => socket?.emit('leaveRoom', { roomId }),
-        sendRoomMessage: (roomId: string, content: string, type: ChatMessage['type'] = 'text', replyToId: string | null = null) =>
-            socket?.emit('roomMessage', { roomId, content, type, replyTo: replyToId }),
-        sendPrivateMessage: (toUserId: string, content: string, type: ChatMessage['type'] = 'text', replyToId: string | null = null) =>
-            socket?.emit('privateMessage', { toUserId, content, type, replyTo: replyToId }),
+        sendRoomMessage: (roomId: string, content: string, type: ChatMessage['type'] = 'text', replyToId: string | null = null, clientId: string | null = null) =>
+            socket?.emit('roomMessage', { roomId, content, type, replyTo: replyToId, clientId }),
+        sendPrivateMessage: (toUserId: string, content: string, type: ChatMessage['type'] = 'text', replyToId: string | null = null, clientId: string | null = null) =>
+            socket?.emit('privateMessage', { toUserId, content, type, replyTo: replyToId, clientId }),
     }), [socket, connected, onlineUsers]);
 
     return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
