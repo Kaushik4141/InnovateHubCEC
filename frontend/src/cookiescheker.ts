@@ -1,9 +1,6 @@
 import axios from 'axios';
-const API_BASE: string = (import.meta as any)?.env?.VITE_API_URL || '';
-if (API_BASE) {
-  axios.defaults.baseURL = API_BASE;
-}
-axios.defaults.withCredentials = true;
+const apiBase = import.meta.env.VITE_API_URL;
+
 
 let isRefreshing = false;
 let failedQueue: any[] = [];
@@ -46,7 +43,7 @@ axios.interceptors.response.use(
       isRefreshing = true;
       try {
         await axios.post(
-          '/api/v1/users/refresh-token',
+          `${apiBase}/api/v1/users/refresh-token`,
           {},
           { withCredentials: true }
         );
@@ -54,7 +51,7 @@ axios.interceptors.response.use(
         return axios(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        window.location.href = '/login';
+        window.location.href = `/login`;
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
