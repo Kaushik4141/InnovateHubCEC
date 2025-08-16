@@ -15,6 +15,9 @@ const Chat: React.FC = () => {
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
@@ -84,50 +87,70 @@ const Chat: React.FC = () => {
     setScope('room');
     setActiveId(id);
     joinRoom(id);
-    const hist = await getRoomMessages(id);
-    setMessages(hist);
+    setLoadingMessages(true);
+    try {
+      const hist = await getRoomMessages(id);
+      setMessages(hist);
+    } finally {
+      setLoadingMessages(false);
+    }
   }
   async function openDM(id: string) {
     if (activeId && scope === 'room') leaveRoom(activeId);
     setScope('dm');
     setActiveId(id);
-    const hist = await getPrivateMessages(id);
-    setMessages(hist);
+    setLoadingMessages(true);
+    try {
+      const hist = await getPrivateMessages(id);
+      setMessages(hist);
+    } finally {
+      setLoadingMessages(false);
+    }
   }
 
   async function handleSend() {
-    if (!input.trim() || !activeId) return;
+    if (!input.trim() || !activeId || sendingMessage) return;
+    setSendingMessage(true);
     const content = input.trim();
-    if (scope === 'room') {
-      const cid = genClientId();
-      sendRoomMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
-      // optimistic
-      setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
-    } else {
-      const cid = genClientId();
-      sendPrivateMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
-      // optimistic
-      setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+    try {
+      if (scope === 'room') {
+        const cid = genClientId();
+        sendRoomMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
+        // optimistic
+        setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      } else {
+        const cid = genClientId();
+        sendPrivateMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
+        // optimistic
+        setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      }
+      setInput('');
+      setReplyTo(null);
+    } finally {
+      setSendingMessage(false);
     }
-    setInput('');
-    setReplyTo(null);
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || !activeId) return;
-    const up = await uploadChatFile(file);
-    if (scope === 'room') {
-      const cid = genClientId();
-      sendRoomMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
-      setMessages(prev => [...prev, { content: up.url, type: up.type, roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
-    } else {
-      const cid = genClientId();
-      sendPrivateMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
-      setMessages(prev => [...prev, { content: up.url, type: up.type, receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+    if (!file || !activeId || uploadingFile) return;
+    setUploadingFile(true);
+    try {
+      const up = await uploadChatFile(file);
+      if (scope === 'room') {
+        const cid = genClientId();
+        sendRoomMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
+        setMessages(prev => [...prev, { content: up.url, type: up.type, roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      } else {
+        const cid = genClientId();
+        sendPrivateMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
+        setMessages(prev => [...prev, { content: up.url, type: up.type, receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+      }
+      e.target.value = '';
+      setReplyTo(null);
+    } finally {
+      setUploadingFile(false);
     }
-    e.target.value = '';
-    setReplyTo(null);
   }
 
   const messageDomId = (m: Msg, idx: number) => (m as any)?._id || `idx-${idx}`;
@@ -180,6 +203,15 @@ const Chat: React.FC = () => {
             <h1 className="text-lg font-semibold">{activeTitle || 'Select a chat'}</h1>
           </header>
           <section ref={messagesRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+            {loadingMessages && (
+              <div className="flex justify-center items-center py-8">
+                <div className="flex space-x-2">
+                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
+                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+              </div>
+            )}
             {messages.map((m, idx) => {
               const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
               const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
@@ -251,8 +283,13 @@ const Chat: React.FC = () => {
             )}
             <div className="flex items-center gap-3">
               <label className="text-gray-400 hover:text-white transition-colors cursor-pointer">
-                <input type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
-                <span className="px-3 py-2 bg-gray-800 rounded border border-gray-700 text-xs">Attach</span>
+                <input type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" disabled={uploadingFile} />
+                <span className={`px-3 py-2 bg-gray-800 rounded border border-gray-700 text-xs flex items-center gap-2 ${uploadingFile ? 'opacity-50' : ''}`}>
+                  {uploadingFile && (
+                    <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                  )}
+                  Attach
+                </span>
               </label>
               <input
                 value={input}
@@ -262,7 +299,12 @@ const Chat: React.FC = () => {
                 disabled={!activeId}
                 className="flex-1 bg-gray-800 rounded px-3 py-2 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
               />
-              <button onClick={handleSend} disabled={!activeId || !input.trim()} className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-2 rounded transition-colors">Send</button>
+              <button onClick={handleSend} disabled={!activeId || !input.trim() || sendingMessage} className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-2 rounded transition-colors flex items-center gap-2">
+                {sendingMessage && (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                )}
+                Send
+              </button>
             </div>
           </footer>
         </main>
