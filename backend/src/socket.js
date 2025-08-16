@@ -35,7 +35,8 @@ export function initSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
       origin: process.env.CORS_ORIGIN,
-      credentials: true,
+      withCredentials: true,
+      sameSite: 'None', 
     },
   });
 

@@ -3,6 +3,7 @@ import { Reply as ReplyIcon, X } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { listRooms, listContacts, getRoomMessages, getPrivateMessages, uploadChatFile, type Message as Msg, type Room, type Contact } from '../services/chatApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
+import Header from './Header';
 
 const Chat: React.FC = () => {
   const { socket, onlineUsers, sendPrivateMessage, sendRoomMessage, joinRoom, leaveRoom } = useChat();
@@ -143,6 +144,8 @@ const Chat: React.FC = () => {
   };
 
   return (
+    <div className="min-h-screen bg-gray-900 text-white">
+        <Header />
     <div className="h-screen bg-gray-900 text-white flex overflow-hidden">
       <aside className="w-72 border-r border-gray-800 p-4 space-y-4 h-full overflow-y-auto">
         <div>
@@ -270,6 +273,7 @@ const Chat: React.FC = () => {
         </ul>
       </aside>
       <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
+    </div>
     </div>
   );
 };

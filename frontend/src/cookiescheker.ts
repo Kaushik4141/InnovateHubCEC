@@ -1,7 +1,4 @@
 import axios from 'axios';
-
-// Configure base URL from environment for production builds
-// Ensures all relative paths (e.g., "/api/v1/...") go to the backend domain
 const API_BASE: string = (import.meta as any)?.env?.VITE_API_URL || '';
 if (API_BASE) {
   axios.defaults.baseURL = API_BASE;
