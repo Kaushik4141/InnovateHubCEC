@@ -50,8 +50,13 @@ axios.interceptors.response.use(
         processQueue(null);
         return axios(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError, null);
-        window.location.href = `/login`;
+        if ((refreshError as any).response?.status === 401) {
+          processQueue(refreshError, null);
+          window.location.href = `/login`;
+        } else {
+
+          processQueue(refreshError, null);
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
