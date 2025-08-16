@@ -82,7 +82,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
       httpOnly: true,
       secure: true,
       sameSite: 'None',
-      domain: 'innovatehubcec.vercel.app'
+      path: '/'
     };
     return res
       .status(201)
@@ -134,7 +134,6 @@ const loginuser = asyncHandler(async (req, res, next) => {
       httpOnly: true,
       secure: true, // Set to true if using HTTPS
       sameSite: 'None', // Adjust based on your requirements
-      domain: 'innovatehubcec.vercel.app'
     };
     return res
       .status(200)
@@ -172,6 +171,7 @@ const logoutUser = asyncHandler(async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: 'None',
+      path: '/'
     };
     return res
       .status(200)
@@ -212,7 +212,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       httpOnly: true,
       secure: true,
       sameSite: 'None',
-      domain: 'innovatehubcec.vercel.app'
     }
 
     const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(user._id)

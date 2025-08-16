@@ -145,135 +145,135 @@ const Chat: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-        <Header />
-    <div className="h-screen bg-gray-900 text-white flex overflow-hidden">
-      <aside className="w-72 border-r border-gray-800 p-4 space-y-4 h-full overflow-y-auto">
-        <div>
-          <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
-          <ul className="space-y-1">
-            {rooms.map(r => (
-              <li key={r._id}>
-                <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
-                  #{r.name}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h2 className="text-sm uppercase text-gray-400 mb-2">Direct Messages</h2>
-          <ul className="space-y-1">
-            {contacts.map(c => (
-              <li key={c.user._id}>
-                <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
-                  <span className={`h-2 w-2 rounded-full ${c.online ? 'bg-green-400' : 'bg-gray-500'}`}></span>
-                  <img src={c.user.avatar} className="h-6 w-6 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                  <span>{c.user.fullname}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </aside>
-      <main className="flex-1 flex flex-col h-full overflow-hidden">
-        <header className="h-14 flex items-center px-4 border-b border-gray-800">
-          <h1 className="text-lg font-semibold">{activeTitle || 'Select a chat'}</h1>
-        </header>
-        <section ref={messagesRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-          {messages.map((m, idx) => {
-            const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
-            const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
-            const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-            const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.avatar || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
-            const mid = messageDomId(m, idx);
-            return (
-              <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
-                <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                    {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
-                  </div>
-                  <div className={`px-4 py-2 rounded-lg shadow transition-transform duration-150 ${isOwn ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
-                    {m.replyTo && (
-                      <div className={`mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>
-                        <div className="text-xs font-semibold opacity-90">{(m.replyTo as any)?.sender?.fullname || 'Replied message'}</div>
-                        <button type="button" onClick={() => jumpToMessage((m.replyTo as any)?._id)} className="text-left w-full">
-                          <div className="text-xs opacity-80 truncate hover:underline">
-                            {m.replyTo.type === 'text' ? m.replyTo.content : `Media: ${m.replyTo.type}`}
-                          </div>
-                        </button>
-                      </div>
-                    )}
-                    {m.type === 'image' ? (
-                      <img
-                        src={m.content}
-                        alt="image"
-                        className="max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
-                        onClick={() => { setLightboxMedia({ type: 'image', url: m.content }); setLightboxOpen(true); }}
-                      />
-                    ) : m.type === 'video' ? (
-                      <video
-                        src={m.content}
-                        controls
-                        className="max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
-                        onClick={() => { setLightboxMedia({ type: 'video', url: m.content }); setLightboxOpen(true); }}
-                      />
-                    ) : (
-                      <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
-                    )}
-                    <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'}`}>{time}</p>
-                  </div>
-                  <button
-                    title="Reply"
-                    onClick={() => setReplyTo(m)}
-                    className={`opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-white`}
-                  >
-                    <ReplyIcon className="h-4 w-4" />
+      <Header />
+      <div className="h-screen bg-gray-900 text-white flex overflow-hidden">
+        <aside className="w-72 border-r border-gray-800 p-4 space-y-4 h-full overflow-y-auto">
+          <div>
+            <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
+            <ul className="space-y-1">
+              {rooms.map(r => (
+                <li key={r._id}>
+                  <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
+                    #{r.name}
                   </button>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={bottomRef} />
-        </section>
-        <footer className="p-6 border-t border-gray-800">
-          {replyTo && (
-            <div className="mb-3 bg-gray-800/70 border border-gray-700 rounded-lg p-2 flex items-start justify-between">
-              <div className="flex-1">
-                <div className="text-xs text-gray-400">Replying to {(replyTo as any)?.sender?.fullname || 'message'}</div>
-                <div className="text-sm truncate">
-                  {replyTo.type === 'text' ? replyTo.content : `Media: ${replyTo.type}`}
-                </div>
-              </div>
-              <button className="ml-3 text-gray-400 hover:text-white" onClick={() => setReplyTo(null)}>
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          <div className="flex items-center gap-3">
-            <label className="text-gray-400 hover:text-white transition-colors cursor-pointer">
-              <input type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
-              <span className="px-3 py-2 bg-gray-800 rounded border border-gray-700 text-xs">Attach</span>
-            </label>
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
-              placeholder={activeId ? 'Type a message' : 'Select a chat to start messaging'}
-              disabled={!activeId}
-              className="flex-1 bg-gray-800 rounded px-3 py-2 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
-            />
-            <button onClick={handleSend} disabled={!activeId || !input.trim()} className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-2 rounded transition-colors">Send</button>
+                </li>
+              ))}
+            </ul>
           </div>
-        </footer>
-      </main>
-      <aside className="w-56 border-l border-gray-800 p-4 h-full overflow-y-auto">
-        <h2 className="text-sm uppercase text-gray-400 mb-2">Online</h2>
-        <ul className="space-y-1">
-          {Array.from(onlineUsers).map(id => (<li key={id} className="text-gray-300 text-sm">{id}</li>))}
-        </ul>
-      </aside>
-      <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
-    </div>
+          <div>
+            <h2 className="text-sm uppercase text-gray-400 mb-2">Direct Messages</h2>
+            <ul className="space-y-1">
+              {contacts.map(c => (
+                <li key={c.user._id}>
+                  <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
+                    <span className={`h-2 w-2 rounded-full ${c.online ? 'bg-green-400' : 'bg-gray-500'}`}></span>
+                    <img src={c.user.avatar} className="h-6 w-6 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    <span>{c.user.fullname}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+        <main className="flex-1 flex flex-col h-full overflow-hidden">
+          <header className="h-14 flex items-center px-4 border-b border-gray-800">
+            <h1 className="text-lg font-semibold">{activeTitle || 'Select a chat'}</h1>
+          </header>
+          <section ref={messagesRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+            {messages.map((m, idx) => {
+              const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
+              const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
+              const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+              const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.avatar || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
+              const mid = messageDomId(m, idx);
+              return (
+                <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
+                  <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                      {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
+                    </div>
+                    <div className={`px-4 py-2 rounded-lg shadow transition-transform duration-150 ${isOwn ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
+                      {m.replyTo && (
+                        <div className={`mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>
+                          <div className="text-xs font-semibold opacity-90">{(m.replyTo as any)?.sender?.fullname || 'Replied message'}</div>
+                          <button type="button" onClick={() => jumpToMessage((m.replyTo as any)?._id)} className="text-left w-full">
+                            <div className="text-xs opacity-80 truncate hover:underline">
+                              {m.replyTo.type === 'text' ? m.replyTo.content : `Media: ${m.replyTo.type}`}
+                            </div>
+                          </button>
+                        </div>
+                      )}
+                      {m.type === 'image' ? (
+                        <img
+                          src={m.content}
+                          alt="image"
+                          className="max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
+                          onClick={() => { setLightboxMedia({ type: 'image', url: m.content }); setLightboxOpen(true); }}
+                        />
+                      ) : m.type === 'video' ? (
+                        <video
+                          src={m.content}
+                          controls
+                          className="max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
+                          onClick={() => { setLightboxMedia({ type: 'video', url: m.content }); setLightboxOpen(true); }}
+                        />
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                      )}
+                      <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'}`}>{time}</p>
+                    </div>
+                    <button
+                      title="Reply"
+                      onClick={() => setReplyTo(m)}
+                      className={`opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-white`}
+                    >
+                      <ReplyIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={bottomRef} />
+          </section>
+          <footer className="p-6 border-t border-gray-800">
+            {replyTo && (
+              <div className="mb-3 bg-gray-800/70 border border-gray-700 rounded-lg p-2 flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="text-xs text-gray-400">Replying to {(replyTo as any)?.sender?.fullname || 'message'}</div>
+                  <div className="text-sm truncate">
+                    {replyTo.type === 'text' ? replyTo.content : `Media: ${replyTo.type}`}
+                  </div>
+                </div>
+                <button className="ml-3 text-gray-400 hover:text-white" onClick={() => setReplyTo(null)}>
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <label className="text-gray-400 hover:text-white transition-colors cursor-pointer">
+                <input type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" />
+                <span className="px-3 py-2 bg-gray-800 rounded border border-gray-700 text-xs">Attach</span>
+              </label>
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+                placeholder={activeId ? 'Type a message' : 'Select a chat to start messaging'}
+                disabled={!activeId}
+                className="flex-1 bg-gray-800 rounded px-3 py-2 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50"
+              />
+              <button onClick={handleSend} disabled={!activeId || !input.trim()} className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-4 py-2 rounded transition-colors">Send</button>
+            </div>
+          </footer>
+        </main>
+        <aside className="w-56 border-l border-gray-800 p-4 h-full overflow-y-auto">
+          <h2 className="text-sm uppercase text-gray-400 mb-2">Online</h2>
+          <ul className="space-y-1">
+            {Array.from(onlineUsers).map(id => (<li key={id} className="text-gray-300 text-sm">{id}</li>))}
+          </ul>
+        </aside>
+        <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
+      </div>
     </div>
   );
 };
