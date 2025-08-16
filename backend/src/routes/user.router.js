@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword,alive,getNotifications,requestFollow,acceptFollow,rejectFollow, searchUsers, getUserMin} from "../controllers/user.controller.js";
+import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword,alive,getNotifications,requestFollow,acceptFollow,rejectFollow, searchUsers, getUserMin,getNetworkStats, getConnections, getConnectionSuggestions, getPendingRequests } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router= Router()
@@ -28,6 +28,11 @@ router.route("/:id/accept-follow").post(verifyJWT, acceptFollow)
 router.route("/:id/reject-follow").post(verifyJWT, rejectFollow)
 router.route("/search").get(verifyJWT, searchUsers)
 router.route("/min/:id").get(verifyJWT, getUserMin)
+router.route("/network-stats").get(verifyJWT, getNetworkStats)
+router.route("/connections").get(verifyJWT, getConnections)
+router.route("/connection-suggestions").get(verifyJWT, getConnectionSuggestions)
+router.route("/pending-requests").get(verifyJWT, getPendingRequests)
+
 
 
     

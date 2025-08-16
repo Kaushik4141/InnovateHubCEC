@@ -538,5 +538,171 @@ const getUserMin = asyncHandler(async (req, res) => {
     throw new ApiError(500, e.message || "Failed to fetch user");
   }
 });
+const getNetworkStats = asyncHandler(async (req, res) => {
+  try{
+  const userId = req.user._id;
+  
+  const user = await User.findById(userId)
+    .populate('followers', 'fullname')
+    .populate('following', 'fullname')
+    .populate('followRequests', 'fullname');
 
-export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile, requestFollow, acceptFollow, rejectFollow, alive, getNotifications, searchUsers, getUserMin };
+  const stats = {
+    connections: user.followers.length + user.following.length,
+    pendingInvitations: user.followRequests.length,
+    followers: user.followers.length,
+    following: user.following.length
+  };
+
+  return res.status(200).json(
+    new ApiResponse(200, stats, "Network stats retrieved successfully")
+  );
+  } catch (error) {
+    throw new ApiError(500, "Failed to fetch network stats");
+  }
+});
+
+
+const getConnections = asyncHandler(async (req, res) => {
+  try{
+  const userId = req.user._id;
+  const { search } = req.query;
+
+  const user = await User.findById(userId)
+    .populate({
+      path: 'followers following',
+      select: 'fullname email year avatar skills bio linkedin github leetcode',
+      match: search ? { fullname: { $regex: search, $options: 'i' } } : {}
+    });
+    //followers and following issues
+  const connectionsMap = new Map();
+  
+  [...user.followers, ...user.following].forEach(connection => {
+    if (connection && !connectionsMap.has(connection._id.toString())) {
+      connectionsMap.set(connection._id.toString(), {
+        ...connection.toObject(),
+        isOnline: Math.random() > 0.5, // Mock online status for now
+        lastActive: new Date(Date.now() - Math.random() * 86400000).toISOString()
+      });
+    }
+  });
+
+  const connections = Array.from(connectionsMap.values());
+
+  return res.status(200).json(
+    new ApiResponse(200, connections, "Connections retrieved successfully")
+  );
+  } catch (error) {
+    throw new ApiError(500, "Failed to fetch connections");
+  }
+});
+
+const getConnectionSuggestions = asyncHandler(async (req, res) => {
+  try{
+  const userId = req.user._id;
+  const { search, limit = 10 } = req.query;
+
+  const user = await User.findById(userId);
+  const connectedUserIds = [...user.followers, ...user.following, userId];
+
+  const matchQuery = {
+    _id: { $nin: connectedUserIds },
+    ...(search && { fullname: { $regex: search, $options: 'i' } })
+  };
+
+  const suggestions = await User.find(matchQuery)
+    .select('fullname email year avatar skills bio linkedin github leetcode')
+    .limit(parseInt(limit));
+
+  
+  const enrichedSuggestions = await Promise.all(
+    suggestions.map(async (suggestion) => {
+      const mutualConnections = await User.findById(suggestion._id)
+        .populate({
+          path: 'followers following',
+          match: { _id: { $in: [...user.followers, ...user.following] } }
+        });
+
+      const mutualCount = new Set([
+        ...mutualConnections.followers.map(f => f._id.toString()),
+        ...mutualConnections.following.map(f => f._id.toString())
+      ]).size;
+
+      return {
+        ...suggestion.toObject(),
+        mutualConnections: mutualCount,
+        reason: getSuggestionReason(suggestion, user)
+      };
+    })
+  );
+
+  return res.status(200).json(
+    new ApiResponse(200, enrichedSuggestions, "Connection suggestions retrieved successfully")
+  );
+  } catch (error) {
+    throw new ApiError(500, "Failed to fetch connection suggestions");
+  }
+});
+
+
+
+const getPendingRequests = asyncHandler(async (req, res) => {
+  try{
+  const userId = req.user._id;
+
+  const user = await User.findById(userId)
+    .populate({
+      path: 'notifications.from',
+      select: 'fullname email year avatar skills bio'
+    });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  const requests = user.notifications
+    .filter(notification => 
+      notification.type === 'follow-request' && 
+      !notification.read &&
+      notification.from
+    )
+    .map(notification => ({
+      _id: notification._id,
+      from: notification.from,
+      date: notification.date,
+      type: notification.type,
+      read: notification.read
+    }));
+
+  return res.status(200).json(
+    new ApiResponse(200, requests, "Pending requests retrieved successfully")
+  );
+  } catch (error) {
+    console.error("Error in getPendingRequests:", error);
+    throw new ApiError(500, "Failed to fetch pending requests");
+  }
+});
+
+
+const getSuggestionReason = (suggestion, currentUser) => {
+  if (suggestion.skills && currentUser.skills) {
+    const commonSkills = suggestion.skills.filter(skill => 
+      currentUser.skills.includes(skill)
+    );
+    if (commonSkills.length > 0) {
+      return `Similar skills: ${commonSkills.slice(0, 2).join(', ')}`;
+    }
+  }
+
+  if (suggestion.year === currentUser.year) {
+    return `Same year student`;
+  }
+
+  if (suggestion.github && currentUser.github) {
+    return `Active on GitHub`;
+  }
+
+  return `Suggested for you`;
+};
+
+export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile, requestFollow, acceptFollow, rejectFollow, alive, getNotifications, searchUsers, getUserMin, getNetworkStats, getConnections, getConnectionSuggestions, getPendingRequests };
