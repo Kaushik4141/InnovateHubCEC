@@ -80,9 +80,10 @@ const registerUser = asyncHandler(async (req, res, next) => {
     }
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
-      path: '/'
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
     };
     return res
       .status(201)
@@ -132,8 +133,10 @@ const loginuser = asyncHandler(async (req, res, next) => {
     );
     const cookieOptions = {
       httpOnly: true,
-      secure: true, // Set to true if using HTTPS
-      sameSite: 'None', // Adjust based on your requirements
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000 
     };
     return res
       .status(200)
@@ -169,8 +172,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     );
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
       path: '/'
     };
     return res
@@ -210,8 +213,10 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
     const cookieOptions = {
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000
     }
 
     const { accessToken, newRefreshToken } = await generateAccessAndRefreshToken(user._id)

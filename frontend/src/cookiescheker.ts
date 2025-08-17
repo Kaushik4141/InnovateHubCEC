@@ -52,13 +52,10 @@ axios.interceptors.response.use(
         return axios(originalRequest);
       } catch (refreshError) {
         const errorResponse = (refreshError as any).response;
-        
-        // Only redirect to login if it's actually an auth error, not a server error
         if (errorResponse?.status === 401) {
           processQueue(refreshError, null);
           window.location.href = `/login`;
         } else if (errorResponse?.status >= 500 || !errorResponse) {
-          // Server error or network error - don't logout, just fail the request
           console.warn('Server error during token refresh, retrying later');
           processQueue(refreshError, null);
         } else {
