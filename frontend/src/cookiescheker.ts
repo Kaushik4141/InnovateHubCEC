@@ -25,14 +25,15 @@ axios.interceptors.response.use(
       error.response.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url.includes('/login') &&
-      !originalRequest.url.includes('/register')
+      !originalRequest.url.includes('/register') &&
+      !originalRequest.url.includes('/refresh-token')
     ) {
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
           failedQueue.push({ resolve, reject });
         })
-          .then((token) => {
-            // Not using token header, just retry
+          .then(() => {
+            // Just retry the original request
             return axios(originalRequest);
           })
           .catch((err) => {
@@ -50,11 +51,17 @@ axios.interceptors.response.use(
         processQueue(null);
         return axios(originalRequest);
       } catch (refreshError) {
-        if ((refreshError as any).response?.status === 401) {
+        const errorResponse = (refreshError as any).response;
+        
+        // Only redirect to login if it's actually an auth error, not a server error
+        if (errorResponse?.status === 401) {
           processQueue(refreshError, null);
           window.location.href = `/login`;
+        } else if (errorResponse?.status >= 500 || !errorResponse) {
+          // Server error or network error - don't logout, just fail the request
+          console.warn('Server error during token refresh, retrying later');
+          processQueue(refreshError, null);
         } else {
-
           processQueue(refreshError, null);
         }
         return Promise.reject(refreshError);
