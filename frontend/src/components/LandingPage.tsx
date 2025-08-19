@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowRight, Users, Trophy, Code, Brain, Palette, Cpu } from 'lucide-react';
-import Header from './Header';
 
 
 const LandingPage = () => {
@@ -12,6 +11,7 @@ const LandingPage = () => {
   const [contributors, setContributors] = useState<any[]>([]);
   const [contributorsLoading, setContributorsLoading] = useState(false);
   const [contributorsError, setContributorsError] = useState<string | null>(null);
+  
 
   useEffect(() => {
     fetch(`${apiBase}/api/v1/users/current-user`, { credentials: 'include' })
@@ -19,6 +19,8 @@ const LandingPage = () => {
       .then(data => setIsLoggedIn(!!data?.data))
       .catch(() => setIsLoggedIn(false));
   }, []);
+
+  
 
   useEffect(() => {
     const timer = setTimeout(() => setMinLoadingElapsed(true), 4400); 
@@ -57,7 +59,6 @@ const LandingPage = () => {
     // If logged in, show the main header and maybe redirect or show dashboard
     return (
       <div className="min-h-screen bg-gray-900 text-white">
-        <Header />
         <div className="flex flex-col items-center justify-center h-[80vh]">
           <h1 className="text-4xl font-bold mb-4">Welcome back to InnovateHubCEC!</h1>
           <button
@@ -75,23 +76,29 @@ const LandingPage = () => {
       {/* Header */}
       <header className="bg-gray-900 bg-opacity-80 backdrop-blur-sm border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex flex-wrap items-center justify-between gap-2 py-3">
             <div className="flex items-center">
              <button onClick={() => navigate('/')} className="flex items-center">
               <img src="logo1.png" alt="logo" className="h-8 w-8 text-purple-400" />
-              <span className="ml-2 text-xl font-bold text-white">InnovateHubCEC</span>
+              <span className="ml-2 text-base sm:text-xl font-bold text-white">InnovateHubCEC</span>
               </button>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto whitespace-nowrap -mx-2 px-2">
+            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+              <button
+                onClick={() => navigate('/team')}
+                className="text-gray-300 hover:text-white transition-colors px-4 py-2 rounded-lg border border-transparent hover:border-purple-500/40"
+              >
+                Our Team
+              </button>
               <button 
                 onClick={() => navigate('/register')}
-                className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                className="bg-purple-600 text-white px-4 sm:px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
               >
                 Sign Up
               </button>
               <button 
                 onClick={() => navigate('/Login')}
-                className="border border-purple-500 text-purple-400 px-6 py-2 rounded-lg font-medium hover:bg-purple-500 hover:text-white transition-colors"
+                className="border border-purple-500 text-purple-400 px-4 sm:px-6 py-2 rounded-lg font-medium hover:bg-purple-500 hover:text-white transition-colors"
               >
                 Log In
               </button>

@@ -9,6 +9,7 @@ import Login from './components/Login';
 import SignupForm from './components/register';
 import Leaderboard from './components/Leaderboard';
 import LandingPage from './components/LandingPage';
+import Team from './components/Team';
 import AddPost from './components/addpost';
 import UserProfileView from './components/UserProfileView';
 import Chat from './components/Chat';
@@ -19,6 +20,7 @@ function App() {
       <div className="min-h-screen bg-gray-900">
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/team" element={<Team />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/messages" element={<Messages />} />
