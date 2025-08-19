@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 import Loader from './loading';
+import MediaLightbox, { LightboxMedia } from './MediaLightbox';
 
 // Component for handling expandable text with read more/less functionality
 const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
@@ -40,7 +41,7 @@ const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
 };
 
 // LinkedIn-style image grid component
-const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }) => {
+const LinkedInImageGrid: React.FC<{ images: { value: string }[]; onOpen: (m: LightboxMedia) => void }> = ({ images, onOpen }) => {
   const [showAll, setShowAll] = useState(false);
   const imageCount = images.length;
 
@@ -92,14 +93,25 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }
   return (
     <div className="mb-4">
       <div className={`grid ${getGridLayout()} gap-1 max-w-full`}>
-        {displayImages.map((img, index) => (
+        {displayImages.map((img, index) => {
+          const url = img.value;
+          const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
+          return (
           <div key={index} className="relative overflow-hidden">
-            <img
-              src={img.value}
-              alt={`Post image ${index + 1}`}
-              className={getImageClass(index)}
-              onClick={() => window.open(img.value, '_blank')}
-            />
+            {isVideo ? (
+              <video
+                src={url}
+                className={getImageClass(index)}
+                onClick={() => onOpen({ type: 'video', url })}
+              />
+            ) : (
+              <img
+                src={url}
+                alt={`Post image ${index + 1}`}
+                className={getImageClass(index)}
+                onClick={() => onOpen({ type: 'image', url })}
+              />
+            )}
             {/* Overlay for additional images */}
             {!showAll && index === 3 && remainingCount > 0 && (
               <div
@@ -112,7 +124,7 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }
               </div>
             )}
           </div>
-        ))}
+        );})}
       </div>
       {showAll && imageCount > 4 && (
         <button
@@ -220,6 +232,11 @@ const Profile: FC = () => {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
+
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
+  const openLightbox = (m: LightboxMedia) => { setLightboxMedia(m); setLightboxOpen(true); };
 
   useEffect(() => {
     const url = userId ? `${apiBase}/api/v1/users/u/${userId}` : `${apiBase}/api/v1/users/current-user`;
@@ -453,7 +470,10 @@ const Profile: FC = () => {
                             <div key={p._id} className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-md">
                               <h4 className="font-semibold text-white mb-2">{p.title}</h4>
                               {p.postFile && (
-                                <LinkedInImageGrid images={Array.isArray(p.postFile) ? p.postFile.map((f: string) => ({ value: f })) : [{ value: p.postFile }]} />
+                                <LinkedInImageGrid 
+                                  images={Array.isArray(p.postFile) ? p.postFile.map((f: string) => ({ value: f })) : [{ value: p.postFile }]} 
+                                  onOpen={openLightbox}
+                                />
                               )}
                               <ExpandableText text={p.description || ''} maxLength={150} />
                               <p className="text-gray-400 text-sm my-3">Views: {p.views || 0}</p>
@@ -517,7 +537,12 @@ const Profile: FC = () => {
                                     if (!url) return null;
                                     const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
                                     return isVideo ? (
-                                      <video key={fileIdx} controls className="w-full max-h-64 rounded-lg border border-gray-700">
+                                      <video 
+                                        key={fileIdx} 
+                                        controls 
+                                        className="w-full max-h-64 rounded-lg border border-gray-700 cursor-pointer"
+                                        onClick={() => openLightbox({ type: 'video', url })}
+                                      >
                                         <source src={url} />
                                         Your browser does not support the video tag.
                                       </video>
@@ -526,7 +551,8 @@ const Profile: FC = () => {
                                         key={fileIdx}
                                         src={url}
                                         alt={post.title || `Post image ${fileIdx + 1}`}
-                                        className="w-full max-h-64 object-cover rounded-lg border border-gray-700"
+                                        className="w-full max-h-64 object-cover rounded-lg border border-gray-700 cursor-pointer"
+                                        onClick={() => openLightbox({ type: 'image', url })}
                                       />
                                     );
                                   })}
@@ -561,6 +587,7 @@ const Profile: FC = () => {
           </div>
         </div>
       </div>
+      <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
     </div>
   );
 };

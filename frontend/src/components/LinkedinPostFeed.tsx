@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import {useNavigate } from "react-router-dom";
 import Loader from "./loading";
+import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
 
 // Component for handling expandable text with read more/less functionality
 const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({ 
@@ -32,7 +33,7 @@ const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
 };
 
 // LinkedIn-style image grid component
-const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }) => {
+const LinkedInImageGrid: React.FC<{ images: { value: string }[]; onOpen: (m: LightboxMedia) => void }> = ({ images, onOpen }) => {
   const [showAll, setShowAll] = useState(false);
   const imageCount = images.length;
   
@@ -84,14 +85,25 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }
   return (
     <div className="mb-4">
       <div className={`grid ${getGridLayout()} gap-1 max-w-full`}>
-        {displayImages.map((img, index) => (
+        {displayImages.map((img, index) => {
+          const url = img.value;
+          const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
+          return (
           <div key={index} className="relative overflow-hidden">
-            <img
-              src={img.value}
-              alt={`Post image ${index + 1}`}
-              className={getImageClass(index)}
-              onClick={() => window.open(img.value, '_blank')}
-            />
+            {isVideo ? (
+              <video
+                src={url}
+                className={getImageClass(index)}
+                onClick={() => onOpen({ type: 'video', url })}
+              />
+            ) : (
+              <img
+                src={url}
+                alt={`Post image ${index + 1}`}
+                className={getImageClass(index)}
+                onClick={() => onOpen({ type: 'image', url })}
+              />
+            )}
             {/* Overlay for additional images */}
             {!showAll && index === 3 && remainingCount > 0 && (
               <div 
@@ -104,7 +116,7 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({ images }
               </div>
             )}
           </div>
-        ))}
+        );})}
       </div>
       {showAll && imageCount > 4 && (
         <button
@@ -139,6 +151,10 @@ const LinkedinPostFeed: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
+  const openLightbox = (m: LightboxMedia) => { setLightboxMedia(m); setLightboxOpen(true); };
 
   useEffect(() => {
     const fetchLinkedinPosts = async () => {
@@ -177,6 +193,9 @@ const LinkedinPostFeed: React.FC = () => {
 
   return (
     <div className="space-y-8">
+      {error && (
+        <div className="text-center text-red-400">{error}</div>
+      )}
       {posts.length === 0 && !loading && (
         <div className="text-center text-gray-400">No LinkedIn posts found.</div>
       )}
@@ -216,7 +235,7 @@ const LinkedinPostFeed: React.FC = () => {
           </div>
           {post.text && <ExpandableText text={post.text} maxLength={200} />}
           {post.images && post.images.length > 0 && (
-            <LinkedInImageGrid images={post.images} />
+            <LinkedInImageGrid images={post.images} onOpen={openLightbox} />
           )}
           <button
             className="mt-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded transition"
@@ -236,6 +255,7 @@ const LinkedinPostFeed: React.FC = () => {
       {hasMore && !loading && (
         <div id="linkedin-scroll-sentinel" style={{ height: 1 }} />
       )}
+      <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
     </div>
   );
 };

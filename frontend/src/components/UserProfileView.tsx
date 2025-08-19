@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import Loader from "./loading";
+import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
 
 
 const UserProfileView = () => {
@@ -18,6 +19,10 @@ const UserProfileView = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
+  const openLightbox = (m: LightboxMedia) => { setLightboxMedia(m); setLightboxOpen(true); };
 
   useEffect(() => {
     axios
@@ -170,8 +175,9 @@ const UserProfileView = () => {
   };
 
   // LinkedIn-style image grid component
-  const LinkedInImageGrid: React.FC<{ images: { value: string }[] }> = ({
+  const LinkedInImageGrid: React.FC<{ images: { value: string }[]; onOpen: (m: LightboxMedia) => void }> = ({
     images,
+    onOpen,
   }) => {
     const [showAll, setShowAll] = useState(false);
     const imageCount = images.length;
@@ -232,14 +238,25 @@ const UserProfileView = () => {
     return (
       <div className="mb-4">
         <div className={`grid ${getGridLayout()} gap-1 max-w-full`}>
-          {displayImages.map((img, index) => (
+          {displayImages.map((img, index) => {
+            const url = img.value;
+            const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
+            return (
             <div key={index} className="relative overflow-hidden">
-              <img
-                src={img.value}
-                alt={`Post image ${index + 1}`}
-                className={getImageClass(index)}
-                onClick={() => window.open(img.value, "_blank")}
-              />
+              {isVideo ? (
+                <video
+                  src={url}
+                  className={getImageClass(index)}
+                  onClick={() => onOpen({ type: 'video', url })}
+                />
+              ) : (
+                <img
+                  src={url}
+                  alt={`Post image ${index + 1}`}
+                  className={getImageClass(index)}
+                  onClick={() => onOpen({ type: 'image', url })}
+                />
+              )}
               {/* Overlay for additional images */}
               {!showAll && index === 3 && remainingCount > 0 && (
                 <div
@@ -252,7 +269,7 @@ const UserProfileView = () => {
                 </div>
               )}
             </div>
-          ))}
+          );})}
         </div>
         {showAll && imageCount > 4 && (
           <button
@@ -589,6 +606,7 @@ const UserProfileView = () => {
                                           key={fileIdx}
                                           controls
                                           className="w-full max-h-64 rounded-lg border border-gray-700"
+                                          onClick={() => openLightbox({ type: 'video', url: fileUrl })}
                                         >
                                           <source src={fileUrl} />
                                           Your browser does not support the video
@@ -600,6 +618,7 @@ const UserProfileView = () => {
                                           src={fileUrl}
                                           alt={p.title}
                                           className="w-full max-h-64 object-cover rounded-lg border border-gray-700"
+                                          onClick={() => openLightbox({ type: 'image', url: fileUrl })}
                                         />
                                       )
                                   )}
@@ -675,7 +694,7 @@ const UserProfileView = () => {
                             className="bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-md"
                           >
                             {post.images && post.images.length > 0 && (
-                              <LinkedInImageGrid images={post.images} />
+                              <LinkedInImageGrid images={post.images} onOpen={openLightbox} />
                             )}
                             <ExpandableText
                               text={post.text || ""}
@@ -706,6 +725,7 @@ const UserProfileView = () => {
             </div>
           </div>
         </div>
+        <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
       </div>
     );
   }

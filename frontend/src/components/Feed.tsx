@@ -3,9 +3,16 @@ import axios from "axios";
 import LinkedinPostFeed from "./LinkedinPostFeed"; 
 import { useNavigate } from "react-router-dom";
 import Loader from './loading'
+import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
 
 const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
   const [showAll, setShowAll] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
+  const openLightbox = (media: LightboxMedia) => {
+    setLightboxMedia(media);
+    setLightboxOpen(true);
+  };
   const imageFiles = files.filter(file => /\.(jpg|jpeg|png|gif)$/i.test(file));
   const videoFiles = files.filter(file => /\.(mp4|webm|ogg)$/i.test(file));
   const otherFiles = files.filter(file => !/\.(jpg|jpeg|png|gif|mp4|webm|ogg)$/i.test(file));
@@ -69,7 +76,7 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
                   src={fileUrl}
                   alt={`Project image ${index + 1}`}
                   className={getImageClass(index)}
-                  onClick={() => window.open(fileUrl, '_blank')}
+                  onClick={() => openLightbox({ type: 'image', url: fileUrl })}
                 />
                 {/* Overlay for additional images */}
                 {!showAll && index === 3 && remainingCount > 0 && (
@@ -104,7 +111,8 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
               key={idx}
               controls
               src={fileUrl}
-              className="w-full max-h-64 rounded-lg border border-gray-700"
+              className="w-full max-h-64 rounded-lg border border-gray-700 cursor-pointer"
+              onClick={() => openLightbox({ type: 'video', url: fileUrl })}
             >
               Your browser does not support the video tag.
             </video>
@@ -128,6 +136,11 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
           ))}
         </div>
       )}
+      <MediaLightbox
+        open={lightboxOpen}
+        media={lightboxMedia}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 };
