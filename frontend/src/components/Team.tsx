@@ -32,7 +32,7 @@ const Team = () => {
      github:'Chaithra0206',
      url:'https://github.com/Chaithra0206',
      linkedin:'linkedin.com/in/chaithra-s-89809430a',
-     avatar:'https://github.com/Chaithra0206.png?size=120',
+     avatar:'https://res.cloudinary.com/dtejzccrf/image/upload/v1754383354/fsxktlldebpkubxvqcou.jpg',
     },
 
   ];
