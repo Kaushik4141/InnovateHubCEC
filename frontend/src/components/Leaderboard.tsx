@@ -3,7 +3,7 @@ import Loader from './loading';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 
-import { Trophy, Medal, Award, Star, TrendingUp, Code, Users, Target, Crown, Zap } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Code, Users, Target, Crown, Zap } from 'lucide-react';
 
 import axios from 'axios';
 

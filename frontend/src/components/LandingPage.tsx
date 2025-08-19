@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowRight, Users, Trophy, Code, Brain, Palette, Cpu } from 'lucide-react';
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import Header from './Header';
 
 
@@ -10,6 +9,9 @@ const LandingPage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); 
   const [minLoadingElapsed, setMinLoadingElapsed] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL;
+  const [contributors, setContributors] = useState<any[]>([]);
+  const [contributorsLoading, setContributorsLoading] = useState(false);
+  const [contributorsError, setContributorsError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`${apiBase}/api/v1/users/current-user`, { credentials: 'include' })
@@ -21,6 +23,22 @@ const LandingPage = () => {
   useEffect(() => {
     const timer = setTimeout(() => setMinLoadingElapsed(true), 4400); 
     return () => clearTimeout(timer);
+  }, []);
+
+  // Fetch GitHub contributors for the Our Team section
+  useEffect(() => {
+    setContributorsLoading(true);
+    setContributorsError(null);
+    fetch('https://api.github.com/repos/Kaushik4141/InnovateHubCEC/contributors?per_page=100')
+      .then(res => res.ok ? res.json() : Promise.reject(res))
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        const sorted = list.sort((a, b) => (b?.contributions || 0) - (a?.contributions || 0));
+        setContributors(sorted);
+        if (!sorted.length) setContributorsError('No contributors found yet.');
+      })
+      .catch(() => setContributorsError('Failed to load contributors from GitHub.'))
+      .finally(() => setContributorsLoading(false));
   }, []);
 
   if (isLoggedIn === null || !minLoadingElapsed) {
@@ -64,28 +82,7 @@ const LandingPage = () => {
               <span className="ml-2 text-xl font-bold text-white">InnovateHubCEC</span>
               </button>
             </div>
-            <div className="flex items-center space-x-4">
-              <button 
-                onClick={() => navigate('/dashboard')}
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Projects
-              </button>
-              <button 
-                onClick={() => navigate('/network')}
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Mentors
-              </button>
-              <button 
-                onClick={() => navigate('/jobs')}
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Competitions
-              </button>
-              <button className="text-gray-300 hover:text-white transition-colors">
-                About Us
-              </button>
+            <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto whitespace-nowrap -mx-2 px-2">
               <button 
                 onClick={() => navigate('/register')}
                 className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
@@ -118,7 +115,7 @@ const LandingPage = () => {
               </p>
               <button 
                 onClick={() => navigate('/Login')}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 flex items-center"
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-300 transform hover:scale-105 flex items-center justify-center w-full sm:w-auto"
               >
                 Get Started
                 <ArrowRight className="ml-2 h-5 w-5" />
@@ -128,9 +125,9 @@ const LandingPage = () => {
               <img 
                 src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800" 
                 alt="Students collaborating" 
-                className="rounded-2xl shadow-2xl"
+                className="w-full h-auto rounded-2xl shadow-2xl object-cover"
               />
-              <div className="absolute -bottom-6 -left-6 bg-gray-800 rounded-xl p-4 border border-gray-700">
+              <div className="hidden sm:block absolute -bottom-6 -left-6 bg-gray-800 rounded-xl p-4 border border-gray-700">
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
@@ -228,6 +225,55 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Our Contributors Section */}
+      <section className="py-20 bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-white mb-3">Our Contributors</h2>
+            <p className="text-gray-300">Top contributors to the InnovateHubCEC repository</p>
+          </div>
+
+          {contributorsLoading && (
+            <div className="text-center text-gray-300">Loading contributors…</div>
+          )}
+          {contributorsError && !contributorsLoading && (
+            <div className="mx-auto max-w-2xl mb-8 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-3 text-center">
+              {contributorsError}
+            </div>
+          )}
+
+          {!contributorsLoading && !contributorsError && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {contributors.map((c: any) => (
+                <a
+                  key={c?.id || c?.login}
+                  href={c?.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group bg-gray-800 rounded-2xl p-6 border border-gray-700 hover:border-purple-500 transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={c?.avatar_url}
+                      alt={c?.login}
+                      className="w-14 h-14 rounded-full object-cover border border-gray-700"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-white font-semibold truncate">{c?.login}</div>
+                      <div className="text-sm text-gray-400 truncate">{c?.html_url?.replace('https://', '')}</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-sm text-gray-300">Contributions</div>
+                    <div className="text-lg font-bold text-purple-300">{c?.contributions ?? 0}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-purple-600 to-blue-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -237,7 +283,7 @@ const LandingPage = () => {
           </p>
           <button 
             onClick={() => navigate('/Login')}
-            className="bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors transform hover:scale-105"
+            className="bg-white text-purple-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-colors transform hover:scale-105 w-full sm:w-auto"
           >
             Join InnovateHubCEC Today
           </button>

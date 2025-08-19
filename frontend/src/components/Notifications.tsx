@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Header from './Header';
 import { 
   Bell, Check, X, Heart, MessageCircle, UserPlus, Trophy, 
-  Code, Calendar, Star, Settings, Filter, MoreHorizontal
+  Code, Calendar, Star, Settings, MoreHorizontal
 } from 'lucide-react';
 
 const Notifications = () => {
@@ -157,18 +157,18 @@ const Notifications = () => {
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Notifications</h1>
             <p className="text-gray-400">
               {unreadCount > 0 ? `You have ${unreadCount} unread notifications` : 'You\'re all caught up!'}
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
             {unreadCount > 0 && (
               <button 
                 onClick={markAllAsRead}
-                className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center"
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center w-full sm:w-auto"
               >
                 <Check className="h-4 w-4 mr-2" />
                 Mark all as read
@@ -209,7 +209,7 @@ const Notifications = () => {
                   notification.unread ? 'border-purple-500 bg-purple-900 bg-opacity-10' : 'border-gray-700'
                 }`}
               >
-                <div className="flex items-start justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div className="flex items-start">
                     {/* Avatar */}
                     <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-4 flex-shrink-0">
@@ -231,7 +231,7 @@ const Notifications = () => {
                   </div>
                   
                   {/* Actions */}
-                  <div className="flex items-center space-x-2 ml-4">
+                  <div className="flex items-center gap-2 sm:ml-4 mt-3 sm:mt-0">
                     {notification.unread && (
                       <button 
                         onClick={() => markAsRead(notification.id)}
@@ -256,11 +256,11 @@ const Notifications = () => {
 
                 {/* Action buttons for specific notification types */}
                 {notification.type === 'connection' && notification.unread && (
-                  <div className="flex space-x-3 mt-4 pt-4 border-t border-gray-700">
-                    <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors">
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4 pt-4 border-t border-gray-700">
+                    <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors w-full sm:w-auto">
                       Accept
                     </button>
-                    <button className="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors">
+                    <button className="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors w-full sm:w-auto">
                       Decline
                     </button>
                   </div>
