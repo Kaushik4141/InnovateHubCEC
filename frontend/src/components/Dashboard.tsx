@@ -1,6 +1,4 @@
-import React, { useState,useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Feed from './Feed';
@@ -8,39 +6,10 @@ import Projects from './Projects';
 import Competitions from './Competitions';
 import MentorsList from './MentorsList';
 
-
-interface User {
-  _id: string;
-  fullname: string;
-  usn: string;
-  year: number;
-  email: string;
-  avatar?: string;
-  coverimage?: string;
-  linkedin?: string;
-  github?: string;
-  leetcode?: string;
-  bio?: string;
-  skills: string[];
-  followers: Array<{ _id: string; fullname: string; avatar?: string }>;
-  following: Array<{ _id: string; fullname: string; avatar?: string }>;
-  createdAt: string;
-  stats?: {
-    profileViews?: number;
-    posts?: number;
-    connections?: number;
-    mentees?: number;
-    competitions?: number;
-  };
-}
+ 
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('feed');
-  const navigate = useNavigate();
-  const apiBase = import.meta.env.VITE_API_URL;
- const [user, setUser] = useState<User | null>(null);
-   const [loading, setLoading] = useState<boolean>(true);
-   const [error, setError] = useState<string | null>(null);
   const renderContent = () => {
     switch (activeTab) {
       case 'feed':
@@ -55,18 +24,6 @@ const Dashboard = () => {
         return <Feed />;
     }
   };
-  useEffect(() => {
-    axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true })
-      .then(res => {
-        setUser(res.data.data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setError('Could not load profile.');
-        setLoading(false);
-      });
-  }, []);
 
 
 
@@ -75,12 +32,14 @@ const Dashboard = () => {
       <Header />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          <div className="lg:col-span-2">
+          <div className="order-2 lg:order-1">
+            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+          </div>
+          <div className="order-1 lg:order-2 lg:col-span-2">
             {renderContent()}
           </div>
-          <div className="lg:col-span-1">
-            {/* Right Sidebar - Trending & Events */}
+          <div className="hidden lg:block lg:order-3 lg:col-span-1">
+
             <div className="space-y-6">
               {/* Trending Topics */}
               <div className="bg-gray-800 rounded-xl p-6">

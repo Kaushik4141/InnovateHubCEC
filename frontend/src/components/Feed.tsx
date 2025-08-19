@@ -19,13 +19,13 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
       case 1:
         return "grid-cols-1";
       case 2:
-        return "grid-cols-2";
+        return "grid-cols-1 sm:grid-cols-2";
       case 3:
-        return "grid-cols-2";
+        return "grid-cols-1 sm:grid-cols-2";
       case 4:
-        return "grid-cols-2";
+        return "grid-cols-1 sm:grid-cols-2";
       default:
-        return "grid-cols-2";
+        return "grid-cols-1 sm:grid-cols-2";
     }
   };
   
@@ -36,21 +36,21 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
       case 1:
         return `${baseClass} max-h-96 rounded-lg`;
       case 2:
-        return `${baseClass} h-64 ${index === 0 ? 'rounded-l-lg' : 'rounded-r-lg'}`;
+        return `${baseClass} h-64 rounded-lg ${index === 0 ? 'sm:rounded-l-lg' : 'sm:rounded-r-lg'}`;
       case 3:
         if (index === 0) {
-          return `${baseClass} h-64 row-span-2 rounded-l-lg`;
+          return `${baseClass} h-48 sm:h-64 sm:row-span-2 rounded-lg sm:rounded-l-lg`;
         }
-        return `${baseClass} h-32 ${index === 1 ? 'rounded-tr-lg' : 'rounded-br-lg'}`;
+        return `${baseClass} h-48 sm:h-32 rounded-lg ${index === 1 ? 'sm:rounded-tr-lg' : 'sm:rounded-br-lg'}`;
       case 4:
-        const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg', 'rounded-br-lg'];
-        return `${baseClass} h-32 ${corners[index]}`;
+        const corners = ['sm:rounded-tl-lg', 'sm:rounded-tr-lg', 'sm:rounded-bl-lg', 'sm:rounded-br-lg'];
+        return `${baseClass} h-32 rounded-lg ${corners[index]}`;
       default:
         if (index < 3) {
-          const corners = ['rounded-tl-lg', 'rounded-tr-lg', 'rounded-bl-lg'];
-          return `${baseClass} h-32 ${corners[index]}`;
+          const corners = ['sm:rounded-tl-lg', 'sm:rounded-tr-lg', 'sm:rounded-bl-lg'];
+          return `${baseClass} h-48 sm:h-32 rounded-lg ${corners[index]}`;
         }
-        return `${baseClass} h-32 rounded-br-lg relative`;
+        return `${baseClass} h-48 sm:h-32 rounded-lg sm:rounded-br-lg relative`;
     }
   };
   
@@ -74,7 +74,7 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
                 {/* Overlay for additional images */}
                 {!showAll && index === 3 && remainingCount > 0 && (
                   <div 
-                    className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer rounded-br-lg"
+                    className="absolute inset-0 bg-black bg-opacity-60 flex items-center justify-center cursor-pointer rounded-lg sm:rounded-br-lg"
                     onClick={() => setShowAll(true)}
                   >
                     <span className="text-white text-xl font-semibold">
@@ -224,15 +224,15 @@ const Feed: React.FC = () => {
 
   return (
     <div>
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
         <button
-          className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${tab === 'project' ? 'bg-purple-700 text-white' : 'bg-neutral-800 text-gray-400 hover:bg-purple-900'}`}
+          className={`w-full sm:w-auto px-4 py-2 rounded-t-lg font-semibold transition-colors ${tab === 'project' ? 'bg-purple-700 text-white' : 'bg-neutral-800 text-gray-400 hover:bg-purple-900'}`}
           onClick={() => setTab('project')}
         >
           Project
         </button>
         <button
-          className={`px-4 py-2 rounded-t-lg font-semibold transition-colors ${tab === 'post' ? 'bg-purple-700 text-white' : 'bg-neutral-800 text-gray-400 hover:bg-purple-900'}`}
+          className={`w-full sm:w-auto px-4 py-2 rounded-t-lg font-semibold transition-colors ${tab === 'post' ? 'bg-purple-700 text-white' : 'bg-neutral-800 text-gray-400 hover:bg-purple-900'}`}
           onClick={() => setTab('post')}
         >
           Post
