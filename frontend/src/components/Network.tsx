@@ -388,7 +388,7 @@ const Network = () => {
                         >
                           Decline
                         </button>
-                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center">
+                        <button  className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center">
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Message
                         </button>

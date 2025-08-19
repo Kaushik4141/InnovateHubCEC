@@ -3,9 +3,17 @@ import requests
 import re
 import time
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+try:
+    from dotenv import load_dotenv 
+except ImportError:  
+    load_dotenv = None
+
+if load_dotenv:
+    try:
+        load_dotenv()
+    except Exception:
+        pass
 
 API_KEY = os.getenv("API_KEY")
 
