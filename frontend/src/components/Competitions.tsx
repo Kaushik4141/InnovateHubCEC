@@ -1,14 +1,40 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
-  Trophy, Calendar, Users, Award, Clock, Target, Filter, Search, Plus,
-  ExternalLink, Star, MapPin, DollarSign, Zap, Code, Brain, Palette
+  Trophy, Calendar, Award, Clock, Target, Search, Plus,
+  ExternalLink, Zap, Code, Brain, Palette
 } from 'lucide-react';
+
+type Competition = {
+  id: number;
+  title: string;
+  organizer: string;
+  description: string;
+  deadline: string;
+  startDate: string;
+  endDate: string;
+  participants: number;
+  maxParticipants: number;
+  prize: string;
+  difficulty: string;
+  category: string;
+  tags: string[];
+  status: string;
+  featured: boolean;
+  location: string;
+  teamSize: string;
+  requirements: string[];
+  image: string;
+  icon: any;
+};
 
 const Competitions = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [visibleCount, setVisibleCount] = useState(4);
+  const [expandedReqs, setExpandedReqs] = useState<Set<number>>(new Set());
+  const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
 
-  const competitions = [
+  const competitions: Competition[] = [
     {
       id: 1,
       title: "AI Innovation Challenge 2024",
@@ -214,6 +240,7 @@ const Competitions = () => {
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="flex-1">
+
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
@@ -227,12 +254,12 @@ const Competitions = () => {
           </div>
           
           {/* Category Filter */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto flex-nowrap sm:flex-wrap pb-1">
             {categories.map((category) => (
               <button
                 key={category.value}
                 onClick={() => setFilter(category.value)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`shrink-0 px-4 py-2 rounded-lg font-medium transition-colors ${
                   filter === category.value
                     ? 'bg-purple-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -245,51 +272,30 @@ const Competitions = () => {
         </div>
       </div>
 
+
       {/* Featured Competitions */}
       {filter === 'all' && (
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
           <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
-            <Star className="h-5 w-5 mr-2 text-yellow-400" />
+            <Award className="h-5 w-5 mr-2 text-yellow-400" />
             Featured Competitions
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {competitions.filter(c => c.featured).slice(0, 3).map((competition) => (
-              <div key={competition.id} className="bg-gray-700 rounded-lg p-4 border border-yellow-500 border-opacity-30">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="px-2 py-1 bg-yellow-600 bg-opacity-20 text-yellow-300 rounded text-xs font-medium">
-                    Featured
-                  </span>
-                  <competition.icon className="h-5 w-5 text-gray-400" />
-                </div>
-                <h4 className="font-semibold text-white mb-1">{competition.title}</h4>
-                <p className="text-sm text-gray-400 mb-2">{competition.organizer}</p>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span className="flex items-center">
-                    <DollarSign className="h-3 w-3 mr-1" />
-                    {competition.prize}
-                  </span>
-                  <span className="flex items-center">
-                    <Users className="h-3 w-3 mr-1" />
-                    {competition.participants}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-gray-400 text-sm">Explore highlighted competitions happening now.</p>
         </div>
       )}
 
       {/* Competitions Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredCompetitions.map((competition) => (
+        {filteredCompetitions.slice(0, visibleCount).map((competition) => (
           <div key={competition.id} className="bg-gray-800 rounded-xl border border-gray-700 hover:border-purple-500 transition-all duration-300 overflow-hidden">
             {/* Competition Image */}
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative h-40 sm:h-48 overflow-hidden">
               <img 
                 src={competition.image} 
                 alt={competition.title}
                 className="w-full h-full object-cover"
               />
+
               <div className="absolute top-4 left-4 flex gap-2">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(competition.status)}`}>
                   {competition.status}
@@ -298,42 +304,18 @@ const Competitions = () => {
                   {competition.difficulty}
                 </span>
               </div>
-              {competition.featured && (
-                <div className="absolute top-4 right-4">
-                  <Star className="h-6 w-6 text-yellow-400 fill-current" />
-                </div>
-              )}
-              <div className="absolute bottom-4 left-4 bg-black bg-opacity-60 rounded-lg px-3 py-1">
-                <span className="text-white font-semibold text-lg">{competition.prize}</span>
-              </div>
             </div>
-            
+
+            {/* Card Content */}
             <div className="p-6">
-              {/* Competition Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-white mb-1">{competition.title}</h3>
-                  <p className="text-purple-400 font-medium">{competition.organizer}</p>
-                </div>
-                <competition.icon className="h-6 w-6 text-gray-400 flex-shrink-0 ml-2" />
-              </div>
-              
               {/* Description */}
               <p className="text-gray-300 mb-4 line-clamp-2 leading-relaxed">{competition.description}</p>
-              
+
               {/* Competition Details */}
-              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4 text-sm">
                 <div className="flex items-center text-gray-400">
                   <Calendar className="h-4 w-4 mr-2" />
                   <span>{getDaysLeft(competition.deadline)} days left</span>
-                </div>
-                <div className="flex items-center text-gray-400">
-                  <Users className="h-4 w-4 mr-2" />
-                  <span>{competition.participants}/{competition.maxParticipants}</span>
-                </div>
-                <div className="flex items-center text-gray-400">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  <span>{competition.location}</span>
                 </div>
                 <div className="flex items-center text-gray-400">
                   <Target className="h-4 w-4 mr-2" />
@@ -388,7 +370,7 @@ const Competitions = () => {
                       Registration Closed
                     </button>
                   )}
-                  <button className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center text-sm">
+                  <button onClick={() => setSelectedCompetition(competition)} className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center text-sm">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Details
                   </button>
@@ -399,15 +381,34 @@ const Competitions = () => {
               <div className="mt-4 pt-4 border-t border-gray-700">
                 <h4 className="text-sm font-medium text-gray-400 mb-2">Requirements:</h4>
                 <ul className="text-xs text-gray-500 space-y-1">
-                  {competition.requirements.slice(0, 2).map((req, index) => (
+                  {(expandedReqs.has(competition.id) ? competition.requirements : competition.requirements.slice(0, 2)).map((req, index) => (
                     <li key={index} className="flex items-center">
                       <div className="w-1 h-1 bg-purple-400 rounded-full mr-2"></div>
                       {req}
                     </li>
                   ))}
-                  {competition.requirements.length > 2 && (
-                    <li className="text-purple-400 cursor-pointer hover:text-purple-300">
+                  {competition.requirements.length > 2 && !expandedReqs.has(competition.id) && (
+                    <li
+                      className="text-purple-400 cursor-pointer hover:text-purple-300"
+                      onClick={() => setExpandedReqs((prev) => {
+                        const next = new Set(prev);
+                        next.add(competition.id);
+                        return next;
+                      })}
+                    >
                       +{competition.requirements.length - 2} more requirements
+                    </li>
+                  )}
+                  {competition.requirements.length > 2 && expandedReqs.has(competition.id) && (
+                    <li
+                      className="text-purple-400 cursor-pointer hover:text-purple-300"
+                      onClick={() => setExpandedReqs((prev) => {
+                        const next = new Set(prev);
+                        next.delete(competition.id);
+                        return next;
+                      })}
+                    >
+                      Show less
                     </li>
                   )}
                 </ul>
@@ -418,9 +419,9 @@ const Competitions = () => {
       </div>
 
       {/* Load More */}
-      {filteredCompetitions.length > 0 && (
+      {filteredCompetitions.length > 0 && visibleCount < filteredCompetitions.length && (
         <div className="text-center">
-          <button className="bg-gray-800 text-gray-300 px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
+          <button onClick={() => setVisibleCount((c) => Math.min(c + 4, filteredCompetitions.length))} className="bg-gray-800 text-gray-300 px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
             Load More Competitions
           </button>
         </div>
@@ -432,6 +433,49 @@ const Competitions = () => {
           <Trophy className="h-16 w-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-400 mb-2">No competitions found</h3>
           <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+        </div>
+      )}
+
+      {/* Details Modal */}
+      {selectedCompetition && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black bg-opacity-60" onClick={() => setSelectedCompetition(null)}></div>
+          <div className="relative bg-gray-900 border border-gray-700 rounded-xl w-11/12 max-w-3xl max-h-[85vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-700">
+              <h3 className="text-xl font-semibold text-white">{selectedCompetition.title}</h3>
+              <button className="text-gray-400 hover:text-white" onClick={() => setSelectedCompetition(null)}>✕</button>
+            </div>
+            <div className="p-6 space-y-4">
+              <img src={selectedCompetition.image} alt={selectedCompetition.title} className="w-full h-56 object-cover rounded-lg" />
+              <p className="text-gray-300">{selectedCompetition.description}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-400">
+                <div className="flex items-center"><Calendar className="h-4 w-4 mr-2" /> Start: {new Date(selectedCompetition.startDate).toLocaleDateString()}</div>
+                <div className="flex items-center"><Clock className="h-4 w-4 mr-2" /> End: {new Date(selectedCompetition.endDate).toLocaleDateString()}</div>
+                <div className="flex items-center"><Target className="h-4 w-4 mr-2" /> Team Size: {selectedCompetition.teamSize}</div>
+                <div className="flex items-center"><Award className="h-4 w-4 mr-2" /> Prize: {selectedCompetition.prize}</div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-2">Tags</h4>
+                <div className="flex flex-wrap gap-2">
+                  {selectedCompetition.tags.map((t) => (
+                    <span key={t} className="px-2 py-1 bg-gray-700 text-gray-300 rounded-md text-xs">{t}</span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-400 mb-2">Requirements</h4>
+                <ul className="text-xs text-gray-500 space-y-1">
+                  {selectedCompetition.requirements.map((req, idx) => (
+                    <li key={idx} className="flex items-center"><div className="w-1 h-1 bg-purple-400 rounded-full mr-2"></div>{req}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-600" onClick={() => setSelectedCompetition(null)}>Close</button>
+                <button className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">Participate</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

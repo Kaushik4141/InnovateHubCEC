@@ -192,7 +192,7 @@ const Network = () => {
 
         {/* Tabs */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 mb-8">
-          <div className="flex border-b border-gray-700">
+          <div className="flex border-b border-gray-700 overflow-x-auto whitespace-nowrap">
             <button 
               onClick={() => setActiveTab('connections')}
               className={`px-6 py-4 font-medium transition-colors ${activeTab === 'connections' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
@@ -265,12 +265,12 @@ const Network = () => {
                         </div>
                       </div>
 
-                      <div className="flex space-x-2">
-                        <button className="flex-1 bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <button className="w-full sm:flex-1 bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center">
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Message
                         </button>
-                        <button className="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">
+                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">
                           <UserCheck className="h-4 w-4" />
                         </button>
                       </div>
@@ -375,20 +375,20 @@ const Network = () => {
                         <p className="text-gray-300 text-sm italic">"Hi! I'd like to connect with you."</p>
                       </div>
 
-                      <div className="flex space-x-3 mt-4">
+                      <div className="flex flex-col sm:flex-row gap-3 mt-4">
                         <button 
                           onClick={() => handleAcceptInvitation(invitation.from._id)}
-                          className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                          className="w-full sm:w-auto bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
                         >
                           Accept
                         </button>
                         <button 
                           onClick={() => handleDeclineInvitation(invitation.from._id)}
-                          className="bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors"
+                          className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors"
                         >
                           Decline
                         </button>
-                        <button className="bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center">
+                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center">
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Message
                         </button>

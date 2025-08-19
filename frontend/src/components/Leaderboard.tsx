@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Loader from './loading';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
 
-import { Trophy, Medal, Award, Star, TrendingUp, Code, Users, Target, Crown, Zap, BookOpen, Calendar } from 'lucide-react';
+import { Trophy, Medal, Award, Star, TrendingUp, Code, Users, Target, Crown, Zap } from 'lucide-react';
 
 import axios from 'axios';
 
 const Leaderboard = () => {
   const [leaderboardType, setLeaderboardType] = useState<'github' | 'leetcode'>('github');
-  const [activeCategory, setActiveCategory] = useState('overall');
   const [contribType, setContribType] = useState<'overall' | 'thisMonth' | 'lastMonth' | 'thisYear'>('overall');
   const [contribData, setContribData] = useState<any[]>([]);
   const [contribLoading, setContribLoading] = useState(false);
@@ -105,20 +104,7 @@ const Leaderboard = () => {
     { id: 'leetcode', name: 'LeetCode', icon: Target },
   ];
 
-  const categories = [
-    { id: 'overall', name: 'Overall', icon: Trophy },
-    { id: 'projects', name: 'Projects', icon: Code },
-    { id: 'competitions', name: 'Competitions', icon: Target },
-    { id: 'contributions', name: 'Contributions', icon: Users },
-    { id: 'monthly', name: 'Monthly', icon: Calendar }
-  ];
-
-  const achievements = [
-    { title: 'Most Innovative Project', winner: 'Arjun Mehta', icon: Zap, color: 'text-yellow-400' },
-    { title: 'Best Team Player', winner: 'Sneha Reddy', icon: Users, color: 'text-blue-400' },
-    { title: 'Rising Star', winner: 'Ananya Patel', icon: Star, color: 'text-purple-400' },
-    { title: 'Knowledge Sharer', winner: 'Vikram Singh', icon: BookOpen, color: 'text-green-400' }
-  ];
+  
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
@@ -167,17 +153,19 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-gray-900 text-white ">
       <Header />
       <div className="max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-center gap-4 mt-8 mb-6">
-          {leaderboardTabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-colors ${leaderboardType === tab.id ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-              onClick={() => setLeaderboardType(tab.id as 'github' | 'leetcode')}
-            >
-              <tab.icon className="w-5 h-5" />
-              {tab.name}
-            </button>
-          ))}
+        <div className="mt-8 mb-6 -mx-4 px-4">
+          <div className="flex gap-3 overflow-x-auto whitespace-nowrap md:justify-center">
+            {leaderboardTabs.map(tab => (
+              <button
+                key={tab.id}
+                className={`shrink-0 flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-colors ${leaderboardType === tab.id ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                onClick={() => setLeaderboardType(tab.id as 'github' | 'leetcode')}
+              >
+                <tab.icon className="w-5 h-5" />
+                {tab.name}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="text-center space-y-4 ">
           <div className="flex items-center justify-center space-x-3 mb-4">
@@ -193,8 +181,8 @@ const Leaderboard = () => {
           </p>
         </div>
 
-        <div className="relative flex justify-end mt-4 mb-6">
-          <div className="relative w-52">
+        <div className="relative mt-4 mb-2 px-4 sm:px-0">
+          <div className="relative w-full sm:w-52 sm:ml-auto">
             <select
               className="peer w-full bg-slate-900 text-white border border-purple-500/50 rounded-xl px-5 py-3 pl-16 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none cursor-pointer hover:border-purple-400 hover:bg-slate-800"
               value={contribType}
@@ -211,10 +199,15 @@ const Leaderboard = () => {
             </span>
           </div>
         </div>
+        {contribError && (
+          <div className="mx-4 sm:mx-0 mb-6 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-3">
+            {contribError}
+          </div>
+        )}
 
         {/* Top 3 Podium */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {topPerformers.slice(0, 3).map((performer, index) => (
+          {topPerformers.slice(0, 3).map((performer) => (
             <div
               key={performer.rank}
               className={`${getRankBg(performer.rank)} rounded-2xl p-6 border text-center shadow-xl transition-all duration-300 hover:scale-105 ${
@@ -304,8 +297,8 @@ const Leaderboard = () => {
           </div>
           <div className="divide-y divide-slate-700/50">
             {topPerformers.map((performer) => (
-              <div key={performer.rank} className="p-6 hover:bg-slate-700/30 transition-all duration-200">
-                <div className="flex items-center justify-between">
+              <div key={performer.rank} className="p-4 sm:p-6 hover:bg-slate-700/30 transition-all duration-200">
+                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center justify-center w-10">
                       {getRankIcon(performer.rank)}
@@ -347,7 +340,7 @@ const Leaderboard = () => {
                     </button>
                     <div>
                       <div className="flex items-center space-x-2">
-                       
+                        
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(performer.level)}`}>
                           {performer.level}
                         </span>
@@ -359,13 +352,13 @@ const Leaderboard = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-8">
+                  <div className="flex items-center gap-6 md:gap-8 w-full md:w-auto justify-between md:justify-end">
                     <div className="text-center">
                       <div className="text-purple-400 font-bold text-lg">{performer.points.toLocaleString()}</div>
                       <div className="text-slate-400 text-xs">Points</div>
                     </div>
                     
-                    <div className="flex items-center space-x-4 text-sm">
+                    <div className="flex items-center gap-4 text-sm">
                       <div className="flex items-center space-x-1 text-slate-300">
                         <Code className="w-4 h-4" />
                         <span>{performer.projects}</span>

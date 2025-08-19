@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   MessageCircle, Star, Award, Code, Cpu, Palette, Brain, Database, Smartphone,
-  Filter, Search, Users, Calendar, Clock, CheckCircle, Video, Phone
+  Search, Users, Calendar, Video, Phone
 } from 'lucide-react';
 
 const MentorsList = () => {
@@ -240,12 +240,12 @@ const MentorsList = () => {
         </div>
         
         {/* Specialization Filter */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="flex gap-2 overflow-x-auto flex-nowrap sm:flex-wrap pb-1 mt-4">
           {specializations.map((spec) => (
             <button
               key={spec.value}
               onClick={() => setFilter(spec.value)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
+              className={`shrink-0 px-4 py-2 rounded-lg font-medium transition-colors text-sm ${
                 filter === spec.value
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -341,7 +341,7 @@ const MentorsList = () => {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 mb-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4 text-center">
               <div className="bg-gray-700 rounded-lg p-3">
                 <p className="text-lg font-semibold text-white">{mentor.mentees}</p>
                 <p className="text-xs text-gray-400">Mentees</p>

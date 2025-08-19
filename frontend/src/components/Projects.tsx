@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
-  ExternalLink, Star, Users, Code, Cpu, Palette, Brain, Database, Smartphone,
-  Filter, Search, Plus, Eye, Heart, MessageCircle, Calendar, Award
+  ExternalLink, Code, Cpu, Palette, Brain, Database, Smartphone,
+  Search, Plus, Eye, Heart, MessageCircle, Calendar, Award
 } from 'lucide-react';
 
 const Projects = () => {
@@ -193,12 +193,12 @@ const Projects = () => {
           </div>
           
           {/* Domain Filter */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2 overflow-x-auto flex-nowrap sm:flex-wrap pb-1">
             {domains.map((domain) => (
               <button
                 key={domain.value}
                 onClick={() => setFilter(domain.value)}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                className={`shrink-0 px-4 py-2 rounded-lg font-medium transition-colors ${
                   filter === domain.value
                     ? 'bg-purple-600 text-white'
                     : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
@@ -246,7 +246,7 @@ const Projects = () => {
         {filteredProjects.map((project) => (
           <div key={project.id} className="bg-gray-800 rounded-xl border border-gray-700 hover:border-purple-500 transition-all duration-300 overflow-hidden">
             {/* Project Image */}
-            <div className="relative h-48 overflow-hidden">
+            <div className="relative h-40 sm:h-48 overflow-hidden">
               <img 
                 src={project.image} 
                 alt={project.title}

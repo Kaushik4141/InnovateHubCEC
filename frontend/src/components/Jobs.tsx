@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Header from './Header';
 import { 
   Briefcase, MapPin, Clock, DollarSign, Users, Search, Filter,
   BookOpen, Star, ExternalLink, Bookmark, Calendar, Building,
-  TrendingUp, Award, Target, Plus
+  TrendingUp, Award, Plus
 } from 'lucide-react';
 
 const Jobs = () => {
@@ -225,6 +225,7 @@ const Jobs = () => {
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+
                 <input
                   type="text"
                   placeholder="Search jobs, companies, or skills..."
@@ -234,12 +235,13 @@ const Jobs = () => {
                 />
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500"
               >
+
                 <option value="all">All Locations</option>
                 <option value="bangalore">Bangalore</option>
                 <option value="mumbai">Mumbai</option>
@@ -257,7 +259,7 @@ const Jobs = () => {
 
         {/* Tabs */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 mb-8">
-          <div className="flex border-b border-gray-700">
+          <div className="flex border-b border-gray-700 overflow-x-auto whitespace-nowrap">
             <button 
               onClick={() => setActiveTab('jobs')}
               className={`px-6 py-4 font-medium transition-colors ${activeTab === 'jobs' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
@@ -331,7 +333,7 @@ const Jobs = () => {
                           <div>
                             <h3 className="text-xl font-semibold text-white mb-1">{job.title}</h3>
                             <p className="text-purple-400 font-medium">{job.company}</p>
-                            <div className="flex items-center space-x-4 mt-2 text-sm text-gray-400">
+                            <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-400">
                               <span className="flex items-center">
                                 <MapPin className="h-4 w-4 mr-1" />
                                 {job.location}
@@ -372,7 +374,7 @@ const Jobs = () => {
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4 text-sm text-gray-400">
+                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                           <span className="flex items-center">
                             <Users className="h-4 w-4 mr-1" />
                             {job.applicants} applicants
@@ -386,14 +388,14 @@ const Jobs = () => {
                             {job.experience}
                           </span>
                         </div>
-                        <div className="flex space-x-3">
-                          <button className="text-gray-400 hover:text-yellow-400 transition-colors">
+                        <div className="flex flex-wrap gap-3 justify-end sm:justify-start">
+                          <button className="text-gray-400 hover:text-yellow-400 transition-colors min-w-[44px]">
                             <Bookmark className="h-5 w-5" />
                           </button>
-                          <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors">
+                          <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex-1 sm:flex-none min-w-[140px]">
                             Apply Now
                           </button>
-                          <button className="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">
+                          <button className="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors min-w-[44px]">
                             <ExternalLink className="h-4 w-4" />
                           </button>
                         </div>
@@ -406,7 +408,7 @@ const Jobs = () => {
 
             {activeTab === 'competitions' && (
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                   <h3 className="text-xl font-semibold text-white">Active Competitions</h3>
                   <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center">
                     <Plus className="h-4 w-4 mr-2" />
@@ -427,8 +429,8 @@ const Jobs = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-sm text-gray-400">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                         <span className="flex items-center">
                           <Users className="h-4 w-4 mr-1" />
                           {comp.participants} participants

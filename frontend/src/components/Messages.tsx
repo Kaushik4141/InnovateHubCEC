@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Header from './Header';
 import { 
   Search, Plus, Phone, Video, MoreHorizontal, Send, Paperclip, 
-  Smile, Users, Reply as ReplyIcon, X
+  Smile, Users, Reply as ReplyIcon, X, Menu
 } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { listContacts, getPrivateMessages, uploadChatFile, type Message as ChatMsg, type Contact } from '../services/chatApi';
@@ -28,6 +28,7 @@ const Messages = () => {
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Load contacts on mount
   useEffect(() => {
@@ -225,10 +226,79 @@ const Messages = () => {
       <Header />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden" style={{ height: 'calc(100vh - 200px)' }}>
-          <div className="flex h-full">
+        <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)]">
+          <div className="flex h-full relative">
+            {/* Mobile Drawer */}
+            {mobileSidebarOpen && (
+              <div className="fixed inset-0 z-40 md:hidden">
+                <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
+                <div className="absolute left-0 top-0 h-full w-80 bg-gray-900 border-r border-gray-800 p-4 overflow-y-auto">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm uppercase text-gray-400">Messages</h2>
+                    <button onClick={() => setMobileSidebarOpen(false)} className="text-gray-400 hover:text-white">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  {/* Drawer Content mirrors sidebar */}
+                  <div className="p-0 border-b border-gray-700">
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search conversations..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    {filteredContacts.map((c) => {
+                      const id = c.user._id;
+                      const convo = {
+                        id,
+                        name: c.user.fullname,
+                        avatar: initials(c.user.fullname),
+                        online: onlineUsers.has(id),
+                        role: 'Direct Message',
+                        lastMessage: c.lastMessage?.content || '',
+                        timestamp: c.lastMessage?.createdAt ? new Date(c.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
+                      };
+                      return (
+                        <div
+                          key={id}
+                          onClick={() => { setSelectedChat(id); setMobileSidebarOpen(false); }}
+                          className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors ${
+                            selectedChat === id ? 'bg-gray-700 border-l-4 border-l-purple-500' : ''
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <div className="relative">
+                              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-3">
+                                {convo.avatar}
+                              </div>
+                              {convo.online && (
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between">
+                                <h3 className="font-semibold text-white truncate">{convo.name}</h3>
+                                <span className="text-xs text-gray-400">{convo.timestamp}</span>
+                              </div>
+                              <p className={`text-sm text-blue-400 mb-1`}>{convo.role}</p>
+                              <p className="text-sm text-gray-400 truncate">{convo.lastMessage}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
             {/* Conversations Sidebar */}
-            <div className="w-1/3 border-r border-gray-700 flex flex-col">
+            <div className="hidden md:flex md:w-80 border-r border-gray-700 flex-col">
               {/* Header */}
               <div className="p-6 border-b border-gray-700">
                 <div className="flex items-center justify-between mb-4">
@@ -309,6 +379,9 @@ const Messages = () => {
                   <div className="p-6 border-b border-gray-700">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
+                        <button className="md:hidden mr-3 text-gray-300 hover:text-white" onClick={() => setMobileSidebarOpen(true)} aria-label="Open conversations">
+                          <Menu className="h-6 w-6" />
+                        </button>
                         <div className="relative">
                           <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-4">
                             {selectedConversation.avatar}
@@ -350,7 +423,7 @@ const Messages = () => {
                       const mid = messageDomId(m, idx);
                       return (
                         <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
-                          <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                          <div className={`flex items-end space-x-2 max-w-[80%] sm:max-w-sm md:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
                             <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
                               {avatar}
                             </div>
@@ -369,18 +442,18 @@ const Messages = () => {
                                 <img
                                   src={m.content}
                                   alt="image"
-                                  className="max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
+                                  className="max-w-full sm:max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
                                   onClick={() => { setLightboxMedia({ type: 'image', url: m.content }); setLightboxOpen(true); }}
                                 />
                               ) : m.type === 'video' ? (
                                 <video
                                   src={m.content}
                                   controls
-                                  className="max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
+                                  className="max-w-full sm:max-w-xs rounded cursor-zoom-in hover:opacity-90 transition"
                                   onClick={() => { setLightboxMedia({ type: 'video', url: m.content }); setLightboxOpen(true); }}
                                 />
                               ) : (
-                                <p className="text-sm">{m.content}</p>
+                                <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
                               )}
                               <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'}`}>{time}</p>
                             </div>
@@ -459,6 +532,9 @@ const Messages = () => {
                     </div>
                     <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a conversation</h3>
                     <p className="text-gray-500">Choose a conversation from the sidebar to start messaging</p>
+                    <button className="md:hidden mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700" onClick={() => setMobileSidebarOpen(true)}>
+                      Open conversations
+                    </button>
                   </div>
                 </div>
               )}

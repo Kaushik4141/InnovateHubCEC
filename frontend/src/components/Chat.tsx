@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Reply as ReplyIcon, X } from 'lucide-react';
+import { Reply as ReplyIcon, X, Menu } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { listRooms, listContacts, getRoomMessages, getPrivateMessages, uploadChatFile, type Message as Msg, type Room, type Contact } from '../services/chatApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
@@ -23,6 +23,7 @@ const Chat: React.FC = () => {
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const activeTitle = useMemo(() => {
     if (!activeId) return '';
@@ -169,8 +170,50 @@ const Chat: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
-      <div className="h-screen bg-gray-900 text-white flex overflow-hidden">
-        <aside className="w-72 border-r border-gray-800 p-4 space-y-4 h-full overflow-y-auto">
+      <div className="h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] bg-gray-900 text-white flex overflow-hidden">
+        {/* Mobile Drawer */}
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 z-40 md:hidden">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
+            <div className="absolute left-0 top-0 h-full w-72 bg-gray-900 border-r border-gray-800 p-4 overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-sm uppercase text-gray-400">Chats</h2>
+                <button onClick={() => setMobileSidebarOpen(false)} className="text-gray-400 hover:text-white">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
+                  <ul className="space-y-1">
+                    {rooms.map(r => (
+                      <li key={r._id}>
+                        <button onClick={() => { openRoom(r._id); setMobileSidebarOpen(false); }} className={`w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
+                          #{r.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h2 className="text-sm uppercase text-gray-400 mb-2">Direct Messages</h2>
+                  <ul className="space-y-1">
+                    {contacts.map(c => (
+                      <li key={c.user._id}>
+                        <button onClick={() => { openDM(c.user._id); setMobileSidebarOpen(false); }} className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
+                          <span className={`h-2 w-2 rounded-full ${c.online ? 'bg-green-400' : 'bg-gray-500'}`}></span>
+                          <img src={c.user.avatar} className="h-6 w-6 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          <span>{c.user.fullname}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <aside className="hidden md:block w-72 border-r border-gray-800 p-4 space-y-4 h-full overflow-y-auto">
           <div>
             <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
             <ul className="space-y-1">
@@ -200,7 +243,12 @@ const Chat: React.FC = () => {
         </aside>
         <main className="flex-1 flex flex-col h-full overflow-hidden">
           <header className="h-14 flex items-center px-4 border-b border-gray-800">
-            <h1 className="text-lg font-semibold">{activeTitle || 'Select a chat'}</h1>
+            <div className="flex items-center gap-2 w-full">
+              <button className="md:hidden mr-2 text-gray-300 hover:text-white" onClick={() => setMobileSidebarOpen(true)} aria-label="Open chats">
+                <Menu className="h-6 w-6" />
+              </button>
+              <h1 className="text-lg font-semibold">{activeTitle || 'Select a chat'}</h1>
+            </div>
           </header>
           <section ref={messagesRef} className="flex-1 overflow-y-auto p-6 space-y-4">
             {loadingMessages && (
@@ -220,7 +268,7 @@ const Chat: React.FC = () => {
               const mid = messageDomId(m, idx);
               return (
                 <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
-                  <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                  <div className={`flex items-end space-x-2 max-w-[80%] sm:max-w-sm md:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
                     <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
                       {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
                     </div>
@@ -308,7 +356,7 @@ const Chat: React.FC = () => {
             </div>
           </footer>
         </main>
-        <aside className="w-56 border-l border-gray-800 p-4 h-full overflow-y-auto">
+        <aside className="hidden lg:block w-56 border-l border-gray-800 p-4 h-full overflow-y-auto">
           <h2 className="text-sm uppercase text-gray-400 mb-2">Online</h2>
           <ul className="space-y-1">
             {Array.from(onlineUsers).map(id => (<li key={id} className="text-gray-300 text-sm">{id}</li>))}
