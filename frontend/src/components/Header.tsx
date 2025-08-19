@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Search, Bell, MessageCircle, User, Home, Users, Briefcase, BookOpen,
+  Search, Bell, MessageCircle, User, Home, Users, Briefcase,
   ChevronDown, Settings, LogOut, Plus,
-  Trophy,Handshake,
+  Trophy, Handshake, Menu, X,
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -13,6 +13,8 @@ const Header = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const apiBase = import.meta.env.VITE_API_URL;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   const fetchNotifications = async () => {
     try {
@@ -81,7 +83,7 @@ const Header = () => {
           </div>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-2xl mx-8">
+          <div className="flex-1 max-w-2xl mx-8 hidden sm:block">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
@@ -91,9 +93,16 @@ const Header = () => {
               />
             </div>
           </div>
+          <button
+            className="sm:hidden p-2 text-gray-300 hover:text-white"
+            aria-label="Open search"
+            onClick={() => setMobileSearchOpen((v) => !v)}
+          >
+            {mobileSearchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
+          </button>
 
           {/* Navigation */}
-          <nav className="flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-6">
             <button 
               onClick={() => navigate('/dashboard')}
               className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
@@ -264,8 +273,63 @@ const Header = () => {
               <Plus className="h-5 w-5" />
             </button>
           </nav>
+
+          {/* Mobile hamburger */}
+          <button
+            className="md:hidden ml-2 p-2 text-gray-300 hover:text-white"
+            aria-label="Open menu"
+            onClick={() => setMobileMenuOpen((v) => !v)}
+          >
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
       </div>
+      {/* Mobile search panel */}
+      {mobileSearchOpen && (
+        <div className="sm:hidden bg-gray-800 border-t border-gray-700 px-4 py-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search projects, competitions, mentors..."
+              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+            />
+          </div>
+        </div>
+      )}
+      {/* Mobile menu panel */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-gray-800 border-t border-gray-700 px-4 py-3">
+          <div className="grid grid-cols-2 gap-3">
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/dashboard'); }} className="flex items-center gap-2 bg-gray-700 rounded-lg p-3 text-gray-200">
+              <Home className="h-5 w-5" /> Home
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/chat'); }} className="flex items-center gap-2 bg-gray-700 rounded-lg p-3 text-gray-200">
+              <Handshake className="h-5 w-5" /> Chat
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/network'); }} className="flex items-center gap-2 bg-gray-700 rounded-lg p-3 text-gray-200">
+              <Users className="h-5 w-5" /> Network
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/jobs'); }} className="flex items-center gap-2 bg-gray-700 rounded-lg p-3 text-gray-200">
+              <Briefcase className="h-5 w-5" /> Jobs
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/messages'); }} className="flex items-center gap-2 bg-gray-700 rounded-lg p-3 text-gray-200">
+              <MessageCircle className="h-5 w-5" /> Messages
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/Leaderboard'); }} className="flex items-center gap-2 bg-gray-700 rounded-lg p-3 text-gray-200">
+              <Trophy className="h-5 w-5" /> Leaderboard
+            </button>
+          </div>
+          <div className="mt-3 flex gap-3">
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/profile'); }} className="flex-1 bg-purple-600 hover:bg-purple-700 text-white rounded-lg p-2">
+              Profile
+            </button>
+            <button onClick={handleLogout} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg p-2">
+              Logout
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
