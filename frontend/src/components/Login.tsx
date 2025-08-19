@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -25,45 +26,71 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#111922] p-6" style={{ fontFamily: 'Inter, \"Noto Sans\", sans-serif' }}>
-      <form onSubmit={handleSubmit} className="w-full max-w-md bg-[#243447] p-8 rounded-lg space-y-6">
-        <h2 className="text-2xl font-bold text-white text-center">Sign in to InnovativeHubCEC</h2>
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-        <div>
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            className="w-full p-4 rounded-lg bg-[#111922] text-white placeholder-[#93acc8] focus:outline-none"
-            required
-          />
-        </div>
-        <div>
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            className="w-full p-4 rounded-lg bg-[#111922] text-white placeholder-[#93acc8] focus:outline-none"
-            required
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-[#1978e5] hover:bg-[#1565c0] text-white font-bold py-3 rounded-lg transition-colors"
-          disabled={loading}
-        >
-          {loading ? 'Signing In...' : 'Sign In'}
-        </button>
-        <p className="text-[#93acc8] text-sm text-center">
-          Don't have an account? <span className="underline text-[#1978e5] cursor-pointer" onClick={() => navigate('/register')}>Sign up</span>
-        </p>
-      </form>
+    <div className="relative min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-6 overflow-hidden">
+      <div className="absolute inset-0 -z-10 pointer-events-none">
+        <div className="absolute -top-40 -right-24 w-96 h-96 bg-purple-700/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-24 w-[28rem] h-[28rem] bg-blue-600/20 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-md p-[1px] rounded-2xl bg-gradient-to-r from-purple-500/30 to-blue-500/30 shadow-2xl">
+        <form onSubmit={handleSubmit} className="bg-gray-900/80 backdrop-blur-xl rounded-2xl p-8 space-y-6">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 mb-2">
+              <img src="/logo1.png" alt="logo" className="h-8 w-8" />
+              <span className="text-xl font-bold text-white">InnovateHubCEC</span>
+            </div>
+            <h2 className="text-2xl font-semibold text-white">Welcome back</h2>
+            <p className="text-sm text-gray-400">Sign in to continue</p>
+          </div>
+
+          {error && <p className="text-red-400 bg-red-500/10 border border-red-500/30 px-3 py-2 rounded text-sm text-center">{error}</p>}
+
+          <div>
+            <input
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              className="w-full p-4 rounded-lg bg-gray-900/60 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition"
+              required
+            />
+          </div>
+          <div>
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              className="w-full p-4 rounded-lg bg-gray-900/60 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Signing In...
+              </span>
+            ) : (
+              'Sign In'
+            )}
+          </button>
+          <p className="text-gray-400 text-sm text-center">
+            Don't have an account?{' '}
+            <span className="underline text-purple-400 hover:text-white cursor-pointer" onClick={() => navigate('/register')}>
+              Sign up
+            </span>
+          </p>
+        </form>
+      </div>
     </div>
   );
 };
 
-export default Login; 
+export default Login;

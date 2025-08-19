@@ -44,16 +44,15 @@ const LandingPage = () => {
   }, []);
 
   if (isLoggedIn === null || !minLoadingElapsed) {
-    return(
-        <div style={{ width: 650, height: 650, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center" }}>
-  <img
-    src="/loa.gif"
-    width="650"
-    height="650"
-    style={{ objectFit: "cover", borderRadius: "12px" }}
-    alt="Loading..."
-  />
-</div>);
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+        <img
+          src="loa.gif"
+          alt="Loading..."
+          className="w-full max-w-[650px] h-auto rounded-xl object-cover shadow-lg"
+        />
+      </div>
+    );
   }
   if (isLoggedIn) {
     // If logged in, show the main header and maybe redirect or show dashboard

@@ -1,6 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
 
 interface FormData {
   fullname: string;
@@ -39,6 +40,7 @@ const SignupForm: React.FC = () => {
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -80,6 +82,7 @@ const SignupForm: React.FC = () => {
       return;
     }
 
+    setLoading(true);
     try {
       const payload = {
         fullname: formData.fullname,
@@ -95,150 +98,172 @@ const SignupForm: React.FC = () => {
     } catch (error: any) {
       console.error(error);
       setErrors({ general: error.response?.data?.message || 'Something went wrong' });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#111922] p-6" style={{ fontFamily: 'Inter, "Noto Sans", sans-serif' }}>
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-md bg-[#243447] p-8 rounded-lg space-y-6"
-      >
-        <h2 className="text-2xl font-bold text-white text-center">
-          Create your InnovativeHubCEC account
-        </h2>
+    <div className="relative min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 flex items-center justify-center p-6 overflow-hidden">
+      <div className="absolute inset-0 -z-10 pointer-events-none">
+        <div className="absolute -top-40 -right-24 w-96 h-96 bg-purple-700/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-24 w-[28rem] h-[28rem] bg-blue-600/20 rounded-full blur-3xl" />
+      </div>
 
-        {errors.general && (
-          <p className="text-red-500 text-sm text-center">{errors.general}</p>
-        )}
-        {success && (
-          <p className="text-green-500 text-sm text-center">
-            Account created successfully! Redirecting...
-          </p>
-        )}
-
-        <div>
-          <input
-            name="fullname"
-            type="text"
-            placeholder="Full Name"
-            value={formData.fullname}
-            onChange={handleChange}
-            className={`w-full p-4 rounded-lg bg-[#111922] text-white placeholder-[#93acc8] focus:outline-none ${
-              errors.fullname ? 'border border-red-500' : ''
-            }`}
-          />
-          {errors.fullname && <p className="text-red-500 text-sm">{errors.fullname}</p>}
-        </div>
-
-        <div>
-          <input
-            name="usn"
-            type="text"
-            placeholder="Your USN"
-            value={formData.usn}
-            onChange={handleChange}
-            className={`w-full p-4 rounded-lg bg-[#111922] text-white placeholder-[#93acc8] focus:outline-none ${
-              errors.usn ? 'border border-red-500' : ''
-            }`}
-          />
-          {errors.usn && <p className="text-red-500 text-sm">{errors.usn}</p>}
-        </div>
-
-        <div>
-          <select
-            name="year"
-            value={formData.year}
-            onChange={handleChange}
-            className={`w-full p-4 rounded-lg bg-[#111922] text-white focus:outline-none appearance-none ${
-              errors.year ? 'border border-red-500' : ''
-            }`}
-          >
-            <option value="" disabled>
-              Select Graduation Year
-            </option>
-            {Array.from({ length: 11 }, (_, i) => 2020 + i).map(y => (
-              <option key={y} value={y} className="bg-[#243447]">
-                {y}
-              </option>
-            ))}
-          </select>
-          {errors.year && <p className="text-red-500 text-sm">{errors.year}</p>}
-        </div>
-
-        <div>
-          <input
-            name="email"
-            type="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className={`w-full p-4 rounded-lg bg-[#111922] text-white placeholder-[#93acc8] focus:outline-none ${
-              errors.email ? 'border border-red-500' : ''
-            }`}
-          />
-          {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-        </div>
-
-        <div>
-          <input
-            name="password"
-            type="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            className={`w-full p-4 rounded-lg bg-[#111922] text-white placeholder-[#93acc8] focus:outline-none ${
-              errors.password ? 'border border-red-500' : ''
-            }`}
-          />
-          {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
-        </div>
-
-        <div>
-          <input
-            name="confirmPassword"
-            type="password"
-            placeholder="Confirm Password"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className={`w-full p-4 rounded-lg bg-[#111922] text-white placeholder-[#93acc8] focus:outline-none ${
-              errors.confirmPassword ? 'border border-red-500' : ''
-            }`}
-          />
-          {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword}</p>}
-        </div>
-
-        <div className="flex items-center">
-          <input
-            name="terms"
-            type="checkbox"
-            checked={formData.terms}
-            onChange={handleChange}
-            id="terms"
-            className="h-4 w-4 text-[#1978e5] bg-[#243447] border-[#93acc8] rounded focus:ring-[#1978e5]"
-          />
-          <label htmlFor="terms" className="ml-2 text-[#93acc8] text-sm">
-            I agree to the <a href="#" className="underline text-[#1978e5 judgment]">Terms and Conditions</a>
-          </label>
-        </div>
-        {errors.terms && <p className="text-red-500 text-sm">{errors.terms}</p>}
-
-        <button
-          type="submit"
-          className="w-full bg-[#1978e5] hover:bg-[#1565c0] text-white font-bold py-3 rounded-lg transition-colors"
+      <div className="relative w-full max-w-md p-[1px] rounded-2xl bg-gradient-to-r from-purple-500/30 to-blue-500/30 shadow-2xl">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-gray-900/80 backdrop-blur-xl rounded-2xl p-8 space-y-6"
         >
-          Create Account
-        </button>
-        <p className="text-[#93acc8] text-sm text-center">
-          Already have an account?{' '}
-          <span
-            className="underline text-[#1978e5] cursor-pointer"
-            onClick={() => navigate('/login')}
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 mb-2">
+              <img src="/logo1.png" alt="logo" className="h-8 w-8" />
+              <span className="text-xl font-bold text-white">InnovateHubCEC</span>
+            </div>
+            <h2 className="text-2xl font-semibold text-white">Create your account</h2>
+            <p className="text-sm text-gray-400">Join the community</p>
+          </div>
+
+          {errors.general && (
+            <p className="text-red-400 bg-red-500/10 border border-red-500/30 px-3 py-2 rounded text-sm text-center">{errors.general}</p>
+          )}
+          {success && (
+            <p className="text-green-400 bg-green-500/10 border border-green-500/30 px-3 py-2 rounded text-sm text-center">
+              Account created successfully! Redirecting...
+            </p>
+          )}
+
+          <div>
+            <input
+              name="fullname"
+              type="text"
+              placeholder="Full Name"
+              value={formData.fullname}
+              onChange={handleChange}
+              className={`w-full p-4 rounded-lg bg-gray-900/60 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition ${
+                errors.fullname ? 'border-red-500' : ''
+              }`}
+            />
+            {errors.fullname && <p className="text-red-500 text-sm">{errors.fullname}</p>}
+          </div>
+
+          <div>
+            <input
+              name="usn"
+              type="text"
+              placeholder="Your USN"
+              value={formData.usn}
+              onChange={handleChange}
+              className={`w-full p-4 rounded-lg bg-gray-900/60 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition ${
+                errors.usn ? 'border-red-500' : ''
+              }`}
+            />
+            {errors.usn && <p className="text-red-500 text-sm">{errors.usn}</p>}
+          </div>
+
+          <div>
+            <select
+              name="year"
+              value={formData.year}
+              onChange={handleChange}
+              className={`w-full p-4 rounded-lg bg-gray-900/60 text-white border border-gray-700 focus:outline-none appearance-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition ${
+                errors.year ? 'border-red-500' : ''
+              }`}
+            >
+              <option value="" disabled>
+                Select Graduation Year
+              </option>
+              {Array.from({ length: 11 }, (_, i) => 2020 + i).map(y => (
+                <option key={y} value={y} className="bg-[#243447]">
+                  {y}
+                </option>
+              ))}
+            </select>
+            {errors.year && <p className="text-red-500 text-sm">{errors.year}</p>}
+          </div>
+
+          <div>
+            <input
+              name="email"
+              type="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full p-4 rounded-lg bg-gray-900/60 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition ${
+                errors.email ? 'border-red-500' : ''
+              }`}
+            />
+            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+          </div>
+
+          <div>
+            <input
+              name="password"
+              type="password"
+              placeholder="Password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full p-4 rounded-lg bg-gray-900/60 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition ${
+                errors.password ? 'border-red-500' : ''
+              }`}
+            />
+            {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
+          </div>
+
+          <div>
+            <input
+              name="confirmPassword"
+              type="password"
+              placeholder="Confirm Password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className={`w-full p-4 rounded-lg bg-gray-900/60 text-white placeholder-gray-400 border border-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition ${
+                errors.confirmPassword ? 'border-red-500' : ''
+              }`}
+            />
+            {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword}</p>}
+          </div>
+
+          <div className="flex items-center">
+            <input
+              name="terms"
+              type="checkbox"
+              checked={formData.terms}
+              onChange={handleChange}
+              id="terms"
+              className="h-4 w-4 text-[#1978e5] bg-[#243447] border-[#93acc8] rounded focus:ring-[#1978e5]"
+            />
+            <label htmlFor="terms" className="ml-2 text-[#93acc8] text-sm">
+              I agree to the <a href="#" className="underline text-[#1978e5]">Terms and Conditions</a>
+            </label>
+          </div>
+          {errors.terms && <p className="text-red-500 text-sm">{errors.terms}</p>}
+
+          <button
+            type="submit"
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={loading}
           >
-            Sign in
-          </span>
-        </p>
-      </form>
+            {loading ? (
+              <span className="inline-flex items-center justify-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Creating...
+              </span>
+            ) : (
+              'Create Account'
+            )}
+          </button>
+          <p className="text-gray-400 text-sm text-center">
+            Already have an account?{' '}
+            <span
+              className="underline text-purple-400 hover:text-white cursor-pointer"
+              onClick={() => navigate('/login')}
+            >
+              Sign in
+            </span>
+          </p>
+        </form>
+      </div>
     </div>
   );
 };
