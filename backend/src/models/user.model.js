@@ -12,14 +12,14 @@ const userSchema = new mongoose.Schema({
   },
   usn: {
     type: String,
-    required: true,
+    required: function () { return this.onboardingCompleted === true || this.provider === 'local'; },
     unique: true,
     index: true,
     trim: true
   },
   year: {
     type: Number,
-    required: true
+    required: function () { return this.onboardingCompleted === true || this.provider === 'local'; }
   },
   email: {
     type: String,
@@ -31,7 +31,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, "Password is required"]
+    required: function () { return this.provider === 'local'; }
   },
   avatar: {
     type: String,
@@ -40,6 +40,20 @@ const userSchema = new mongoose.Schema({
   coverimage: {
     type: String,
     default: "/default_coverimage.jpg"
+  },
+  provider: {
+    type: String,
+    enum: ['local', 'google'],
+    default: 'local'
+  },
+  googleId: {
+    type: String,
+    index: true,
+    sparse: true
+  },
+  onboardingCompleted: {
+    type: Boolean,
+    default: false
   },
   likehistory: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -115,7 +129,7 @@ const userSchema = new mongoose.Schema({
     timestamps: true
   });
 userSchema.pre("save", async function (next) {
-  if (this.isModified("password")) {
+  if (this.isModified("password") && this.password) {
     this.password = await bcrypt.hash(this.password, 10)
   }
   next()

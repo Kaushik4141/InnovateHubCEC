@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiresponsehandler.js";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -12,11 +13,105 @@ const generateAccessAndRefreshToken = async (userId) => {
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
     await user.save({ validatebeforeSave: false });
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken, newRefreshToken: refreshToken };
   } catch (error) {
     throw new ApiError("Error generating tokens", 500);
   }
 };
+
+const googleAuth = asyncHandler(async (req, res) => {
+  try {
+    const { idToken } = req.body || {};
+    if (!idToken) {
+      throw new ApiError(400, "Missing Google ID token");
+    }
+
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+
+    const googleId = payload.sub;
+    const email = payload.email;
+    const emailVerified = payload.email_verified;
+    const name = payload.name || payload.given_name || email?.split("@")[0];
+    const picture = payload.picture;
+
+    if (!email) {
+      throw new ApiError(400, "Google account missing email");
+    }
+
+    if (emailVerified === false) {
+      throw new ApiError(400, "Google email not verified");
+    }
+
+    let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+    if (!user) {
+      let fullname = (name || email.split("@")[0]).trim();
+      if (!fullname) fullname = email.split("@")[0];
+      let suffix = 0;
+      while (true) {
+        const exists = await User.findOne({ fullname });
+        if (!exists) break;
+        suffix += 1;
+        fullname = `${name}-${suffix}`;
+      }
+
+      user = await User.create({
+        fullname,
+        email,
+        provider: 'google',
+        googleId,
+        isVerified: true,
+        onboardingCompleted: false,
+        ...(picture ? { avatar: picture } : {})
+      });
+    } else {
+      if (!user.googleId) user.googleId = googleId;
+      user.provider = 'google';
+      user.isVerified = true;
+      if (picture && (!user.avatar || user.avatar.includes('default_avatar'))) {
+        user.avatar = picture;
+      }
+      await user.save({ validatebeforeSave: false });
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+    const safeUser = await User.findById(user._id).select("-password -refreshToken");
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000
+    };
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, cookieOptions)
+      .cookie("refreshToken", refreshToken, cookieOptions)
+      .json(new ApiResponse(200, { user: safeUser, accessToken, refreshToken }, "Google auth successful"));
+  } catch (e) {
+    throw new ApiError(400, e.message || "Google auth failed");
+  }
+});
+
+const completeOnboarding = asyncHandler(async (req, res) => {
+  const { usn, year, fullname } = req.body || {};
+  if (!usn || !year) {
+    throw new ApiError(400, "USN and year are required to complete onboarding");
+  }
+  const u = await User.findById(req.user._id);
+  if (!u) throw new ApiError(404, "User not found");
+  if (fullname) u.fullname = fullname;
+  u.usn = usn;
+  u.year = Number(year);
+  u.onboardingCompleted = true;
+  await u.save();
+  const safeUser = await User.findById(u._id).select("-password -refreshToken");
+  return res.status(200).json(new ApiResponse(200, safeUser, "Onboarding completed"));
+});
 
 const registerUser = asyncHandler(async (req, res, next) => {
   try {
@@ -710,4 +805,4 @@ const getSuggestionReason = (suggestion, currentUser) => {
   return `Suggested for you`;
 };
 
-export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile, requestFollow, acceptFollow, rejectFollow, alive, getNotifications, searchUsers, getUserMin, getNetworkStats, getConnections, getConnectionSuggestions, getPendingRequests };
+export { registerUser, loginuser, logoutUser, refreshAccessToken, getcurrentUser, changeCurrrentPassword, updateAccountDetails, updateUserAvatar, getUserProfile, requestFollow, acceptFollow, rejectFollow, alive, getNotifications, searchUsers, getUserMin, getNetworkStats, getConnections, getConnectionSuggestions, getPendingRequests, googleAuth, completeOnboarding };
