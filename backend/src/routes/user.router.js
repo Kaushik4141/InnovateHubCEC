@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword,alive,getNotifications,requestFollow,acceptFollow,rejectFollow, searchUsers, getUserMin,getNetworkStats, getConnections, getConnectionSuggestions, getPendingRequests } from "../controllers/user.controller.js";
+import { registerUser, loginuser, logoutUser, refreshAccessToken, updateUserAvatar, updateAccountDetails, getcurrentUser,getUserProfile ,changeCurrrentPassword,alive,getNotifications,requestFollow,acceptFollow,rejectFollow, searchUsers, getUserMin,getNetworkStats, getConnections, getConnectionSuggestions, getPendingRequests, googleAuth, completeOnboarding } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router= Router()
@@ -11,6 +11,10 @@ router.route("/register").post(
     registerUser);
 router.route("/login").post(loginuser);
 router.route("/alive").get(alive);
+
+
+router.route("/auth/google").post(googleAuth);
+router.route("/auth/complete-onboarding").post(verifyJWT, completeOnboarding);
 
 
 router.route("/logout").post(verifyJWT, logoutUser);
