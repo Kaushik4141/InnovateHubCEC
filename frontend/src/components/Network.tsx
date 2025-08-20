@@ -19,9 +19,10 @@ import {
   ConnectionRequest,
   networkApi,
 } from "../services/networkApi";
+import { useNavigate } from "react-router-dom";
 
 const Network = () => {
-  const [activeTab, setActiveTab] = useState("connections");
+  const [activeTab, setActiveTab] = useState("suggestions");
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<NetworkStats | null>(null);
@@ -29,12 +30,12 @@ const Network = () => {
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [invitations, setInvitations] = useState<ConnectionRequest[]>([]);
   const apiBase = import.meta.env.VITE_API_URL;
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadNetworkData();
   }, []);
 
- 
   const avatarUrlFrom = (
     id: string,
     name: string,
@@ -231,15 +232,6 @@ const Network = () => {
         <div className="bg-gray-800 rounded-xl border border-gray-700 mb-8">
           <div className="flex border-b border-gray-700 overflow-x-auto whitespace-nowrap">
             <button
-              onClick={() => setActiveTab("connections")}
-              className={`px-6 py-4 font-medium transition-colors ${activeTab === "connections"
-                  ? "text-purple-400 border-b-2 border-purple-400"
-                  : "text-gray-400 hover:text-white"
-                }`}
-            >
-              Connections ({connections.length})
-            </button>
-            <button
               onClick={() => setActiveTab("suggestions")}
               className={`px-6 py-4 font-medium transition-colors ${activeTab === "suggestions"
                   ? "text-purple-400 border-b-2 border-purple-400"
@@ -247,6 +239,15 @@ const Network = () => {
                 }`}
             >
               People You May Know ({suggestions.length})
+            </button>
+            <button
+              onClick={() => setActiveTab("connections")}
+              className={`px-6 py-4 font-medium transition-colors ${activeTab === "connections"
+                  ? "text-purple-400 border-b-2 border-purple-400"
+                  : "text-gray-400 hover:text-white"
+                }`}
+            >
+              Connections ({connections.length})
             </button>
             <button
               onClick={() => setActiveTab("invitations")}
@@ -277,7 +278,7 @@ const Network = () => {
                       className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
                     >
                       <div className="flex items-center mb-4">
-                        <div className="relative">
+                        <div className="relative" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
                           <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden">
                             <img
                               src={avatarUrlFrom(person._id, person.fullname, person.avatar)}
@@ -291,7 +292,7 @@ const Network = () => {
                           )}
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white">
+                          <h3 className="font-semibold text-white cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
                             {person.fullname}
                           </h3>
                           <p className="text-sm text-gray-400">
@@ -332,11 +333,11 @@ const Network = () => {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-2">
-                        <button className="w-full sm:flex-1 bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center">
+                        <button className="w-full sm:flex-1 bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center" onClick={() => navigate(`/messages?to=${person._id}`)}>
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Message
                         </button>
-                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">
+                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors">
                           <UserCheck className="h-4 w-4" />
                         </button>
                       </div>
@@ -363,7 +364,7 @@ const Network = () => {
                       className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
                     >
                       <div className="flex items-center mb-4">
-                        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden">
+                        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
                           <img
                             src={avatarUrlFrom(person._id, person.fullname, person.avatar)}
                             alt={person.fullname}
@@ -372,7 +373,7 @@ const Network = () => {
                           />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white">
+                          <h3 className="font-semibold text-white cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
                             {person.fullname}
                           </h3>
                           <p className="text-sm text-gray-400">
@@ -437,7 +438,7 @@ const Network = () => {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center">
-                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden">
+                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden" onClick={() => navigate(`/profile/c/${encodeURIComponent(invitation.from.fullname)}`)}>
                             <img
                               src={avatarUrlFrom(invitation.from._id, invitation.from.fullname, invitation.from.avatar)}
                               alt={invitation.from.fullname}
@@ -446,7 +447,7 @@ const Network = () => {
                             />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-white">
+                            <h3 className="font-semibold text-white cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(invitation.from.fullname)}`)}>
                               {invitation.from.fullname}
                             </h3>
                             <p className="text-sm text-gray-400">
@@ -485,7 +486,7 @@ const Network = () => {
                         >
                           Decline
                         </button>
-                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center">
+                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center" onClick={() => navigate(`/messages?to=${invitation.from._id}`)}>
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Message
                         </button>

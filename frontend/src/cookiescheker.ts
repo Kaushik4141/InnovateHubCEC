@@ -26,6 +26,8 @@ axios.interceptors.response.use(
       !originalRequest._retry &&
       !originalRequest.url.includes('/login') &&
       !originalRequest.url.includes('/register') &&
+      !originalRequest.url.includes('/auth/google') &&
+      !originalRequest.url.includes('/auth/complete-onboarding') &&
       !originalRequest.url.includes('/refresh-token')
     ) {
       if (isRefreshing) {

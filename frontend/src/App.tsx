@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
 import Messages from './components/Messages';
@@ -13,6 +15,60 @@ import Team from './components/Team';
 import AddPost from './components/addpost';
 import UserProfileView from './components/UserProfileView';
 import Chat from './components/Chat';
+import Onboarding from './components/Onboarding';
+
+type Me = {
+  _id: string;
+  onboardingCompleted?: boolean;
+};
+
+const useMe = () => {
+  const [me, setMe] = useState<Me | null>(null);
+  const [loading, setLoading] = useState(true);
+  const apiBase = import.meta.env.VITE_API_URL;
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true });
+        if (!mounted) return;
+        const data = res.data?.data || res.data?.user || res.data;
+        setMe(data);
+      } catch (_) {
+        setMe(null);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [apiBase]);
+  return { me, loading };
+};
+
+const RequireAuth = ({ children }: { children: JSX.Element }) => {
+  const { me, loading } = useMe();
+  if (loading) return null;
+  if (!me) return <Navigate to="/login" replace />;
+  return children;
+};
+
+const RequireOnboardingComplete = ({ children }: { children: JSX.Element }) => {
+  const { me, loading } = useMe();
+  if (loading) return null;
+  if (!me) return <Navigate to="/login" replace />;
+  if (!me.onboardingCompleted) return <Navigate to="/onboarding" replace />;
+  return children;
+};
+
+const OnboardingOnly = () => {
+  const { me, loading } = useMe();
+  if (loading) return null;
+  if (!me) return <Navigate to="/login" replace />;
+  if (me.onboardingCompleted) return <Navigate to="/dashboard" replace />;
+  return <Onboarding />;
+};
 
 function App() {
   return (
@@ -21,18 +77,19 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/team" element={<Team />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/messages" element={<Messages />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/network" element={<Network />} />
-          <Route path="/jobs" element={<Jobs />} />
-          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
+          <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />
+          <Route path="/messages" element={<RequireOnboardingComplete><Messages /></RequireOnboardingComplete>} />
+          <Route path="/chat" element={<RequireOnboardingComplete><Chat /></RequireOnboardingComplete>} />
+          <Route path="/network" element={<RequireOnboardingComplete><Network /></RequireOnboardingComplete>} />
+          <Route path="/jobs" element={<RequireOnboardingComplete><Jobs /></RequireOnboardingComplete>} />
+          <Route path="/notifications" element={<RequireOnboardingComplete><Notifications /></RequireOnboardingComplete>} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<SignupForm />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/addpost" element={<AddPost />} />
-          <Route path="/profile/c/:fullname" element={<UserProfileView />} />
+          <Route path="/addpost" element={<RequireOnboardingComplete><AddPost /></RequireOnboardingComplete>} />
+          <Route path="/profile/c/:fullname" element={<RequireAuth><UserProfileView /></RequireAuth>} />
+          <Route path="/onboarding" element={<OnboardingOnly />} />
         </Routes>
       </div>
     </Router>

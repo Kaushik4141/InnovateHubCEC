@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -20,6 +21,33 @@ const Login: React.FC = () => {
       navigate('/profile');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      setError('');
+      setLoading(true);
+      const idToken = credentialResponse?.credential;
+      if (!idToken) {
+        setError('Invalid Google response');
+        return;
+      }
+      const res = await axios.post(
+        `${apiBase}/api/v1/users/auth/google`,
+        { idToken },
+        { withCredentials: true }
+      );
+      const user = res.data?.data?.user || res.data?.user || res.data?.data;
+      if (user?.onboardingCompleted === false) {
+        navigate('/onboarding');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Google Sign-In failed');
     } finally {
       setLoading(false);
     }
@@ -81,6 +109,16 @@ const Login: React.FC = () => {
               'Sign In'
             )}
           </button>
+
+          <div className="flex items-center gap-3">
+            <div className="h-px bg-gray-700 flex-1" />
+            <span className="text-gray-400 text-sm">or</span>
+            <div className="h-px bg-gray-700 flex-1" />
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google Sign-In failed')} useOneTap={false} />
+          </div>
           <p className="text-gray-400 text-sm text-center">
             Don't have an account?{' '}
             <span className="underline text-purple-400 hover:text-white cursor-pointer" onClick={() => navigate('/register')}>

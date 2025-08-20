@@ -2,6 +2,7 @@ import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 
 interface FormData {
   fullname: string;
@@ -53,6 +54,26 @@ const SignupForm: React.FC = () => {
       [name]: type === 'checkbox' ? checked : value,
     }));
     setErrors(prev => ({ ...prev, [name]: undefined, general: undefined }));
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      const idToken = credentialResponse?.credential;
+      if (!idToken) return;
+      const res = await axios.post(
+        `${apiBase}/api/v1/users/auth/google`,
+        { idToken },
+        { withCredentials: true }
+      );
+      const user = res.data?.data?.user || res.data?.user || res.data?.data;
+      if (user?.onboardingCompleted === false) {
+        navigate('/onboarding');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      // swallow; UI remains
+    }
   };
 
   const validate = () => {
@@ -263,6 +284,16 @@ const SignupForm: React.FC = () => {
             </span>
           </p>
         </form>
+        <div className="px-8 pb-8">
+          <div className="flex items-center gap-3 my-4">
+            <div className="h-px bg-gray-700 flex-1" />
+            <span className="text-gray-400 text-sm">or</span>
+            <div className="h-px bg-gray-700 flex-1" />
+          </div>
+          <div className="flex justify-center">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => {}} useOneTap={false} />
+          </div>
+        </div>
       </div>
     </div>
   );
