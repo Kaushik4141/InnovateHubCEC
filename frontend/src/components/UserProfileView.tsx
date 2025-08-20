@@ -12,7 +12,6 @@ import axios from "axios";
 import Loader from "./loading";
 import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
 
-
 const UserProfileView = () => {
   const apiBase = import.meta.env.VITE_API_URL;
   const { fullname } = useParams<{ fullname: string }>();
@@ -24,14 +23,23 @@ const UserProfileView = () => {
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const openLightbox = (m: LightboxMedia) => { setLightboxMedia(m); setLightboxOpen(true); };
 
+  // Deterministic unique avatar when no uploaded avatar or default placeholder
+  const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
+    const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
+    const isDefault = avatar && avatar.includes('default_avatar');
+    if (!isUsable || isDefault) {
+      const seed = id || name || 'user';
+      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+    }
+    return avatar as string;
+  };
+
   useEffect(() => {
     axios
       .get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true })
       .then((res) => setCurrentUser(res.data.data));
   }, [apiBase]);
   const refreshViewedUser = () => setRefreshKey((k) => k + 1);
-
-
 
   // Component for handling expandable text with read more/less functionality
   const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
@@ -154,7 +162,12 @@ const UserProfileView = () => {
           .filter((n) => n.type === "follow-request")
           .map((n) => (
             <div key={n._id} className="flex items-center gap-2">
-              <img src={n.from.avatar} alt="" className="w-8 h-8 rounded-full" />
+              <img
+                src={avatarUrlFrom(n.from._id, n.from.fullname, n.from.avatar)}
+                alt={n.from.fullname}
+                className="w-8 h-8 rounded-full"
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+              />
               <span>{n.from.fullname} wants to connect.</span>
               <button
                 onClick={() => handleAccept(n.from._id)}
@@ -248,7 +261,11 @@ const UserProfileView = () => {
                   src={url}
                   className={getImageClass(index)}
                   onClick={() => onOpen({ type: 'video', url })}
-                />
+                >
+                  <source src={url} />
+                  Your browser does not support the video
+                  tag.
+                </video>
               ) : (
                 <img
                   src={url}
@@ -435,17 +452,12 @@ const UserProfileView = () => {
             <div className="flex flex-col md:flex-row justify-between items-center">
               <div className="flex items-center gap-4">
                 <div className="w-24 h-24 rounded-full overflow-hidden">
-                  {user.avatar ? (
-                    <img
-                      src={user.avatar}
-                      alt={user.fullname}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-purple-700 flex items-center justify-center text-2xl font-bold">
-                      {user.fullname.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
+                  <img
+                    src={avatarUrlFrom(user._id, user.fullname, user.avatar)}
+                    alt={user.fullname}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                  />
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold">{user.fullname}</h1>
@@ -554,7 +566,8 @@ const UserProfileView = () => {
                         rel="noreferrer"
                         className="flex items-center gap-1 hover:text-white"
                       >
-                        <Github className="w-4 h-4" /> GitHub
+                        <Github className="h-4 w-4 mr-1" />
+                        GitHub
                       </a>
                     )}
                     {user.linkedin && (
@@ -564,7 +577,8 @@ const UserProfileView = () => {
                         rel="noreferrer"
                         className="flex items-center gap-1 hover:text-white"
                       >
-                        <Linkedin className="w-4 h-4" /> LinkedIn
+                        <Linkedin className="h-4 w-4 mr-1" />
+                        LinkedIn
                       </a>
                     )}
                   </div>

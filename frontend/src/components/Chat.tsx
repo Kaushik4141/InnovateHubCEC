@@ -25,6 +25,17 @@ const Chat: React.FC = () => {
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  const apiBase = import.meta.env.VITE_API_URL;
+  const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
+    const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
+    const isDefault = avatar && avatar.includes('default_avatar');
+    if (!isUsable || isDefault) {
+      const seed = id || name || 'user';
+      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+    }
+    return avatar as string;
+  };
+
   const activeTitle = useMemo(() => {
     if (!activeId) return '';
     if (scope === 'room') return rooms.find(r => r._id === activeId)?.name || '';
@@ -202,7 +213,12 @@ const Chat: React.FC = () => {
                       <li key={c.user._id}>
                         <button onClick={() => { openDM(c.user._id); setMobileSidebarOpen(false); }} className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
                           <span className={`h-2 w-2 rounded-full ${c.online ? 'bg-green-400' : 'bg-gray-500'}`}></span>
-                          <img src={c.user.avatar} className="h-6 w-6 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                          <img
+                            src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
+                            alt={c.user.fullname}
+                            className="h-6 w-6 rounded-full object-cover"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                          />
                           <span>{c.user.fullname}</span>
                         </button>
                       </li>
@@ -233,7 +249,12 @@ const Chat: React.FC = () => {
                 <li key={c.user._id}>
                   <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/30' : ''}`}>
                     <span className={`h-2 w-2 rounded-full ${c.online ? 'bg-green-400' : 'bg-gray-500'}`}></span>
-                    <img src={c.user.avatar} className="h-6 w-6 rounded-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                    <img
+                      src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
+                      alt={c.user.fullname}
+                      className="h-6 w-6 rounded-full object-cover"
+                      onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                    />
                     <span>{c.user.fullname}</span>
                   </button>
                 </li>
@@ -264,14 +285,27 @@ const Chat: React.FC = () => {
               const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
               const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
               const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-              const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.avatar || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
+              const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.fullname || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
+              const other = contacts.find(c => c.user._id === activeId);
+              const avatarUrl = scope === 'dm'
+                ? (isOwn ? null : avatarUrlFrom(other?.user?._id, other?.user?.fullname, other?.user?.avatar))
+                : (typeof m.sender === 'object' ? avatarUrlFrom((m.sender as any)?._id, (m.sender as any)?.fullname, (m.sender as any)?.avatar) : null);
               const mid = messageDomId(m, idx);
               return (
                 <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
                   <div className={`flex items-end space-x-2 max-w-[80%] sm:max-w-sm md:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                      {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
-                    </div>
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="avatar"
+                        className="w-8 h-8 rounded-full object-cover"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                        {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
+                      </div>
+                    )}
                     <div className={`px-4 py-2 rounded-lg shadow transition-transform duration-150 ${isOwn ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
                       {m.replyTo && (
                         <div className={`mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>

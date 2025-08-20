@@ -233,6 +233,21 @@ const Profile: FC = () => {
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
 
+
+ const avatarUrl = (
+    id: string,
+    name: string,
+    avatar?: string
+  ) => {
+    const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
+    const isDefault = avatar && avatar.includes('default_avatar');
+    if (!isUsable || isDefault) {
+      const seed = id || name || 'user';
+      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+    }
+    return avatar as string;
+  };
+
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
@@ -343,11 +358,12 @@ const Profile: FC = () => {
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
             <div className="flex items-center mb-6 lg:mb-0">
               <div className="w-24 h-24 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-2xl mr-6 overflow-hidden relative cursor-pointer group" onClick={handleAvatarClick}>
-                {user.avatar ? (
-                  <img src={user.avatar} alt={user.fullname} className="w-full h-full object-cover" />
-                ) : (
-                  user.fullname.split(' ').map(n => n[0]).join('').toUpperCase()
-                )}
+                <img
+                  src={avatarUrl(user._id, user.fullname, user.avatar)}
+                  alt={user.fullname}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                />
                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="text-xs">Change Avatar</span>
                 </div>

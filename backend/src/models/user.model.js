@@ -35,11 +35,11 @@ const userSchema = new mongoose.Schema({
   },
   avatar: {
     type: String,
-    default: "../public/default_avatar.png"
+    default: "/default_avatar.png"
   },
   coverimage: {
     type: String,
-    default: "../public/default_coverimage.png"
+    default: "/default_coverimage.jpg"
   },
   likehistory: [{
     type: mongoose.Schema.Types.ObjectId,

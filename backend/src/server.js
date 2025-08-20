@@ -23,7 +23,6 @@ connectDB()
     console.log("MONGO db connection failed !!! ", err);
   });
 
-
 let jobScraperProc = null;
 function startJobScraper() {
   if (process.env.ENABLE_JOB_SCRAPER === "false") {
@@ -39,9 +38,16 @@ function startJobScraper() {
     const __filenameLocal = fileURLToPath(import.meta.url);
     const __dirnameLocal = path.dirname(__filenameLocal);
     const backendRoot = path.resolve(__dirnameLocal, "..");
-    const scriptPath = path.join(backendRoot, "src", "job_scarpper", "job_scarpper.py");
+    const scriptPath = path.join(
+      backendRoot,
+      "src",
+      "job_scarpper",
+      "job_scarpper.py"
+    );
     if (!process.env.API_KEY) {
-      console.warn("[JobScraper] Skipped: missing API_KEY in environment. Add API_KEY to backend/.env");
+      console.warn(
+        "[JobScraper] Skipped: missing API_KEY in environment. Add API_KEY to backend/.env"
+      );
       return;
     }
 
@@ -68,12 +74,20 @@ function startJobScraper() {
     const cleanup = () => {
       if (jobScraperProc) {
         console.log("[JobScraper] Shutting down...");
-        try { jobScraperProc.kill(); } catch {}
+        try {
+          jobScraperProc.kill();
+        } catch {}
         jobScraperProc = null;
       }
     };
-    process.on("SIGINT", () => { cleanup(); process.exit(0); });
-    process.on("SIGTERM", () => { cleanup(); process.exit(0); });
+    process.on("SIGINT", () => {
+      cleanup();
+      process.exit(0);
+    });
+    process.on("SIGTERM", () => {
+      cleanup();
+      process.exit(0);
+    });
     process.on("exit", cleanup);
   } catch (e) {
     console.error("[JobScraper] Unexpected error:", e);

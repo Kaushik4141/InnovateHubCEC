@@ -229,6 +229,15 @@ const Feed: React.FC = () => {
   }, [tab, hasMore, loading]);
 
   console.log({ page, postsLength: posts.length, hasMore, total });
+  const avatarUrlFrom = (name: string, avatar?: string) => {
+    const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
+    const isDefault = avatar && avatar.includes('default_avatar');
+    if (!isUsable || isDefault) {
+      const seed = name || 'user';
+      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+    }
+    return avatar as string;
+  };
 
   if (tab === 'project' && loading)
     return <Loader />;
@@ -263,21 +272,12 @@ const Feed: React.FC = () => {
                 className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-md"
               >
                 <div className="flex items-center mb-3">
-                  {post.owner?.avatar ? (
-                    <img
-                      src={post.owner.avatar}
-                      alt={post.owner.fullname}
-                      className="w-10 h-10 rounded-full mr-3"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm mr-3">
-                      {post.owner?.fullname
-                        ?.split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase() || "?"}
-                    </div>
-                  )}
+                  <img
+                    src={avatarUrlFrom(post.owner?.fullname || 'user', post.owner?.avatar)}
+                    alt={post.owner?.fullname || 'Unknown'}
+                    className="w-10 h-10 rounded-full mr-3"
+                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                  />
                   <div>
                     <button
                       className="text-white font-semibold hover:underline ml-2 focus:outline-none"
@@ -373,4 +373,3 @@ const Feed: React.FC = () => {
 }
 
 export default Feed;
-

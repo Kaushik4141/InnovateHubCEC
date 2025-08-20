@@ -30,6 +30,17 @@ const Messages = () => {
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  const apiBase = import.meta.env.VITE_API_URL;
+  const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
+    const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
+    const isDefault = avatar && avatar.includes('default_avatar');
+    if (!isUsable || isDefault) {
+      const seed = id || name || 'user';
+      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+    }
+    return avatar as string;
+  };
+
   // Load contacts on mount
   useEffect(() => {
     (async () => {
@@ -274,9 +285,12 @@ const Messages = () => {
                         >
                           <div className="flex items-center">
                             <div className="relative">
-                              <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-3">
-                                {convo.avatar}
-                              </div>
+                              <img
+                                src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
+                                alt={c.user.fullname}
+                                className="w-12 h-12 rounded-full object-cover mr-3"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                              />
                               {convo.online && (
                                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
                               )}
@@ -344,9 +358,12 @@ const Messages = () => {
                     >
                       <div className="flex items-center">
                         <div className="relative">
-                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-3">
-                            {convo.avatar}
-                          </div>
+                          <img
+                            src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
+                            alt={c.user.fullname}
+                            className="w-12 h-12 rounded-full object-cover mr-3"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                          />
                           {convo.online && (
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
                           )}
@@ -383,9 +400,16 @@ const Messages = () => {
                           <Menu className="h-6 w-6" />
                         </button>
                         <div className="relative">
-                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold mr-4">
-                            {selectedConversation.avatar}
-                          </div>
+                          <img
+                            src={avatarUrlFrom(
+                              selectedConversation.id,
+                              selectedConversation.name,
+                              (contacts.find(c => c.user._id === selectedConversation.id)?.user.avatar)
+                            )}
+                            alt={selectedConversation.name}
+                            className="w-12 h-12 rounded-full object-cover mr-4"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                          />
                           {selectedConversation.online && (
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
                           )}
@@ -419,14 +443,25 @@ const Messages = () => {
                       const senderId = typeof m.sender === 'string' ? m.sender : m.sender?._id;
                       const isOwn = senderId !== selectedChat; // if sender is not the selected user, it's me
                       const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                      const avatar = isOwn ? 'ME' : (selectedConversation?.avatar || 'U');
+                      const avatar = isOwn ? 'ME' : (selectedConversation?.name || 'U');
+                      const sel = contacts.find(c => c.user._id === selectedChat);
+                      const avatarUrl = isOwn ? null : avatarUrlFrom(sel?.user?._id, sel?.user?.fullname, sel?.user?.avatar);
                       const mid = messageDomId(m, idx);
                       return (
                         <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
                           <div className={`flex items-end space-x-2 max-w-[80%] sm:max-w-sm md:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
-                              {avatar}
-                            </div>
+                            {avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt="avatar"
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                              />
+                            ) : (
+                              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs">
+                                {avatar?.toString().slice(0, 2) || 'U'}
+                              </div>
+                            )}
                             <div className={`px-4 py-2 rounded-lg shadow transition-transform duration-150 ${isOwn ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
                               {m.replyTo && (
                                 <div className={`mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>

@@ -156,6 +156,17 @@ const LinkedinPostFeed: React.FC = () => {
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const openLightbox = (m: LightboxMedia) => { setLightboxMedia(m); setLightboxOpen(true); };
 
+  // Deterministic unique avatar when no uploaded avatar or default placeholder
+  const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
+    const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
+    const isDefault = avatar && avatar.includes('default_avatar');
+    if (!isUsable || isDefault) {
+      const seed = id || name || 'user';
+      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+    }
+    return avatar as string;
+  };
+
   useEffect(() => {
     const fetchLinkedinPosts = async () => {
       setLoading(true);
@@ -202,21 +213,12 @@ const LinkedinPostFeed: React.FC = () => {
       {posts.map((post) => (
         <div key={post._id} className="bg-neutral-800 rounded-lg p-6 shadow">
           <div className="flex items-center mb-3">
-            {post.owner?.avatar ? (
-              <img
-                src={post.owner.avatar}
-                alt={post.owner.fullname}
-                className="w-10 h-10 rounded-full mr-3"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mr-3">
-                {post.owner?.fullname
-                  ?.split(" ")
-                  .map((n) => n[0])
-                  .join("")
-                  .toUpperCase() || "?"}
-              </div>
-            )}
+            <img
+              src={avatarUrlFrom(post.owner?._id, post.owner?.fullname, post.owner?.avatar)}
+              alt={post.owner?.fullname || 'Unknown'}
+              className="w-10 h-10 rounded-full mr-3"
+              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+            />
             <div>
               <button
                 className="text-white font-semibold hover:underline ml-2 focus:outline-none"

@@ -27,6 +27,7 @@ SEEN_JOB_IDS = set()
 
 
 
+
 def extract_details_from_description(desc):
     details = {
         "expected_skills": [],

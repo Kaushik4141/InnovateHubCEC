@@ -43,6 +43,7 @@ const Team = () => {
         linkedin:'https://www.linkedin.com/in/mohith-j-karkera-59b66836a/',
         avatar:'https://res.cloudinary.com/dtejzccrf/image/upload/v1755602131/mqqn0trqkiberx4zlatu.jpg  ',
     }
+    
 
   ];
 

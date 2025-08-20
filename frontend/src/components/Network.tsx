@@ -1,29 +1,53 @@
-import { useState, useEffect } from 'react';
-import Header from './Header';
-import { 
-  Users, UserPlus, Search, Filter, MessageCircle, UserCheck, 
-  Star, Calendar, Award, Code
-} from 'lucide-react';
-import { 
-  NetworkStats, 
-  Connection, 
-  ConnectionSuggestion, 
+import { useState, useEffect } from "react";
+import Header from "./Header";
+import {
+  Users,
+  UserPlus,
+  Search,
+  Filter,
+  MessageCircle,
+  UserCheck,
+  Star,
+  Calendar,
+  Award,
+  Code,
+} from "lucide-react";
+import {
+  NetworkStats,
+  Connection,
+  ConnectionSuggestion,
   ConnectionRequest,
-  networkApi
-} from '../services/networkApi';
+  networkApi,
+} from "../services/networkApi";
 
 const Network = () => {
-  const [activeTab, setActiveTab] = useState('connections');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState("connections");
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<NetworkStats | null>(null);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [invitations, setInvitations] = useState<ConnectionRequest[]>([]);
+  const apiBase = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     loadNetworkData();
   }, []);
+
+ 
+  const avatarUrlFrom = (
+    id: string,
+    name: string,
+    avatar?: string
+  ) => {
+    const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
+    const isDefault = avatar && avatar.includes('default_avatar');
+    if (!isUsable || isDefault) {
+      const seed = id || name || 'user';
+      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+    }
+    return avatar as string;
+  };
 
   useEffect(() => {
     if (searchTerm) {
@@ -39,19 +63,20 @@ const Network = () => {
   const loadNetworkData = async () => {
     try {
       setLoading(true);
-      const [statsData, connectionsData, suggestionsData, invitationsData] = await Promise.all([
-        networkApi.getNetworkStats(),
-        networkApi.getConnections(searchTerm),
-        networkApi.getConnectionSuggestions(searchTerm),
-        networkApi.getPendingRequests()
-      ]);
-      
+      const [statsData, connectionsData, suggestionsData, invitationsData] =
+        await Promise.all([
+          networkApi.getNetworkStats(),
+          networkApi.getConnections(searchTerm),
+          networkApi.getConnectionSuggestions(searchTerm),
+          networkApi.getPendingRequests(),
+        ]);
+
       setStats(statsData);
       setConnections(connectionsData);
       setSuggestions(suggestionsData);
       setInvitations(invitationsData);
     } catch (error) {
-      console.error('Failed to load network data:', error);
+      console.error("Failed to load network data:", error);
     } finally {
       setLoading(false);
     }
@@ -60,24 +85,26 @@ const Network = () => {
   const loadTabData = async () => {
     try {
       setLoading(true);
-      if (activeTab === 'connections') {
+      if (activeTab === "connections") {
         const connectionsData = await networkApi.getConnections(searchTerm);
         setConnections(connectionsData || []);
-      } else if (activeTab === 'suggestions') {
-        const suggestionsData = await networkApi.getConnectionSuggestions(searchTerm);
+      } else if (activeTab === "suggestions") {
+        const suggestionsData = await networkApi.getConnectionSuggestions(
+          searchTerm
+        );
         setSuggestions(suggestionsData || []);
-      } else if (activeTab === 'invitations') {
+      } else if (activeTab === "invitations") {
         const invitationsData = await networkApi.getPendingRequests();
         setInvitations(invitationsData || []);
       }
     } catch (error) {
-      console.error('Failed to load tab data:', error);
+      console.error("Failed to load tab data:", error);
       // Set empty arrays as fallback to prevent white screen
-      if (activeTab === 'connections') {
+      if (activeTab === "connections") {
         setConnections([]);
-      } else if (activeTab === 'suggestions') {
+      } else if (activeTab === "suggestions") {
         setSuggestions([]);
-      } else if (activeTab === 'invitations') {
+      } else if (activeTab === "invitations") {
         setInvitations([]);
       }
     } finally {
@@ -89,10 +116,10 @@ const Network = () => {
     try {
       await networkApi.sendConnectionRequest(userId);
       // Remove from suggestions and reload data
-      setSuggestions(prev => prev.filter(s => s._id !== userId));
+      setSuggestions((prev) => prev.filter((s) => s._id !== userId));
       loadNetworkData();
     } catch (error) {
-      console.error('Failed to send connection request:', error);
+      console.error("Failed to send connection request:", error);
     }
   };
 
@@ -100,10 +127,10 @@ const Network = () => {
     try {
       await networkApi.acceptConnectionRequest(fromUserId);
       // Remove from invitations and reload data
-      setInvitations(prev => prev.filter(i => i.from._id !== fromUserId));
+      setInvitations((prev) => prev.filter((i) => i.from._id !== fromUserId));
       loadNetworkData();
     } catch (error) {
-      console.error('Failed to accept invitation:', error);
+      console.error("Failed to accept invitation:", error);
     }
   };
 
@@ -111,21 +138,23 @@ const Network = () => {
     try {
       await networkApi.declineConnectionRequest(fromUserId);
       // Remove from invitations
-      setInvitations(prev => prev.filter(i => i.from._id !== fromUserId));
+      setInvitations((prev) => prev.filter((i) => i.from._id !== fromUserId));
     } catch (error) {
-      console.error('Failed to decline invitation:', error);
+      console.error("Failed to decline invitation:", error);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
-      
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">My Network</h1>
-          <p className="text-gray-400">Manage your connections and discover new people to connect with</p>
+          <p className="text-gray-400">
+            Manage your connections and discover new people to connect with
+          </p>
         </div>
 
         {/* Stats */}
@@ -134,7 +163,9 @@ const Network = () => {
             <div className="flex items-center">
               <Users className="h-8 w-8 text-blue-400 mr-3" />
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.connections || 0}</p>
+                <p className="text-2xl font-bold text-white">
+                  {stats?.connections || 0}
+                </p>
                 <p className="text-sm text-gray-400">Connections</p>
               </div>
             </div>
@@ -143,7 +174,9 @@ const Network = () => {
             <div className="flex items-center">
               <UserPlus className="h-8 w-8 text-green-400 mr-3" />
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.pendingInvitations || 0}</p>
+                <p className="text-2xl font-bold text-white">
+                  {stats?.pendingInvitations || 0}
+                </p>
                 <p className="text-sm text-gray-400">Pending Invitations</p>
               </div>
             </div>
@@ -152,7 +185,9 @@ const Network = () => {
             <div className="flex items-center">
               <Star className="h-8 w-8 text-yellow-400 mr-3" />
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.followers || 0}</p>
+                <p className="text-2xl font-bold text-white">
+                  {stats?.followers || 0}
+                </p>
                 <p className="text-sm text-gray-400">Followers</p>
               </div>
             </div>
@@ -161,7 +196,9 @@ const Network = () => {
             <div className="flex items-center">
               <Award className="h-8 w-8 text-purple-400 mr-3" />
               <div>
-                <p className="text-2xl font-bold text-white">{stats?.following || 0}</p>
+                <p className="text-2xl font-bold text-white">
+                  {stats?.following || 0}
+                </p>
                 <p className="text-sm text-gray-400">Following</p>
               </div>
             </div>
@@ -193,28 +230,37 @@ const Network = () => {
         {/* Tabs */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 mb-8">
           <div className="flex border-b border-gray-700 overflow-x-auto whitespace-nowrap">
-            <button 
-              onClick={() => setActiveTab('connections')}
-              className={`px-6 py-4 font-medium transition-colors ${activeTab === 'connections' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
+            <button
+              onClick={() => setActiveTab("connections")}
+              className={`px-6 py-4 font-medium transition-colors ${activeTab === "connections"
+                  ? "text-purple-400 border-b-2 border-purple-400"
+                  : "text-gray-400 hover:text-white"
+                }`}
             >
               Connections ({connections.length})
             </button>
-            <button 
-              onClick={() => setActiveTab('suggestions')}
-              className={`px-6 py-4 font-medium transition-colors ${activeTab === 'suggestions' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
+            <button
+              onClick={() => setActiveTab("suggestions")}
+              className={`px-6 py-4 font-medium transition-colors ${activeTab === "suggestions"
+                  ? "text-purple-400 border-b-2 border-purple-400"
+                  : "text-gray-400 hover:text-white"
+                }`}
             >
               People You May Know ({suggestions.length})
             </button>
-            <button 
-              onClick={() => setActiveTab('invitations')}
-              className={`px-6 py-4 font-medium transition-colors ${activeTab === 'invitations' ? 'text-purple-400 border-b-2 border-purple-400' : 'text-gray-400 hover:text-white'}`}
+            <button
+              onClick={() => setActiveTab("invitations")}
+              className={`px-6 py-4 font-medium transition-colors ${activeTab === "invitations"
+                  ? "text-purple-400 border-b-2 border-purple-400"
+                  : "text-gray-400 hover:text-white"
+                }`}
             >
               Invitations ({invitations.length})
             </button>
           </div>
 
           <div className="p-6">
-            {activeTab === 'connections' && (
+            {activeTab === "connections" && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                   <div className="col-span-full flex justify-center py-8">
@@ -226,24 +272,34 @@ const Network = () => {
                   </div>
                 ) : (
                   connections.map((person) => (
-                    <div key={person._id} className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300">
+                    <div
+                      key={person._id}
+                      className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
+                    >
                       <div className="flex items-center mb-4">
                         <div className="relative">
-                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-                            {person.avatar ? (
-                              <img src={person.avatar} alt={person.fullname} className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                              person.fullname.charAt(0).toUpperCase()
-                            )}
+                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden">
+                            <img
+                              src={avatarUrlFrom(person._id, person.fullname, person.avatar)}
+                              alt={person.fullname}
+                              className="w-full h-full rounded-full object-cover"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                            />
                           </div>
                           {person.isOnline && (
                             <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-700"></div>
                           )}
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white">{person.fullname}</h3>
-                          <p className="text-sm text-gray-400">Year {person.year}</p>
-                          <p className="text-sm text-purple-400">{person.bio || 'Student'}</p>
+                          <h3 className="font-semibold text-white">
+                            {person.fullname}
+                          </h3>
+                          <p className="text-sm text-gray-400">
+                            Year {person.year}
+                          </p>
+                          <p className="text-sm text-purple-400">
+                            {person.bio || "Student"}
+                          </p>
                         </div>
                         <Code className="h-5 w-5 text-gray-400" />
                       </div>
@@ -251,14 +307,24 @@ const Network = () => {
                       <div className="space-y-2 mb-4 text-sm text-gray-400">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-2" />
-                          {person.isOnline ? 'Online now' : `Last active ${person.lastActive ? new Date(person.lastActive).toLocaleDateString() : 'Recently'}`}
+                          {person.isOnline
+                            ? "Online now"
+                            : `Last active ${person.lastActive
+                              ? new Date(
+                                person.lastActive
+                              ).toLocaleDateString()
+                              : "Recently"
+                            }`}
                         </div>
                       </div>
 
                       <div className="mb-4">
                         <div className="flex flex-wrap gap-2">
                           {person.skills?.slice(0, 3).map((skill) => (
-                            <span key={skill} className="px-2 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded text-xs">
+                            <span
+                              key={skill}
+                              className="px-2 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded text-xs"
+                            >
                               {skill}
                             </span>
                           ))}
@@ -280,7 +346,7 @@ const Network = () => {
               </div>
             )}
 
-            {activeTab === 'suggestions' && (
+            {activeTab === "suggestions" && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {loading ? (
                   <div className="col-span-full flex justify-center py-8">
@@ -292,19 +358,29 @@ const Network = () => {
                   </div>
                 ) : (
                   suggestions.map((person) => (
-                    <div key={person._id} className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300">
+                    <div
+                      key={person._id}
+                      className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
+                    >
                       <div className="flex items-center mb-4">
-                        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-                          {person.avatar ? (
-                            <img src={person.avatar} alt={person.fullname} className="w-full h-full rounded-full object-cover" />
-                          ) : (
-                            person.fullname.charAt(0).toUpperCase()
-                          )}
+                        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden">
+                          <img
+                            src={avatarUrlFrom(person._id, person.fullname, person.avatar)}
+                            alt={person.fullname}
+                            className="w-full h-full rounded-full object-cover"
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                          />
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-semibold text-white">{person.fullname}</h3>
-                          <p className="text-sm text-gray-400">Year {person.year}</p>
-                          <p className="text-sm text-purple-400">{person.bio || 'Student'}</p>
+                          <h3 className="font-semibold text-white">
+                            {person.fullname}
+                          </h3>
+                          <p className="text-sm text-gray-400">
+                            Year {person.year}
+                          </p>
+                          <p className="text-sm text-purple-400">
+                            {person.bio || "Student"}
+                          </p>
                         </div>
                         <Code className="h-5 w-5 text-gray-400" />
                       </div>
@@ -320,14 +396,17 @@ const Network = () => {
                       <div className="mb-4">
                         <div className="flex flex-wrap gap-2">
                           {person.skills?.slice(0, 3).map((skill) => (
-                            <span key={skill} className="px-2 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded text-xs">
+                            <span
+                              key={skill}
+                              className="px-2 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded text-xs"
+                            >
                               {skill}
                             </span>
                           ))}
                         </div>
                       </div>
 
-                      <button 
+                      <button
                         onClick={() => handleConnect(person._id)}
                         className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center"
                       >
@@ -340,7 +419,7 @@ const Network = () => {
               </div>
             )}
 
-            {activeTab === 'invitations' && (
+            {activeTab === "invitations" && (
               <div className="space-y-6">
                 {loading ? (
                   <div className="flex justify-center py-8">
@@ -352,43 +431,61 @@ const Network = () => {
                   </div>
                 ) : (
                   invitations.map((invitation) => (
-                    <div key={invitation._id} className="bg-gray-700 rounded-xl p-6 border border-gray-600">
+                    <div
+                      key={invitation._id}
+                      className="bg-gray-700 rounded-xl p-6 border border-gray-600"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center">
-                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4">
-                            {invitation.from.avatar ? (
-                              <img src={invitation.from.avatar} alt={invitation.from.fullname} className="w-full h-full rounded-full object-cover" />
-                            ) : (
-                              invitation.from.fullname.charAt(0).toUpperCase()
-                            )}
+                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden">
+                            <img
+                              src={avatarUrlFrom(invitation.from._id, invitation.from.fullname, invitation.from.avatar)}
+                              alt={invitation.from.fullname}
+                              className="w-full h-full rounded-full object-cover"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                            />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-semibold text-white">{invitation.from.fullname}</h3>
-                            <p className="text-sm text-gray-400">Year {invitation.from.year}</p>
-                            <p className="text-sm text-purple-400">{invitation.from.bio || 'Student'}</p>
+                            <h3 className="font-semibold text-white">
+                              {invitation.from.fullname}
+                            </h3>
+                            <p className="text-sm text-gray-400">
+                              Year {invitation.from.year}
+                            </p>
+                            <p className="text-sm text-purple-400">
+                              {invitation.from.bio || "Student"}
+                            </p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-500">{new Date(invitation.date).toLocaleDateString()}</span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(invitation.date).toLocaleDateString()}
+                        </span>
                       </div>
 
                       <div className="mt-4 p-4 bg-gray-600 rounded-lg">
-                        <p className="text-gray-300 text-sm italic">"Hi! I'd like to connect with you."</p>
+                        <p className="text-gray-300 text-sm italic">
+                          "Hi! I'd like to connect with you."
+                        </p>
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                        <button 
-                          onClick={() => handleAcceptInvitation(invitation.from._id)}
+                        <button
+                          onClick={() =>
+                            handleAcceptInvitation(invitation.from._id)
+                          }
                           className="w-full sm:w-auto bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
                         >
                           Accept
                         </button>
-                        <button 
-                          onClick={() => handleDeclineInvitation(invitation.from._id)}
+                        <button
+                          onClick={() =>
+                            handleDeclineInvitation(invitation.from._id)
+                          }
                           className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors"
                         >
                           Decline
                         </button>
-                        <button  className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center">
+                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center">
                           <MessageCircle className="h-4 w-4 mr-2" />
                           Message
                         </button>
