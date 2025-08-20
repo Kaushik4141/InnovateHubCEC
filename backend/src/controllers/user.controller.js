@@ -34,7 +34,6 @@ const googleAuth = asyncHandler(async (req, res) => {
     const email = payload.email;
     const emailVerified = payload.email_verified;
     const name = payload.name || payload.given_name || email?.split("@")[0];
-    const picture = payload.picture;
 
     if (!email) {
       throw new ApiError(400, "Google account missing email");
@@ -63,16 +62,13 @@ const googleAuth = asyncHandler(async (req, res) => {
         provider: 'google',
         googleId,
         isVerified: true,
-        onboardingCompleted: false,
-        ...(picture ? { avatar: picture } : {})
+        onboardingCompleted: false
       });
     } else {
       if (!user.googleId) user.googleId = googleId;
       user.provider = 'google';
       user.isVerified = true;
-      if (picture && (!user.avatar || user.avatar.includes('default_avatar'))) {
-        user.avatar = picture;
-      }
+  
       await user.save({ validatebeforeSave: false });
     }
 

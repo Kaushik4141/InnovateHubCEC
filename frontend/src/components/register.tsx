@@ -154,6 +154,15 @@ const SignupForm: React.FC = () => {
             </p>
           )}
 
+          <div className="flex justify-center">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => {}} useOneTap={false} />
+          </div>
+          <div className="flex items-center gap-3 my-2">
+            <div className="h-px bg-gray-700 flex-1" />
+            <span className="text-gray-400 text-sm">or</span>
+            <div className="h-px bg-gray-700 flex-1" />
+          </div>
+
           <div>
             <input
               name="fullname"
@@ -284,16 +293,6 @@ const SignupForm: React.FC = () => {
             </span>
           </p>
         </form>
-        <div className="px-8 pb-8">
-          <div className="flex items-center gap-3 my-4">
-            <div className="h-px bg-gray-700 flex-1" />
-            <span className="text-gray-400 text-sm">or</span>
-            <div className="h-px bg-gray-700 flex-1" />
-          </div>
-          <div className="flex justify-center">
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => {}} useOneTap={false} />
-          </div>
-        </div>
       </div>
     </div>
   );

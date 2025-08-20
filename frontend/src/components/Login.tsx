@@ -73,6 +73,15 @@ const Login: React.FC = () => {
 
           {error && <p className="text-red-400 bg-red-500/10 border border-red-500/30 px-3 py-2 rounded text-sm text-center">{error}</p>}
 
+          <div className="flex justify-center">
+            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google Sign-In failed')} useOneTap={false} />
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-px bg-gray-700 flex-1" />
+            <span className="text-gray-400 text-sm">or</span>
+            <div className="h-px bg-gray-700 flex-1" />
+          </div>
+
           <div>
             <input
               name="email"
@@ -110,15 +119,6 @@ const Login: React.FC = () => {
             )}
           </button>
 
-          <div className="flex items-center gap-3">
-            <div className="h-px bg-gray-700 flex-1" />
-            <span className="text-gray-400 text-sm">or</span>
-            <div className="h-px bg-gray-700 flex-1" />
-          </div>
-
-          <div className="flex justify-center">
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google Sign-In failed')} useOneTap={false} />
-          </div>
           <p className="text-gray-400 text-sm text-center">
             Don't have an account?{' '}
             <span className="underline text-purple-400 hover:text-white cursor-pointer" onClick={() => navigate('/register')}>

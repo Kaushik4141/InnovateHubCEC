@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, Bell, MessageCircle, User, Home, Users, Briefcase,
   ChevronDown, Settings, LogOut, Plus,
-  Trophy, Handshake, Menu, X,
+  Trophy, Handshake, Menu, X, Group
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -124,6 +124,7 @@ const Header = () => {
               <Users className="h-5 w-5" />
               <span className="text-xs mt-1">Network</span>
             </button>
+
             <button 
               onClick={() => navigate('/jobs')}
               className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
@@ -144,6 +145,13 @@ const Header = () => {
             >
               <Trophy className="h-5 w-5" />
               <span className="text-xs mt-1">Leaderboard</span>
+            </button>
+            <button 
+              onClick={() => navigate('/Team')}
+              className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+            >
+              <Group className="h-5 w-5" />
+              <span className="text-xs mt-1">Our Team</span>
             </button>
             {/* Notifications */}
             <div className="relative">
@@ -218,6 +226,7 @@ const Header = () => {
                     </button>
                   </div>
                 </div>
+                
               )}
             </div>
 
@@ -326,6 +335,9 @@ const Header = () => {
             </button>
             <button onClick={handleLogout} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg p-2">
               Logout
+            </button>
+            <button onClick={() => { setMobileMenuOpen(false); navigate('/Team  '); }} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white rounded-lg p-2">
+              Our Team
             </button>
           </div>
         </div>
