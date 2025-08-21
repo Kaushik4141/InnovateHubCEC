@@ -26,7 +26,6 @@ const Chat: React.FC = () => {
   const [onlineUsersOpen, setOnlineUsersOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // NEW STATES FOR WHATSAPP-LIKE FEATURES
   const [readReceipts, setReadReceipts] = useState<Record<string, { readBy: string[], readAt: string }>>({});
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -71,8 +70,6 @@ const Chat: React.FC = () => {
 
     if (activeId && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      // You'll need to implement a function to send this to your backend
-      // `socket.emit('markMessageAsRead', { messageId: lastMessage._id, chatId: activeId })`
     }
   }, [messages, activeId]);
 
@@ -237,8 +234,6 @@ const Chat: React.FC = () => {
   }
 
   const handleDeleteMessage = async (messageId: string) => {
-    // You'll need to implement this API call to your backend
-    // `await deleteMessage(messageId)`
     setMessages(prev => prev.filter(m => (m as any)._id !== messageId));
   };
   
@@ -251,8 +246,6 @@ const Chat: React.FC = () => {
   
   const handleSaveEdit = async () => {
     if (!editingMessageId || !editInput.trim()) return;
-    // You'll need to implement this API call to your backend
-    // `await editMessage(editingMessageId, editInput)`
     setMessages(prev =>
       prev.map(m =>
         (m as any)._id === editingMessageId
@@ -267,8 +260,6 @@ const Chat: React.FC = () => {
 
   const handlePinMessage = async (message: Msg) => {
     setPinnedMessage(message);
-    // You'll need to implement this API call to your backend
-    // `await pinMessage(message._id)`
   };
 
   const messageDomId = (m: Msg, idx: number) => (m as any)?._id || `idx-${idx}`;
@@ -455,8 +446,7 @@ const Chat: React.FC = () => {
                     placeholder="Search messages..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
-                    className="bg-gray-800 rounded-lg pl-8 pr-3 py-1 text-sm outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500"
-                  />
+                    className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none font-sans tracking-normal"/>
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
                 </div>
                 <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
@@ -551,7 +541,9 @@ const Chat: React.FC = () => {
                           onClick={() => { setLightboxMedia({ type: 'video', url: m.content }); setLightboxOpen(true); }}
                         />
                       ) : (
-                        <p className="text-sm whitespace-pre-wrap break-words">{getHighlightedText(m.content, searchQuery)}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words font-sans tracking-normal">
+                          {getHighlightedText(m.content, searchQuery)}
+                        </p>
                       )}
                       <div className="flex items-center justify-end gap-1 mt-1">
                         <p className={`text-xs ${isOwn ? 'text-purple-200' : 'text-gray-500'}`}>{time}</p>
@@ -650,8 +642,7 @@ const Chat: React.FC = () => {
                 }}
                 placeholder={activeId ? (editingMessageId ? 'Edit your message...' : 'Type a message...') : 'Select a chat to start messaging'}
                 disabled={!activeId}
-                className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none"
-              />
+                className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none font-sans tracking-normal"/>
               
               <button 
                 onClick={editingMessageId ? handleSaveEdit : handleSend} 
@@ -682,7 +673,7 @@ const Chat: React.FC = () => {
                       <img
                         src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)}
                         alt={contact.user.fullname}
-                        className="h-6 w-6 rounded-full object-cover flex-shrink-0"
+                        className="h-6 w-6 rounded-full object-cover"
                       />
                       <span className="text-sm text-gray-300 truncate">{contact.user.fullname}</span>
                     </>
