@@ -22,7 +22,7 @@ const Chat: React.FC = () => {
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const genClientId = () => ${Date.now()}-${Math.random().toString(36).slice(2, 10)};
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [onlineUsersOpen, setOnlineUsersOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -33,7 +33,7 @@ const Chat: React.FC = () => {
     const isDefault = avatar && avatar.includes('default_avatar');
     if (!isUsable || isDefault) {
       const seed = id || name || 'user';
-      return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+      return https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64;
     }
     return avatar as string;
   };
@@ -176,12 +176,12 @@ const Chat: React.FC = () => {
     }
   }
 
-  const messageDomId = (m: Msg, idx: number) => (m as any)?._id || `idx-${idx}`;
+  const messageDomId = (m: Msg, idx: number) => (m as any)?._id || idx-${idx};
   const jumpToMessage = (id?: string) => {
     if (!id) return;
     const container = messagesRef.current;
     if (!container) return;
-    const el = container.querySelector(`[data-mid="${id}"]`) as HTMLElement | null;
+    const el = container.querySelector([data-mid="${id}"]) as HTMLElement | null;
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       setHighlightId(id);
@@ -210,7 +210,7 @@ const Chat: React.FC = () => {
                   <ul className="space-y-1">
                     {rooms.map(r => (
                       <li key={r._id}>
-                        <button onClick={() => { openRoom(r._id); setMobileSidebarOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
+                        <button onClick={() => { openRoom(r._id); setMobileSidebarOpen(false); }} className={w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}}>
                           <span className="text-purple-400 mr-2">#</span>
                           {r.name}
                         </button>
@@ -223,9 +223,9 @@ const Chat: React.FC = () => {
                   <ul className="space-y-1">
                     {contacts.map(c => (
                       <li key={c.user._id}>
-                        <button onClick={() => { openDM(c.user._id); setMobileSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
+                        <button onClick={() => { openDM(c.user._id); setMobileSidebarOpen(false); }} className={w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}}>
                           <div className="relative">
-                            <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
+                            <span className={absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}}></span>
                             <img
                               src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
                               alt={c.user.fullname}
@@ -288,7 +288,7 @@ const Chat: React.FC = () => {
             <ul className="space-y-1">
               {rooms.map(r => (
                 <li key={r._id}>
-                  <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
+                  <button onClick={() => openRoom(r._id)} className={w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}}>
                     <span className="text-purple-400 mr-2">#</span>
                     {r.name}
                   </button>
@@ -301,9 +301,9 @@ const Chat: React.FC = () => {
             <ul className="space-y-1">
               {contacts.map(c => (
                 <li key={c.user._id}>
-                  <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
+                  <button onClick={() => openDM(c.user._id)} className={w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}}>
                     <div className="relative">
-                      <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
+                      <span className={absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}}></span>
                       <img
                         src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
                         alt={c.user.fullname}
@@ -368,8 +368,8 @@ const Chat: React.FC = () => {
               const mid = messageDomId(m, idx);
               
               return (
-                <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
-                  <div className={`flex items-end space-x-2 max-w-[90%] sm:max-w-sm md:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
+                <div key={mid} data-mid={mid} className={flex ${isOwn ? 'justify-end' : 'justify-start'} group}>
+                  <div className={flex items-end space-x-2 max-w-[90%] sm:max-w-sm md:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}}>
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
@@ -382,13 +382,13 @@ const Chat: React.FC = () => {
                         {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
                       </div>
                     )}
-                    <div className={`px-4 py-2 rounded-2xl shadow transition-all duration-150 ${isOwn ? 'bg-purple-600 text-white rounded-br-md' : 'bg-gray-800 text-gray-300 rounded-bl-md'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
+                    <div className={px-4 py-2 rounded-2xl shadow transition-all duration-150 ${isOwn ? 'bg-purple-600 text-white rounded-br-md' : 'bg-gray-800 text-gray-300 rounded-bl-md'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}}>
                       {m.replyTo && (
-                        <div className={`mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>
+                        <div className={mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}}>
                           <div className="text-xs font-semibold opacity-90">{(m.replyTo as any)?.sender?.fullname || 'Replied message'}</div>
                           <button type="button" onClick={() => jumpToMessage((m.replyTo as any)?._id)} className="text-left w-full">
                             <div className="text-xs opacity-80 truncate hover:underline">
-                              {m.replyTo.type === 'text' ? m.replyTo.content : `Media: ${m.replyTo.type}`}
+                              {m.replyTo.type === 'text' ? m.replyTo.content : Media: ${m.replyTo.type}}
                             </div>
                           </button>
                         </div>
@@ -410,12 +410,12 @@ const Chat: React.FC = () => {
                       ) : (
                         <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
                       )}
-                      <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'} text-right`}>{time}</p>
+                      <p className={text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'} text-right}>{time}</p>
                     </div>
                     <button
                       title="Reply"
                       onClick={() => setReplyTo(m)}
-                      className={`opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700`}
+                      className={opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700}
                     >
                       <ReplyIcon className="h-4 w-4" />
                     </button>
@@ -433,7 +433,7 @@ const Chat: React.FC = () => {
                 <div className="flex-1">
                   <div className="text-xs text-gray-400">Replying to {(replyTo as any)?.sender?.fullname || 'message'}</div>
                   <div className="text-sm truncate">
-                    {replyTo.type === 'text' ? replyTo.content : `Media: ${replyTo.type}`}
+                    {replyTo.type === 'text' ? replyTo.content : Media: ${replyTo.type}}
                   </div>
                 </div>
                 <button className="ml-3 text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700" onClick={() => setReplyTo(null)}>
@@ -444,8 +444,8 @@ const Chat: React.FC = () => {
             
             <div className="flex items-center gap-2">
               <label className="text-gray-400 hover:text-white transition-colors cursor-pointer flex-shrink-0">
-                <input type="file" accept="image/*,video/*" onChange={handleFile} className="hidden" disabled={uploadingFile || !activeId} />
-                <span className={`p-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center gap-1 ${uploadingFile || !activeId ? 'opacity-50' : 'hover:bg-gray-700'}`}>
+                <input type="file" accept="image/,video/" onChange={handleFile} className="hidden" disabled={uploadingFile || !activeId} />
+                <span className={p-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center gap-1 ${uploadingFile || !activeId ? 'opacity-50' : 'hover:bg-gray-700'}}>
                   {uploadingFile ? (
                     <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
                   ) : (
