@@ -18,3 +18,11 @@ export async function getUserMin(id: string) {
   });
   return data?.data as UserMin;
 }
+export type CurrentUser = { _id: string; fullname: string; avatar?: string };
+
+export async function getCurrentUser() {
+  const { data } = await axios.get(`${apiBase}/api/v1/users/current-user`, {
+    withCredentials: true,
+  });
+  return data?.data as CurrentUser;
+}

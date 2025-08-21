@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Reply as ReplyIcon, X, Menu, Image, Video, Paperclip, Send, Users } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { listRooms, listContacts, getRoomMessages, getPrivateMessages, uploadChatFile, type Message as Msg, type Room, type Contact } from '../services/chatApi';
+import { getCurrentUser, type CurrentUser } from '../services/userApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
 import Header from './Header';
 
@@ -26,6 +27,7 @@ const Chat: React.FC = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [onlineUsersOpen, setOnlineUsersOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
   const apiBase = import.meta.env.VITE_API_URL;
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
@@ -36,6 +38,21 @@ const Chat: React.FC = () => {
       return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
     }
     return avatar as string;
+  };
+
+  // Normalize legacy http media URLs from Cloudinary to https to satisfy CSP
+  const normalizeMediaUrl = (url: string) => {
+    if (!url) return url;
+    try {
+      const u = new URL(url);
+      if (u.protocol === 'http:' && (u.hostname === 'res.cloudinary.com' || u.hostname.endsWith('.res.cloudinary.com'))) {
+        u.protocol = 'https:';
+        return u.toString();
+      }
+      return url;
+    } catch {
+      return url.startsWith('http://res.cloudinary.com') ? url.replace(/^http:/, 'https:') : url;
+    }
   };
 
   const activeTitle = useMemo(() => {
@@ -49,6 +66,11 @@ const Chat: React.FC = () => {
   useEffect(() => {
     listRooms().then(setRooms).catch(() => { });
     listContacts().then(setContacts).catch(() => { });
+  }, []);
+
+  // Load current user for ownership checks
+  useEffect(() => {
+    getCurrentUser().then(setCurrentUser).catch(() => {});
   }, []);
 
   // Scroll bottom when messages change
@@ -140,12 +162,12 @@ const Chat: React.FC = () => {
         const cid = genClientId();
         sendRoomMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
         // optimistic
-        setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: currentUser ? { _id: currentUser._id, fullname: currentUser.fullname, avatar: currentUser.avatar } : 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
       } else {
         const cid = genClientId();
         sendPrivateMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
         // optimistic
-        setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: currentUser ? { _id: currentUser._id, fullname: currentUser.fullname, avatar: currentUser.avatar } : 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
       }
       setInput('');
       setReplyTo(null);
@@ -163,11 +185,11 @@ const Chat: React.FC = () => {
       if (scope === 'room') {
         const cid = genClientId();
         sendRoomMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
-        setMessages(prev => [...prev, { content: up.url, type: up.type, roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [...prev, { content: up.url, type: up.type, roomId: activeId, createdAt: new Date().toISOString(), sender: currentUser ? { _id: currentUser._id, fullname: currentUser.fullname, avatar: currentUser.avatar } : 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
       } else {
         const cid = genClientId();
         sendPrivateMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
-        setMessages(prev => [...prev, { content: up.url, type: up.type, receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [...prev, { content: up.url, type: up.type, receiverUser: activeId, createdAt: new Date().toISOString(), sender: currentUser ? { _id: currentUser._id, fullname: currentUser.fullname, avatar: currentUser.avatar } : 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
       }
       e.target.value = '';
       setReplyTo(null);
@@ -358,7 +380,7 @@ const Chat: React.FC = () => {
             
             {messages.length > 0 && messages.map((m, idx) => {
               const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
-              const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
+              const isOwn = currentUser ? senderId === currentUser._id : false;
               const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
               const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.fullname || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
               const other = contacts.find(c => c.user._id === activeId);
@@ -395,17 +417,17 @@ const Chat: React.FC = () => {
                       )}
                       {m.type === 'image' ? (
                         <img
-                          src={m.content}
+                          src={normalizeMediaUrl(m.content)}
                           alt="image"
                           className="max-w-full rounded-lg cursor-zoom-in hover:opacity-90 transition max-h-64 object-cover"
-                          onClick={() => { setLightboxMedia({ type: 'image', url: m.content }); setLightboxOpen(true); }}
+                          onClick={() => { setLightboxMedia({ type: 'image', url: normalizeMediaUrl(m.content) }); setLightboxOpen(true); }}
                         />
                       ) : m.type === 'video' ? (
                         <video
-                          src={m.content}
+                          src={normalizeMediaUrl(m.content)}
                           controls
                           className="max-w-full rounded-lg cursor-zoom-in hover:opacity-90 transition max-h-64"
-                          onClick={() => { setLightboxMedia({ type: 'video', url: m.content }); setLightboxOpen(true); }}
+                          onClick={() => { setLightboxMedia({ type: 'video', url: normalizeMediaUrl(m.content) }); setLightboxOpen(true); }}
                         />
                       ) : (
                         <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
