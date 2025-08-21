@@ -15,7 +15,7 @@ const generateAccessAndRefreshToken = async (userId) => {
     await user.save({ validatebeforeSave: false });
     return { accessToken, refreshToken, newRefreshToken: refreshToken };
   } catch (error) {
-    throw new ApiError("Error generating tokens", 500);
+    throw new ApiError(500, "Error generating tokens");
   }
 };
 
@@ -124,13 +124,27 @@ const registerUser = asyncHandler(async (req, res, next) => {
     const { fullname, email, usn, password, year } = req.body;
 
     if (!fullname || !email || !usn || !password || !year) {
-      throw new ApiError("Please provide all required fields", 400);
+      
+      throw new ApiError(400, "Please provide all required fields");
     }
     const existeduser = await User.findOne({
-      $or: [{ email }, { usn }],
+      $or: [{ email }, { usn },{ fullname }],
     });
     if (existeduser) {
-      throw new ApiError("User already exists", 409);
+      if (existeduser.email === email) {
+        console.log("User with this email already exists");
+        throw new ApiError(409, "User with this email already exists");
+        
+      }
+      if (existeduser.usn === usn) {
+        throw new ApiError(409, "User with this USN already exists");
+      }
+      if (existeduser.fullname === fullname) {
+        throw new ApiError(409, "User with this fullname already exists");
+      }
+      else{
+      throw new ApiError(409, "User with this email, usn or fullname already exists");
+      }
     }
     const avatarLocalPath =
       req.files && req.files.avatar && req.files.avatar[0]
@@ -167,7 +181,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
       "-password -refreshToken"
     );
     if (!createduserid) {
-      throw new ApiError("User not created", 500);
+      throw new ApiError(500, "User not created");
     }
     const cookieOptions = {
       httpOnly: true,
@@ -188,7 +202,8 @@ const registerUser = asyncHandler(async (req, res, next) => {
   }
 
   catch (e) {
-    throw new ApiError(400, e.message || "User registration failed");
+    if (e instanceof ApiError) { throw e; }
+    throw new ApiError(500, e.message || "User registration failed");
   }
 });
 
@@ -203,18 +218,18 @@ const loginuser = asyncHandler(async (req, res, next) => {
     //return response
     const { email, password } = req.body;
     if (!email) {
-      throw new ApiError("Please provide email", 400);
+      throw new ApiError(400, "Please provide email");
     }
     if (!password) {
-      throw new ApiError("Please provide password", 400);
+      throw new ApiError(400, "Please provide password");
     }
     const user = await User.findOne({ email });
     if (!user) {
-      throw new ApiError("User not found", 404);
+      throw new ApiError(404, "User not found");
     }
     const isPasswordMatched = await user.isPasswordCorrect(password);
     if (!isPasswordMatched) {
-      throw new ApiError("Invalid password", 401);
+      throw new ApiError(401, "Invalid password");
     }
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
       user._id
@@ -358,7 +373,7 @@ const getcurrentUser = asyncHandler(async (req, res) => {
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullname, email, usn, year, skills, linkedin, github, leetcode, certifications, projects, bio, achievements, otherLinks } = req.body;
   if (!fullname || !email || !usn || !year) {
-    throw new ApiError("Please provide all required fields", 400);
+    throw new ApiError(400, "Please provide all required fields");
   }
   const user = await User.findByIdAndUpdate(
     req.user._id,
@@ -366,7 +381,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     { new: true, runValidators: true }
   ).select("-password -refreshToken");
   if (!user) {
-    throw new ApiError("User not found", 404);
+    throw new ApiError(404, "User not found");
   }
   return res
     .status(200)

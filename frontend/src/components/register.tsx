@@ -107,9 +107,9 @@ const SignupForm: React.FC = () => {
     try {
       const payload = {
         fullname: formData.fullname,
-        usn: formData.usn.toUpperCase().trim(), // Normalize USN to uppercase and trim
+        usn: formData.usn.toUpperCase().trim(),
         year: Number(formData.year),
-        email: formData.email.toLowerCase().trim(), // Normalize email to lowercase
+        email: formData.email.toLowerCase().trim(),
         password: formData.password,
       };
 
@@ -119,19 +119,15 @@ const SignupForm: React.FC = () => {
     } catch (error: any) {
       console.error('Registration error:', error);
       
-      // Enhanced error handling with better detection for existing email or USN
       let errorMessage = 'Registration failed. Please try again.';
       
-      // Check for different patterns that might indicate a duplicate email or USN
       const responseData = error.response?.data;
       const errorMessageLower = (responseData?.message || error.message || '').toLowerCase();
       const errorString = JSON.stringify(responseData || error || '').toLowerCase();
-      
-      // Check for specific error patterns
+
       if (error.response?.status === 409) {
         errorMessage = 'An account with this email or USN already exists.';
       } else if (error.response?.status === 400) {
-        // Try to get more specific error message from backend
         if (responseData?.message) {
           errorMessage = responseData.message;
         } else if (errorMessageLower.includes('usn') || errorString.includes('usn')) {
