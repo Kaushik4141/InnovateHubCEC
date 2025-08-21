@@ -117,16 +117,31 @@ const SignupForm: React.FC = () => {
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error: any) {
-      console.error(error);
+      console.error('Registration error:', error);
       
-      // Enhanced error handling with specific messages
+      // Enhanced error handling with better detection for existing email
       let errorMessage = 'Registration failed. Please try again.';
+      
+      // Check for different patterns that might indicate a duplicate email
+      const responseData = error.response?.data;
+      const errorMessageLower = (responseData?.message || '').toLowerCase();
+      const errorString = JSON.stringify(responseData || {}).toLowerCase();
+      
       if (error.response?.status === 409) {
         errorMessage = 'An account with this email already exists.';
       } else if (error.response?.status === 400) {
         errorMessage = 'Invalid registration data. Please check your inputs.';
       } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
         errorMessage = 'Network connection failed. Please check your internet connection.';
+      } else if (
+        errorMessageLower.includes('already exists') ||
+        errorMessageLower.includes('duplicate') ||
+        errorMessageLower.includes('already registered') ||
+        errorString.includes('already exists') ||
+        errorString.includes('duplicate') ||
+        errorString.includes('already registered')
+      ) {
+        errorMessage = 'An account with this email already exists.';
       }
       
       setErrors({ general: error.response?.data?.message || errorMessage });
