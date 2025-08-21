@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Reply as ReplyIcon, X, Menu, Paperclip, Send, Users, Check, CheckCheck, Trash2, Edit2, Pin, Smile, Search } from 'lucide-react';
+import { Reply as ReplyIcon, X, Menu, Image, Video, Paperclip, Send, Users } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { listRooms, listContacts, getRoomMessages, getPrivateMessages, uploadChatFile, type Message as Msg, type Room, type Contact } from '../services/chatApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
@@ -22,17 +22,10 @@ const Chat: React.FC = () => {
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [onlineUsersOpen, setOnlineUsersOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const [readReceipts, setReadReceipts] = useState<Record<string, { readBy: string[], readAt: string }>>({});
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
-  const [editInput, setEditInput] = useState('');
-  const [pinnedMessage, setPinnedMessage] = useState<Msg | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const apiBase = import.meta.env.VITE_API_URL;
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
@@ -44,7 +37,6 @@ const Chat: React.FC = () => {
     }
     return avatar as string;
   };
-  const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
   const activeTitle = useMemo(() => {
     if (!activeId) return '';
@@ -53,25 +45,16 @@ const Chat: React.FC = () => {
     return c?.user.fullname || '';
   }, [scope, activeId, rooms, contacts]);
 
-  const filteredMessages = useMemo(() => {
-    if (!searchQuery) return messages;
-    return messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [messages, searchQuery]);
-
   // Load lists
   useEffect(() => {
     listRooms().then(setRooms).catch(() => { });
     listContacts().then(setContacts).catch(() => { });
   }, []);
 
-  // Scroll to bottom and mark messages as read
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-
-    if (activeId && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-    }
-  }, [messages, activeId]);
+  // Scroll bottom when messages change
+  useEffect(() => { 
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+  }, [messages]);
 
   // Focus input when chat is active
   useEffect(() => {
@@ -80,7 +63,7 @@ const Chat: React.FC = () => {
     }
   }, [activeId]);
 
-  // Socket listeners for live messages, typing, and read receipts
+  // Socket listeners for live messages
   useEffect(() => {
     if (!socket) return;
     const onRoom = (msg: Msg) => {
@@ -114,52 +97,13 @@ const Chat: React.FC = () => {
         return [...prev, msg];
       });
     };
-
-    const onTyping = ({ senderId }: { senderId: string }) => {
-      setTypingUsers(prev => Array.from(new Set([...prev, senderId])));
-    };
-    const onStopTyping = ({ senderId }: { senderId: string }) => {
-      setTypingUsers(prev => prev.filter(id => id !== senderId));
-    };
-    const onReadReceipt = (receipt: { messageId: string; readBy: string[]; readAt: string }) => {
-      setReadReceipts(prev => ({ ...prev, [receipt.messageId]: { readBy: receipt.readBy, readAt: receipt.readAt } }));
-    };
-
     socket.on('roomMessage', onRoom);
     socket.on('privateMessage', onDM);
-    socket.on('startTyping', onTyping);
-    socket.on('stopTyping', onStopTyping);
-    socket.on('messageRead', onReadReceipt);
-
     return () => {
       socket.off('roomMessage', onRoom);
       socket.off('privateMessage', onDM);
-      socket.off('startTyping', onTyping);
-      socket.off('stopTyping', onStopTyping);
-      socket.off('messageRead', onReadReceipt);
     };
   }, [socket, scope, activeId]);
-
-  // Trigger typing indicator
-  useEffect(() => {
-    if (!activeId || !socket) return;
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    if (input.length > 0) {
-      socket.emit('startTyping', { activeId, scope });
-      typingTimeoutRef.current = setTimeout(() => {
-        socket.emit('stopTyping', { activeId, scope });
-      }, 3000); // Stop typing after 3 seconds of inactivity
-    } else {
-      socket.emit('stopTyping', { activeId, scope });
-    }
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, [input, activeId, scope, socket]);
 
   async function openRoom(id: string) {
     if (activeId && scope === 'room') leaveRoom(activeId);
@@ -170,12 +114,10 @@ const Chat: React.FC = () => {
     try {
       const hist = await getRoomMessages(id);
       setMessages(hist);
-      setPinnedMessage(hist.find(m => m.pinned) || null);
     } finally {
       setLoadingMessages(false);
     }
   }
-
   async function openDM(id: string) {
     if (activeId && scope === 'room') leaveRoom(activeId);
     setScope('dm');
@@ -184,7 +126,6 @@ const Chat: React.FC = () => {
     try {
       const hist = await getPrivateMessages(id);
       setMessages(hist);
-      setPinnedMessage(hist.find(m => m.pinned) || null);
     } finally {
       setLoadingMessages(false);
     }
@@ -198,10 +139,12 @@ const Chat: React.FC = () => {
       if (scope === 'room') {
         const cid = genClientId();
         sendRoomMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
+        // optimistic
         setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
       } else {
         const cid = genClientId();
         sendPrivateMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
+        // optimistic
         setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
       }
       setInput('');
@@ -233,35 +176,6 @@ const Chat: React.FC = () => {
     }
   }
 
-  const handleDeleteMessage = async (messageId: string) => {
-    setMessages(prev => prev.filter(m => (m as any)._id !== messageId));
-  };
-  
-  const handleEditMessage = (message: Msg) => {
-    setEditingMessageId((message as any)._id);
-    setEditInput(message.content);
-    setReplyTo(null);
-    inputRef.current?.focus();
-  };
-  
-  const handleSaveEdit = async () => {
-    if (!editingMessageId || !editInput.trim()) return;
-    setMessages(prev =>
-      prev.map(m =>
-        (m as any)._id === editingMessageId
-          ? { ...m, content: editInput.trim(), edited: true }
-          : m
-      )
-    );
-    setEditingMessageId(null);
-    setEditInput('');
-    setInput('');
-  };
-
-  const handlePinMessage = async (message: Msg) => {
-    setPinnedMessage(message);
-  };
-
   const messageDomId = (m: Msg, idx: number) => (m as any)?._id || `idx-${idx}`;
   const jumpToMessage = (id?: string) => {
     if (!id) return;
@@ -273,23 +187,6 @@ const Chat: React.FC = () => {
       setHighlightId(id);
       setTimeout(() => setHighlightId(null), 1200);
     }
-  };
-
-  const getHighlightedText = (text: string, highlight: string) => {
-    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
-    return (
-      <span>
-        {parts.map((part, i) =>
-          part.toLowerCase() === highlight.toLowerCase() ? (
-            <span key={i} className="bg-purple-500/50 rounded px-0.5">
-              {part}
-            </span>
-          ) : (
-            part
-          )
-        )}
-      </span>
-    );
   };
 
   return (
@@ -430,29 +327,11 @@ const Chat: React.FC = () => {
                 <button className="md:hidden mr-2 text-gray-300 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setMobileSidebarOpen(true)} aria-label="Open chats">
                   <Menu className="h-5 w-5" />
                 </button>
-                <div className="flex flex-col">
-                  <h1 className="text-lg font-semibold truncate max-w-[150px] sm:max-w-xs">{activeTitle || 'Select a chat'}</h1>
-                  {typingUsers.length > 0 && (
-                    <span className="text-xs text-purple-400 animate-pulse">
-                      {typingUsers.map(id => contacts.find(c => c.user._id === id)?.user.fullname || id).join(', ')} is typing...
-                    </span>
-                  )}
-                </div>
+                <h1 className="text-lg font-semibold truncate max-w-[150px] sm:max-w-xs">{activeTitle || 'Select a chat'}</h1>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search messages..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none font-sans tracking-normal"/>
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 h-4 w-4" />
-                </div>
-                <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
-                  <Users className="h-5 w-5" />
-                </button>
-              </div>
+              <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
+                <Users className="h-5 w-5" />
+              </button>
             </div>
           </header>
 
@@ -477,19 +356,7 @@ const Chat: React.FC = () => {
               </div>
             )}
             
-            {pinnedMessage && (
-              <div className="p-3 bg-gray-800 rounded-lg flex items-center justify-between shadow-md mb-4 sticky top-0 z-10 animate-slide-in-down">
-                <div className="flex-1 truncate">
-                  <span className="text-xs text-purple-400 font-semibold uppercase">Pinned Message</span>
-                  <p className="text-sm truncate">{pinnedMessage.content}</p>
-                </div>
-                <button onClick={() => setPinnedMessage(null)} className="ml-2 text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700">
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-            
-            {filteredMessages.length > 0 && filteredMessages.map((m, idx) => {
+            {messages.length > 0 && messages.map((m, idx) => {
               const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
               const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
               const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -520,7 +387,7 @@ const Chat: React.FC = () => {
                         <div className={`mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>
                           <div className="text-xs font-semibold opacity-90">{(m.replyTo as any)?.sender?.fullname || 'Replied message'}</div>
                           <button type="button" onClick={() => jumpToMessage((m.replyTo as any)?._id)} className="text-left w-full">
-                            <div className="text-xs opacity-80 whitespace-pre-wrap break-words truncate hover:underline">
+                            <div className="text-xs opacity-80 truncate hover:underline">
                               {m.replyTo.type === 'text' ? m.replyTo.content : `Media: ${m.replyTo.type}`}
                             </div>
                           </button>
@@ -541,56 +408,17 @@ const Chat: React.FC = () => {
                           onClick={() => { setLightboxMedia({ type: 'video', url: m.content }); setLightboxOpen(true); }}
                         />
                       ) : (
-                        <p className="text-sm whitespace-pre-wrap break-words font-sans tracking-normal">
-                          {getHighlightedText(m.content, searchQuery)}
-                        </p>
+                        <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
                       )}
-                      <div className="flex items-center justify-end gap-1 mt-1">
-                        <p className={`text-xs ${isOwn ? 'text-purple-200' : 'text-gray-500'}`}>{time}</p>
-                        {isOwn && (
-                          readReceipts[m._id]?.readBy.length > 0 ? (
-                            <CheckCheck className="h-3 w-3 text-blue-400" />
-                          ) : (
-                            <Check className="h-3 w-3 text-gray-500" />
-                          )
-                        )}
-                      </div>
+                      <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'} text-right`}>{time}</p>
                     </div>
-                    
-                    <div className={`flex items-center gap-1 transition-opacity ${isOwn ? 'flex-row-reverse' : ''}`}>
-                      <button
-                        title="Reply"
-                        onClick={() => setReplyTo(m)}
-                        className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700"
-                      >
-                        <ReplyIcon className="h-4 w-4" />
-                      </button>
-                      <button
-                        title="Pin"
-                        onClick={() => handlePinMessage(m)}
-                        className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-yellow-400 p-1 rounded-md hover:bg-gray-700"
-                      >
-                        <Pin className="h-4 w-4" />
-                      </button>
-                      {isOwn && (
-                        <>
-                          <button
-                            title="Edit"
-                            onClick={() => handleEditMessage(m)}
-                            className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-blue-400 p-1 rounded-md hover:bg-gray-700"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            title="Delete"
-                            onClick={() => handleDeleteMessage((m as any)._id)}
-                            className="opacity-0 group-hover:opacity-100 transition text-red-400 hover:text-red-500 p-1 rounded-md hover:bg-gray-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    <button
+                      title="Reply"
+                      onClick={() => setReplyTo(m)}
+                      className={`opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700`}
+                    >
+                      <ReplyIcon className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
               );
@@ -604,7 +432,7 @@ const Chat: React.FC = () => {
               <div className="mb-3 bg-gray-800/70 border border-gray-700 rounded-lg p-3 flex items-start justify-between">
                 <div className="flex-1">
                   <div className="text-xs text-gray-400">Replying to {(replyTo as any)?.sender?.fullname || 'message'}</div>
-                  <div className="text-sm whitespace-pre-wrap break-words truncate">
+                  <div className="text-sm truncate">
                     {replyTo.type === 'text' ? replyTo.content : `Media: ${replyTo.type}`}
                   </div>
                 </div>
@@ -628,25 +456,17 @@ const Chat: React.FC = () => {
               
               <input
                 ref={inputRef}
-                value={editingMessageId ? editInput : input}
-                onChange={e => (editingMessageId ? setEditInput(e.target.value) : setInput(e.target.value))}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (editingMessageId) {
-                      handleSaveEdit();
-                    } else {
-                      handleSend();
-                    }
-                  }
-                }}
-                placeholder={activeId ? (editingMessageId ? 'Edit your message...' : 'Type a message...') : 'Select a chat to start messaging'}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                placeholder={activeId ? 'Type a message...' : 'Select a chat to start messaging'}
                 disabled={!activeId}
-                className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none font-sans tracking-normal"/>
+                className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none"
+              />
               
               <button 
-                onClick={editingMessageId ? handleSaveEdit : handleSend} 
-                disabled={!activeId || (editingMessageId ? !editInput.trim() : !input.trim()) || sendingMessage} 
+                onClick={handleSend} 
+                disabled={!activeId || !input.trim() || sendingMessage} 
                 className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 p-2 rounded-lg transition-colors flex items-center justify-center flex-shrink-0"
               >
                 {sendingMessage ? (
@@ -673,7 +493,7 @@ const Chat: React.FC = () => {
                       <img
                         src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)}
                         alt={contact.user.fullname}
-                        className="h-6 w-6 rounded-full object-cover"
+                        className="h-6 w-6 rounded-full object-cover flex-shrink-0"
                       />
                       <span className="text-sm text-gray-300 truncate">{contact.user.fullname}</span>
                     </>
