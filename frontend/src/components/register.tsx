@@ -119,16 +119,16 @@ const SignupForm: React.FC = () => {
     } catch (error: any) {
       console.error('Registration error:', error);
       
-      // Enhanced error handling with better detection for existing email
+      // Enhanced error handling with better detection for existing email or USN
       let errorMessage = 'Registration failed. Please try again.';
       
-      // Check for different patterns that might indicate a duplicate email
+      // Check for different patterns that might indicate a duplicate email or USN
       const responseData = error.response?.data;
       const errorMessageLower = (responseData?.message || '').toLowerCase();
       const errorString = JSON.stringify(responseData || {}).toLowerCase();
       
       if (error.response?.status === 409) {
-        errorMessage = 'An account with this email already exists.';
+        errorMessage = 'An account with this email or USN already exists.';
       } else if (error.response?.status === 400) {
         errorMessage = 'Invalid registration data. Please check your inputs.';
       } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
@@ -137,11 +137,15 @@ const SignupForm: React.FC = () => {
         errorMessageLower.includes('already exists') ||
         errorMessageLower.includes('duplicate') ||
         errorMessageLower.includes('already registered') ||
+        errorMessageLower.includes('usn') ||
+        errorMessageLower.includes('email') ||
         errorString.includes('already exists') ||
         errorString.includes('duplicate') ||
-        errorString.includes('already registered')
+        errorString.includes('already registered') ||
+        errorString.includes('usn') ||
+        errorString.includes('email')
       ) {
-        errorMessage = 'An account with this email already exists.';
+        errorMessage = 'An account with this email or USN already exists.';
       }
       
       setErrors({ general: error.response?.data?.message || errorMessage });
