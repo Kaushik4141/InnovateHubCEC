@@ -1,20 +1,68 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Reply as ReplyIcon, X, Menu, Image, Video, Paperclip, Send, Users } from 'lucide-react';
+import {
+  Reply as ReplyIcon,
+  X,
+  Menu,
+  Paperclip,
+  Send,
+  Users,
+  MoreVertical,
+  Trash2,
+  Edit3,
+  RotateCcw,
+  Check,
+  CheckCheck
+} from 'lucide-react';
 import { useChat } from '../context/ChatContext';
-import { listRooms, listContacts, getRoomMessages, getPrivateMessages, uploadChatFile, type Message as Msg, type Room, type Contact } from '../services/chatApi';
+import {
+  listRooms,
+  listContacts,
+  getRoomMessages,
+  getPrivateMessages,
+  uploadChatFile,
+  // The following may or may not exist on your backend.
+  // If they don't, keep the optimistic UI; wire these later.
+  // @ts-ignore
+  deleteMessageForEveryone,
+  // @ts-ignore
+  deleteMessageForMe,
+  // @ts-ignore
+  clearConversation,
+  // @ts-ignore
+  updateMessageContent,
+  // @ts-ignore
+  addMessageReaction,
+  // @ts-ignore
+  removeMessageReaction,
+  // @ts-ignore
+  markConversationRead,
+  type Message as Msg,
+  type Room,
+  type Contact
+} from '../services/chatApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
 import Header from './Header';
 
+type Reaction = { emoji: string; userId: string };
+type MessageWithExtras = Msg & {
+  reactions?: Reaction[];
+  deletedForEveryone?: boolean;
+  deletedForMe?: boolean;
+  editedAt?: string | null;
+};
+
+const REACTIONS = ['👍', '❤️', '😂'];
+
 const Chat: React.FC = () => {
-  const { socket, onlineUsers, sendPrivateMessage, sendRoomMessage, joinRoom, leaveRoom } = useChat();
+  const { socket, onlineUsers, sendPrivateMessage, sendRoomMessage, joinRoom, leaveRoom, me } = useChat() as any;
   const [rooms, setRooms] = useState<Room[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [scope, setScope] = useState<'room' | 'dm'>('room');
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Msg[]>([]);
+  const [messages, setMessages] = useState<MessageWithExtras[]>([]);
   const [input, setInput] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const [replyTo, setReplyTo] = useState<Msg | null>(null);
+  const [replyTo, setReplyTo] = useState<MessageWithExtras | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -27,7 +75,18 @@ const Chat: React.FC = () => {
   const [onlineUsersOpen, setOnlineUsersOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Context menu/editing
+  const [menuOpenFor, setMenuOpenFor] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState('');
+
+  // Unread counts to bold chats
+  const [unread, setUnread] = useState<Record<string, number>>({});
+
   const apiBase = import.meta.env.VITE_API_URL;
+  const myUserId: string | null =
+    (typeof me === 'object' && me?._id) || null;
+
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
     const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
     const isDefault = avatar && avatar.includes('default_avatar');
@@ -47,13 +106,13 @@ const Chat: React.FC = () => {
 
   // Load lists
   useEffect(() => {
-    listRooms().then(setRooms).catch(() => { });
-    listContacts().then(setContacts).catch(() => { });
+    listRooms().then(setRooms).catch(() => {});
+    listContacts().then(setContacts).catch(() => {});
   }, []);
 
   // Scroll bottom when messages change
-  useEffect(() => { 
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); 
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   // Focus input when chat is active
@@ -63,47 +122,76 @@ const Chat: React.FC = () => {
     }
   }, [activeId]);
 
+  // mark conversation read when open
+  useEffect(() => {
+    if (!activeId) return;
+    setUnread(prev => ({ ...prev, [convKey(scope, activeId)]: 0 }));
+    try {
+      markConversationRead?.(scope, activeId);
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, activeId, messages.length]);
+
   // Socket listeners for live messages
   useEffect(() => {
     if (!socket) return;
     const onRoom = (msg: Msg) => {
-      if (!(scope === 'room' && msg.roomId === activeId)) return;
-      setMessages(prev => {
-        if ((msg as any).clientId) {
-          const idx = prev.findIndex(p => (p as any).clientId === (msg as any).clientId);
-          if (idx !== -1) {
-            const next = prev.slice();
-            next[idx] = { ...prev[idx], ...msg } as any;
-            return next;
-          }
-        }
-        if ((msg as any)._id && prev.some(p => (p as any)._id === (msg as any)._id)) return prev;
-        return [...prev, msg];
-      });
+      const m = msg as MessageWithExtras;
+      if (scope === 'room' && m.roomId === activeId) {
+        mergeIncoming(m);
+      } else {
+        // increment unread for that room
+        if (m.roomId) bumpUnread('room', m.roomId);
+      }
     };
     const onDM = (msg: Msg) => {
-      const target = typeof msg.sender === 'string' ? msg.sender : (msg.sender as any)._id;
-      if (!(scope === 'dm' && (msg.receiverUser === activeId || target === activeId))) return;
-      setMessages(prev => {
-        if ((msg as any).clientId) {
-          const idx = prev.findIndex(p => (p as any).clientId === (msg as any).clientId);
-          if (idx !== -1) {
-            const next = prev.slice();
-            next[idx] = { ...prev[idx], ...msg } as any;
-            return next;
-          }
-        }
-        if ((msg as any)._id && prev.some(p => (p as any)._id === (msg as any)._id)) return prev;
-        return [...prev, msg];
-      });
+      const m = msg as MessageWithExtras;
+      const target = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
+      const inOpen =
+        scope === 'dm' &&
+        (m.receiverUser === activeId || target === activeId);
+      if (inOpen) {
+        mergeIncoming(m);
+      } else {
+        const otherUser =
+          myUserId && target === myUserId ? (m.receiverUser as string) : (target as string);
+        if (otherUser) bumpUnread('dm', otherUser);
+      }
     };
     socket.on('roomMessage', onRoom);
     socket.on('privateMessage', onDM);
+    // message updates (edits/deletes/reactions) if your backend emits them:
+    socket.on?.('messageUpdated', (m: MessageWithExtras) => {
+      setMessages(prev => replaceById(prev, (m as any)._id, m));
+    });
     return () => {
       socket.off('roomMessage', onRoom);
       socket.off('privateMessage', onDM);
+      socket.off?.('messageUpdated');
     };
-  }, [socket, scope, activeId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socket, scope, activeId, myUserId]);
+
+  function bumpUnread(s: 'room' | 'dm', id: string) {
+    const key = convKey(s, id);
+    setUnread(prev => ({ ...prev, [key]: (prev[key] || 0) + 1 }));
+  }
+
+  function mergeIncoming(msg: MessageWithExtras) {
+    setMessages(prev => {
+      // collapse optimistic by clientId
+      if ((msg as any).clientId) {
+        const idx = prev.findIndex(p => (p as any).clientId === (msg as any).clientId);
+        if (idx !== -1) {
+          const next = prev.slice();
+          next[idx] = { ...prev[idx], ...msg } as any;
+          return next;
+        }
+      }
+      if ((msg as any)._id && prev.some(p => (p as any)._id === (msg as any)._id)) return prev;
+      return [...prev, msg];
+    });
+  }
 
   async function openRoom(id: string) {
     if (activeId && scope === 'room') leaveRoom(activeId);
@@ -113,7 +201,7 @@ const Chat: React.FC = () => {
     setLoadingMessages(true);
     try {
       const hist = await getRoomMessages(id);
-      setMessages(hist);
+      setMessages(hist as MessageWithExtras[]);
     } finally {
       setLoadingMessages(false);
     }
@@ -125,13 +213,17 @@ const Chat: React.FC = () => {
     setLoadingMessages(true);
     try {
       const hist = await getPrivateMessages(id);
-      setMessages(hist);
+      setMessages(hist as MessageWithExtras[]);
     } finally {
       setLoadingMessages(false);
     }
   }
 
   async function handleSend() {
+    if (editingId) {
+      await commitEdit();
+      return;
+    }
     if (!input.trim() || !activeId || sendingMessage) return;
     setSendingMessage(true);
     const content = input.trim();
@@ -140,12 +232,50 @@ const Chat: React.FC = () => {
         const cid = genClientId();
         sendRoomMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
         // optimistic
-        setMessages(prev => [...prev, { content, type: 'text', roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [
+          ...prev,
+          {
+            content,
+            type: 'text',
+            roomId: activeId,
+            createdAt: new Date().toISOString(),
+            sender: 'me',
+            clientId: cid,
+            replyTo: replyTo
+              ? {
+                  _id: (replyTo as any)._id,
+                  content: replyTo.content,
+                  type: replyTo.type,
+                  sender: replyTo.sender,
+                  createdAt: replyTo.createdAt
+                }
+              : undefined
+          } as any
+        ]);
       } else {
         const cid = genClientId();
         sendPrivateMessage(activeId, content, 'text', (replyTo as any)?._id || null, cid);
         // optimistic
-        setMessages(prev => [...prev, { content, type: 'text', receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [
+          ...prev,
+          {
+            content,
+            type: 'text',
+            receiverUser: activeId,
+            createdAt: new Date().toISOString(),
+            sender: 'me',
+            clientId: cid,
+            replyTo: replyTo
+              ? {
+                  _id: (replyTo as any)._id,
+                  content: replyTo.content,
+                  type: replyTo.type,
+                  sender: replyTo.sender,
+                  createdAt: replyTo.createdAt
+                }
+              : undefined
+          } as any
+        ]);
       }
       setInput('');
       setReplyTo(null);
@@ -163,11 +293,49 @@ const Chat: React.FC = () => {
       if (scope === 'room') {
         const cid = genClientId();
         sendRoomMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
-        setMessages(prev => [...prev, { content: up.url, type: up.type, roomId: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [
+          ...prev,
+          {
+            content: up.url,
+            type: up.type,
+            roomId: activeId,
+            createdAt: new Date().toISOString(),
+            sender: 'me',
+            clientId: cid,
+            replyTo: replyTo
+              ? {
+                  _id: (replyTo as any)._id,
+                  content: replyTo.content,
+                  type: replyTo.type,
+                  sender: replyTo.sender,
+                  createdAt: replyTo.createdAt
+                }
+              : undefined
+          } as any
+        ]);
       } else {
         const cid = genClientId();
         sendPrivateMessage(activeId, up.url, up.type, (replyTo as any)?._id || null, cid);
-        setMessages(prev => [...prev, { content: up.url, type: up.type, receiverUser: activeId, createdAt: new Date().toISOString(), sender: 'me', clientId: cid, replyTo: replyTo ? { _id: (replyTo as any)._id, content: replyTo.content, type: replyTo.type, sender: replyTo.sender, createdAt: replyTo.createdAt } : undefined } as any]);
+        setMessages(prev => [
+          ...prev,
+          {
+            content: up.url,
+            type: up.type,
+            receiverUser: activeId,
+            createdAt: new Date().toISOString(),
+            sender: 'me',
+            clientId: cid,
+            replyTo: replyTo
+              ? {
+                  _id: (replyTo as any)._id,
+                  content: replyTo.content,
+                  type: replyTo.type,
+                  sender: replyTo.sender,
+                  createdAt: replyTo.createdAt
+                }
+              : undefined
+          } as any
+        ]);
       }
       e.target.value = '';
       setReplyTo(null);
@@ -189,6 +357,125 @@ const Chat: React.FC = () => {
     }
   };
 
+  // === WhatsApp-like actions ===
+  async function onDeleteForEveryone(m: MessageWithExtras) {
+    const id = (m as any)._id;
+    if (!id) return;
+    // optimistic: mark as deletedForEveryone
+    setMessages(prev => replaceById(prev, id, { ...m, deletedForEveryone: true, content: 'This message was deleted', type: 'text' }));
+    try {
+      await deleteMessageForEveryone?.(id);
+    } catch {}
+  }
+  async function onDeleteForMe(m: MessageWithExtras) {
+    const id = (m as any)._id;
+    if (!id) return;
+    // optimistic: mark deletedForMe => hide from my list
+    setMessages(prev => prev.filter(x => ((x as any)._id || (x as any).clientId) !== (id || (m as any).clientId)));
+    try {
+      await deleteMessageForMe?.(id);
+    } catch {}
+  }
+  async function onClearChat() {
+    if (!activeId) return;
+    const ok = confirm('Clear messages in this chat?');
+    if (!ok) return;
+    setMessages([]);
+    try {
+      await clearConversation?.(scope, activeId);
+    } catch {}
+  }
+  function startEdit(m: MessageWithExtras) {
+    const id = (m as any)._id || (m as any).clientId;
+    if (!id) return;
+    setEditingId(id);
+    setEditDraft(m.content as string);
+    setMenuOpenFor(null);
+    inputRef.current?.focus();
+  }
+  async function commitEdit() {
+    const id = editingId;
+    if (!id) return;
+    const m = messages.find(mm => ((mm as any)._id || (mm as any).clientId) === id);
+    if (!m) return;
+    const newContent = input.trim();
+    if (!newContent) return;
+    // optimistic
+    setMessages(prev =>
+      prev.map(mm =>
+        ((mm as any)._id || (mm as any).clientId) === id ? ({ ...mm, content: newContent, editedAt: new Date().toISOString() } as any) : mm
+      )
+    );
+    setInput('');
+    setEditingId(null);
+    setEditDraft('');
+    try {
+      const realId = (m as any)._id;
+      if (realId) {
+        await updateMessageContent?.(realId, newContent);
+      } // if only clientId exists, server ack will come and replace
+    } catch {}
+  }
+  function isOwnMessage(m: MessageWithExtras) {
+    const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
+    return scope === 'dm' ? senderId !== activeId : senderId === 'me';
+  }
+  function toggleReaction(m: MessageWithExtras, emoji: string) {
+    const id = (m as any)._id || (m as any).clientId;
+    if (!id || !myUserId) return;
+    const hasMine = (m.reactions || []).some(r => r.emoji === emoji && r.userId === myUserId);
+    // optimistic
+    setMessages(prev =>
+      prev.map(mm => {
+        const mid = ((mm as any)._id || (mm as any).clientId);
+        if (mid !== id) return mm;
+        const reactions = mm.reactions || [];
+        const next = hasMine ? reactions.filter(r => !(r.emoji === emoji && r.userId === myUserId)) : [...reactions, { emoji, userId: myUserId }];
+        return { ...mm, reactions: next } as any;
+      })
+    );
+    try {
+      const realId = (m as any)._id;
+      if (!realId) return;
+      if (hasMine) removeMessageReaction?.(realId, emoji);
+      else addMessageReaction?.(realId, emoji);
+    } catch {}
+  }
+
+  function renderReactions(m: MessageWithExtras) {
+    if (!m.reactions || m.reactions.length === 0) return null;
+    const counts = Object.entries(
+      m.reactions.reduce<Record<string, number>>((acc, r) => {
+        acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+        return acc;
+      }, {})
+    );
+    return (
+      <div className="mt-1 flex gap-1 flex-wrap">
+        {counts.map(([emoji, count]) => (
+          <span key={emoji} className="text-xs px-2 py-0.5 bg-black/30 rounded-full border border-white/10">{emoji} {count > 1 ? count : ''}</span>
+        ))}
+      </div>
+    );
+  }
+
+  function deliveryIcon(m: MessageWithExtras) {
+    // Simple placeholder; replace with your real delivery/read state if available
+    const isMine = isOwnMessage(m);
+    if (!isMine) return null;
+    // If server has _id => sent, if also some 'delivered' flag => double tick, etc.
+    const hasId = Boolean((m as any)._id);
+    return (
+      <span className="inline-flex items-center gap-1 ml-1 opacity-80">
+        {hasId ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />}
+      </span>
+    );
+  }
+
+  function convKey(s: 'room' | 'dm', id: string) {
+    return `${s}:${id}`;
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
@@ -208,35 +495,51 @@ const Chat: React.FC = () => {
                 <div>
                   <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
                   <ul className="space-y-1">
-                    {rooms.map(r => (
-                      <li key={r._id}>
-                        <button onClick={() => { openRoom(r._id); setMobileSidebarOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
-                          <span className="text-purple-400 mr-2">#</span>
-                          {r.name}
-                        </button>
-                      </li>
-                    ))}
+                    {rooms.map(r => {
+                      const key = convKey('room', r._id);
+                      const hasUnread = (unread[key] || 0) > 0;
+                      return (
+                        <li key={r._id}>
+                          <button
+                            onClick={() => { openRoom(r._id); setMobileSidebarOpen(false); }}
+                            className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''} ${hasUnread ? 'font-semibold' : ''}`}
+                          >
+                            <span className="text-purple-400 mr-2">#</span>
+                            {r.name}
+                            {hasUnread && <span className="ml-auto text-xs bg-purple-600 px-2 py-0.5 rounded-full">{unread[key]}</span>}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
                 <div>
                   <h2 className="text-sm uppercase text-gray-400 mb-2">Direct Messages</h2>
                   <ul className="space-y-1">
-                    {contacts.map(c => (
-                      <li key={c.user._id}>
-                        <button onClick={() => { openDM(c.user._id); setMobileSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
-                          <div className="relative">
-                            <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
-                            <img
-                              src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
-                              alt={c.user.fullname}
-                              className="h-8 w-8 rounded-full object-cover"
-                              onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
-                            />
-                          </div>
-                          <span className="truncate">{c.user.fullname}</span>
-                        </button>
-                      </li>
-                    ))}
+                    {contacts.map(c => {
+                      const key = convKey('dm', c.user._id);
+                      const hasUnread = (unread[key] || 0) > 0;
+                      return (
+                        <li key={c.user._id}>
+                          <button
+                            onClick={() => { openDM(c.user._id); setMobileSidebarOpen(false); }}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''} ${hasUnread ? 'font-semibold' : ''}`}
+                          >
+                            <div className="relative">
+                              <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
+                              <img
+                                src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
+                                alt={c.user.fullname}
+                                className="h-8 w-8 rounded-full object-cover"
+                                onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                              />
+                            </div>
+                            <span className="truncate">{c.user.fullname}</span>
+                            {hasUnread && <span className="ml-auto text-xs bg-purple-600 px-2 py-0.5 rounded-full">{unread[key]}</span>}
+                          </button>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               </div>
@@ -284,37 +587,49 @@ const Chat: React.FC = () => {
         {/* Sidebar - Desktop */}
         <aside className="hidden md:block w-72 border-r border-gray-800 p-4 space-y-6 h-full overflow-y-auto">
           <div>
-            <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-sm uppercase text-gray-400">Rooms</h2>
+            </div>
             <ul className="space-y-1">
-              {rooms.map(r => (
-                <li key={r._id}>
-                  <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
-                    <span className="text-purple-400 mr-2">#</span>
-                    {r.name}
-                  </button>
-                </li>
-              ))}
+              {rooms.map(r => {
+                const key = convKey('room', r._id);
+                const hasUnread = (unread[key] || 0) > 0;
+                return (
+                  <li key={r._id}>
+                    <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''} ${hasUnread ? 'font-semibold' : ''}`}>
+                      <span className="text-purple-400 mr-2">#</span>
+                      {r.name}
+                      {hasUnread && <span className="ml-auto text-xs bg-purple-600 px-2 py-0.5 rounded-full">{unread[key]}</span>}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
           <div>
             <h2 className="text-sm uppercase text-gray-400 mb-2">Direct Messages</h2>
             <ul className="space-y-1">
-              {contacts.map(c => (
-                <li key={c.user._id}>
-                  <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
-                    <div className="relative">
-                      <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
-                      <img
-                        src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
-                        alt={c.user.fullname}
-                        className="h-8 w-8 rounded-full object-cover"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
-                      />
-                    </div>
-                    <span className="truncate">{c.user.fullname}</span>
-                  </button>
-                </li>
-              ))}
+              {contacts.map(c => {
+                const key = convKey('dm', c.user._id);
+                const hasUnread = (unread[key] || 0) > 0;
+                return (
+                  <li key={c.user._id}>
+                    <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''} ${hasUnread ? 'font-semibold' : ''}`}>
+                      <div className="relative">
+                        <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
+                        <img
+                          src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
+                          alt={c.user.fullname}
+                          className="h-8 w-8 rounded-full object-cover"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                        />
+                      </div>
+                      <span className="truncate">{c.user.fullname}</span>
+                      {hasUnread && <span className="ml-auto text-xs bg-purple-600 px-2 py-0.5 rounded-full">{unread[key]}</span>}
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </aside>
@@ -329,9 +644,23 @@ const Chat: React.FC = () => {
                 </button>
                 <h1 className="text-lg font-semibold truncate max-w-[150px] sm:max-w-xs">{activeTitle || 'Select a chat'}</h1>
               </div>
-              <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
-                <Users className="h-5 w-5" />
-              </button>
+
+              {/* Chat actions like Clear Chat */}
+              <div className="flex items-center gap-2">
+                {activeId && (
+                  <button
+                    onClick={onClearChat}
+                    className="text-xs px-3 py-1 rounded-md bg-gray-800 hover:bg-gray-700 border border-gray-700"
+                    title="Clear chat"
+                  >
+                    <RotateCcw className="h-4 w-4 inline-block mr-1" />
+                    Clear
+                  </button>
+                )}
+                <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
+                  <Users className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           </header>
 
@@ -360,13 +689,16 @@ const Chat: React.FC = () => {
               const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
               const isOwn = scope === 'dm' ? senderId !== activeId : senderId === 'me';
               const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-              const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.fullname || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
               const other = contacts.find(c => c.user._id === activeId);
               const avatarUrl = scope === 'dm'
                 ? (isOwn ? null : avatarUrlFrom(other?.user?._id, other?.user?.fullname, other?.user?.avatar))
                 : (typeof m.sender === 'object' ? avatarUrlFrom((m.sender as any)?._id, (m.sender as any)?.fullname, (m.sender as any)?.avatar) : null);
               const mid = messageDomId(m, idx);
-              
+              const isDeletedForEveryone = (m as any).deletedForEveryone;
+              const isDeletedForMe = (m as any).deletedForMe;
+
+              if (isDeletedForMe) return null;
+
               return (
                 <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
                   <div className={`flex items-end space-x-2 max-w-[90%] sm:max-w-sm md:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
@@ -379,39 +711,119 @@ const Chat: React.FC = () => {
                       />
                     ) : (
                       <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                        {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
+                        {isOwn ? 'ME' : 'U'}
                       </div>
                     )}
-                    <div className={`px-4 py-2 rounded-2xl shadow transition-all duration-150 ${isOwn ? 'bg-purple-600 text-white rounded-br-md' : 'bg-gray-800 text-gray-300 rounded-bl-md'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
+
+                    <div className={`px-4 py-2 rounded-2xl shadow transition-all duration-150 ${isOwn ? 'bg-purple-600 text-white rounded-br-md' : 'bg-gray-800 text-gray-300 rounded-bl-md'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''} relative`}>
+                      {/* top-right message menu */}
+                      <div className={`absolute ${isOwn ? 'left-1 -top-2' : 'right-1 -top-2'} opacity-0 group-hover:opacity-100 transition`}>
+                        <button
+                          className="p-1 rounded-md bg-gray-800/80 hover:bg-gray-700"
+                          onClick={() => setMenuOpenFor(menuOpenFor === mid ? null : mid)}
+                          title="More"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                        {menuOpenFor === mid && (
+                          <div className="mt-1 absolute z-10 min-w-[160px] bg-gray-900 border border-gray-700 rounded-md shadow-lg">
+                            <button
+                              className="w-full text-left px-3 py-2 hover:bg-gray-800"
+                              onClick={() => { setReplyTo(m); setMenuOpenFor(null); }}
+                            >
+                              Reply
+                            </button>
+
+                            {isOwn && !isDeletedForEveryone && m.type === 'text' && (
+                              <button
+                                className="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2"
+                                onClick={() => startEdit(m)}
+                              >
+                                <Edit3 className="h-4 w-4" /> Edit
+                              </button>
+                            )}
+
+                            {!isDeletedForEveryone && (
+                              <div className="border-t border-gray-800">
+                                <div className="px-3 pt-2 text-xs text-gray-400">React</div>
+                                <div className="flex gap-1 p-2">
+                                  {REACTIONS.map(e => (
+                                    <button
+                                      key={e}
+                                      className="px-2 py-1 rounded-md bg-gray-800 hover:bg-gray-700"
+                                      onClick={() => { toggleReaction(m, e); setMenuOpenFor(null); }}
+                                    >
+                                      {e}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="border-t border-gray-800" />
+                            <button
+                              className="w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center gap-2"
+                              onClick={() => { onDeleteForMe(m); setMenuOpenFor(null); }}
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete for me
+                            </button>
+                            {!isDeletedForEveryone && isOwn && (
+                              <button
+                                className="w-full text-left px-3 py-2 hover:bg-gray-800 text-red-400 flex items-center gap-2"
+                                onClick={() => { onDeleteForEveryone(m); setMenuOpenFor(null); }}
+                              >
+                                <Trash2 className="h-4 w-4" /> Delete for everyone
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* quoted reply */}
                       {m.replyTo && (
                         <div className={`mb-2 border-l-2 pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>
                           <div className="text-xs font-semibold opacity-90">{(m.replyTo as any)?.sender?.fullname || 'Replied message'}</div>
                           <button type="button" onClick={() => jumpToMessage((m.replyTo as any)?._id)} className="text-left w-full">
                             <div className="text-xs opacity-80 truncate hover:underline">
-                              {m.replyTo.type === 'text' ? m.replyTo.content : `Media: ${m.replyTo.type}`}
+                              {(m.replyTo as any)?.type === 'text' ? (m.replyTo as any)?.content : `Media: ${(m.replyTo as any)?.type}`}
                             </div>
                           </button>
                         </div>
                       )}
-                      {m.type === 'image' ? (
+
+                      {/* message content */}
+                      {isDeletedForEveryone ? (
+                        <p className="text-sm italic opacity-80">This message was deleted</p>
+                      ) : m.type === 'image' ? (
                         <img
-                          src={m.content}
+                          src={m.content as string}
                           alt="image"
                           className="max-w-full rounded-lg cursor-zoom-in hover:opacity-90 transition max-h-64 object-cover"
-                          onClick={() => { setLightboxMedia({ type: 'image', url: m.content }); setLightboxOpen(true); }}
+                          onClick={() => { setLightboxMedia({ type: 'image', url: m.content as string }); setLightboxOpen(true); }}
                         />
                       ) : m.type === 'video' ? (
                         <video
-                          src={m.content}
+                          src={m.content as string}
                           controls
                           className="max-w-full rounded-lg cursor-zoom-in hover:opacity-90 transition max-h-64"
-                          onClick={() => { setLightboxMedia({ type: 'video', url: m.content }); setLightboxOpen(true); }}
+                          onClick={() => { setLightboxMedia({ type: 'video', url: m.content as string }); setLightboxOpen(true); }}
                         />
                       ) : (
-                        <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {m.content as string}
+                          {m.editedAt && <span className="ml-2 text-[10px] opacity-80 italic">(edited)</span>}
+                          {deliveryIcon(m)}
+                        </p>
                       )}
+
+                      {/* reactions row */}
+                      {renderReactions(m)}
+
+                      {/* time */}
                       <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'} text-right`}>{time}</p>
                     </div>
+
+                    {/* quick reply button */}
                     <button
                       title="Reply"
                       onClick={() => setReplyTo(m)}
@@ -433,7 +845,7 @@ const Chat: React.FC = () => {
                 <div className="flex-1">
                   <div className="text-xs text-gray-400">Replying to {(replyTo as any)?.sender?.fullname || 'message'}</div>
                   <div className="text-sm truncate">
-                    {replyTo.type === 'text' ? replyTo.content : `Media: ${replyTo.type}`}
+                    {replyTo.type === 'text' ? (replyTo.content as string) : `Media: ${replyTo.type}`}
                   </div>
                 </div>
                 <button className="ml-3 text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700" onClick={() => setReplyTo(null)}>
@@ -456,17 +868,39 @@ const Chat: React.FC = () => {
               
               <input
                 ref={inputRef}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                placeholder={activeId ? 'Type a message...' : 'Select a chat to start messaging'}
+                value={editingId ? editDraft : input}
+                onChange={e => {
+                  const v = e.target.value;
+                  if (editingId) setEditDraft(v);
+                  else setInput(v);
+                }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (editingId) commitEdit();
+                    else handleSend();
+                  } else if (e.key === 'Escape' && editingId) {
+                    setEditingId(null);
+                    setEditDraft('');
+                    setInput('');
+                  }
+                }}
+                placeholder={
+                  activeId
+                    ? editingId
+                      ? 'Edit message…'
+                      : replyTo
+                      ? 'Reply…'
+                      : 'Type a message...'
+                    : 'Select a chat to start messaging'
+                }
                 disabled={!activeId}
                 className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none"
               />
               
               <button 
-                onClick={handleSend} 
-                disabled={!activeId || !input.trim() || sendingMessage} 
+                onClick={editingId ? commitEdit : handleSend} 
+                disabled={!activeId || (editingId ? !editDraft.trim() : !input.trim()) || sendingMessage} 
                 className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 p-2 rounded-lg transition-colors flex items-center justify-center flex-shrink-0"
               >
                 {sendingMessage ? (
@@ -511,5 +945,9 @@ const Chat: React.FC = () => {
     </div>
   );
 };
+
+function replaceById(list: any[], id: string, next: any) {
+  return list.map(x => ((x as any)._id === id ? next : x));
+}
 
 export default Chat;
