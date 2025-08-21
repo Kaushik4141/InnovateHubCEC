@@ -116,39 +116,33 @@ const SignupForm: React.FC = () => {
       await axios.post(`${apiBase}/api/v1/users/register`, payload, { withCredentials: true });
       setSuccess(true);
       setTimeout(() => navigate('/dashboard'), 2000);
+
     } catch (error: any) {
-      console.error('Registration error:', error);
-      
-      // Enhanced error handling with better detection for existing email or USN
-      let errorMessage = 'Registration failed. Please try again.';
-      
-      // Check for different patterns that might indicate a duplicate email or USN
-      const responseData = error.response?.data;
-      const errorMessageLower = (responseData?.message || '').toLowerCase();
-      const errorString = JSON.stringify(responseData || {}).toLowerCase();
-      
+      console.error(error);
+
+      let errorMessage = "Registration failed. Please try again.";
+
       if (error.response?.status === 409) {
-        errorMessage = 'An account with this email or USN already exists.';
+        // Conflict: usually duplicate email or USN
+        const serverMessage = error.response?.data?.message?.toLowerCase() || "";
+
+        if (serverMessage.includes("email")) {
+          errorMessage = "An account with this email already exists.";
+        } else if (serverMessage.includes("usn")) {
+          errorMessage = "An account with this USN already exists.";
+        } else {
+          errorMessage = "An account with these details already exists.";
+        }
+
       } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid registration data. Please check your inputs.';
-      } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
-        errorMessage = 'Network connection failed. Please check your internet connection.';
-      } else if (
-        errorMessageLower.includes('already exists') ||
-        errorMessageLower.includes('duplicate') ||
-        errorMessageLower.includes('already registered') ||
-        errorMessageLower.includes('usn') ||
-        errorMessageLower.includes('email') ||
-        errorString.includes('already exists') ||
-        errorString.includes('duplicate') ||
-        errorString.includes('already registered') ||
-        errorString.includes('usn') ||
-        errorString.includes('email')
-      ) {
-        errorMessage = 'An account with this email or USN already exists.';
+        errorMessage = "Invalid registration data. Please check your inputs.";
+      } else if (error.code === "NETWORK_ERROR") {
+        errorMessage = "Network connection failed. Please check your internet connection.";
       }
-      
-      setErrors({ general: error.response?.data?.message || errorMessage });
+
+      setErrors({
+        general: error.response?.data?.message || errorMessage,
+      });
     } finally {
       setLoading(false);
     }
