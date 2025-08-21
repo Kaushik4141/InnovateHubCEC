@@ -118,7 +118,18 @@ const SignupForm: React.FC = () => {
       setTimeout(() => navigate('/dashboard'), 2000);
     } catch (error: any) {
       console.error(error);
-      setErrors({ general: error.response?.data?.message || 'Something went wrong' });
+      
+      // Enhanced error handling with specific messages
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error.response?.status === 409) {
+        errorMessage = 'An account with this email already exists.';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'Invalid registration data. Please check your inputs.';
+      } else if (error.code === 'NETWORK_ERROR' || error.message === 'Network Error') {
+        errorMessage = 'Network connection failed. Please check your internet connection.';
+      }
+      
+      setErrors({ general: error.response?.data?.message || errorMessage });
     } finally {
       setLoading(false);
     }
