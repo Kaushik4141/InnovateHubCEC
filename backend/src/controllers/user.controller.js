@@ -26,9 +26,28 @@ const googleAuth = asyncHandler(async (req, res) => {
       throw new ApiError(400, "Missing Google ID token");
     }
 
-    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-    const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
-    const payload = ticket.getPayload();
+    const allowedAudiences = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || "")
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
+    if (!allowedAudiences.length) {
+      throw new ApiError(500, "Server misconfigured: GOOGLE_CLIENT_ID(S) missing");
+    }
+    const client = new OAuth2Client();
+    let payload;
+    let lastError;
+    for (const aud of allowedAudiences) {
+      try {
+        const ticket = await client.verifyIdToken({ idToken, audience: aud });
+        payload = ticket.getPayload();
+        if (payload) break;
+      } catch (err) {
+        lastError = err;
+      }
+    }
+    if (!payload) {
+      throw new ApiError(400, lastError?.message || "Invalid Google ID token");
+    }
 
     const googleId = payload.sub;
     const email = payload.email;
