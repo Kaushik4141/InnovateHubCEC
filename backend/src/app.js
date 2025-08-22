@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import  cookieParser from 'cookie-parser';
+import { ApiError } from './utils/apierrorhandler.js';
 const app = express();
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
@@ -40,6 +41,19 @@ app.use('/api/v1/leaderboard', leaderboardRouter);
 app.use('/api/v1/chat', chatRouter);
 
 startLeetcodeStatsScheduler();
+
+//global error handler
+app.use((err, req, res, next) => {
+  const status = err?.statusCode || err?.status || 500;
+  const message = err?.message || 'Internal Server Error';
+  if (process.env.NODE_ENV !== 'production') {
+    console.error('[Error]', status, message);
+  }
+  if (err instanceof ApiError) {
+    return res.status(status).json({ success: false, message, data: err?.data || null });
+  }
+  return res.status(status).json({ success: false, message });
+});
 
 app
 export { app }
