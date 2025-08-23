@@ -1,7 +1,7 @@
 import React, { useState, FormEvent } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
 
 interface FormData {
@@ -42,6 +42,8 @@ const SignupForm: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -258,10 +260,10 @@ const SignupForm: React.FC = () => {
             {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
           </div>
 
-          <div>
+          <div className="relative">
             <input
               name="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={formData.password}
               onChange={handleChange}
@@ -269,13 +271,20 @@ const SignupForm: React.FC = () => {
                 errors.password ? 'border-red-500' : ''
               }`}
             />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
             {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
           </div>
 
-          <div>
+          <div className="relative">
             <input
               name="confirmPassword"
-              type="password"
+              type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm Password"
               value={formData.confirmPassword}
               onChange={handleChange}
@@ -283,6 +292,13 @@ const SignupForm: React.FC = () => {
                 errors.confirmPassword ? 'border-red-500' : ''
               }`}
             />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
             {errors.confirmPassword && <p className="text-red-500 text-sm">{errors.confirmPassword}</p>}
           </div>
 
