@@ -42,6 +42,7 @@ const SignupForm: React.FC = () => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [success, setSuccess] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
 
@@ -59,9 +60,12 @@ const SignupForm: React.FC = () => {
   };
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
+    setGoogleLoading(true);
     try {
       const idToken = credentialResponse?.credential;
-      if (!idToken) return;
+      if (!idToken) {
+        return;
+      }
       const res = await axios.post(
         `${apiBase}/api/v1/users/auth/google`,
         { idToken },
@@ -74,7 +78,9 @@ const SignupForm: React.FC = () => {
         navigate('/dashboard');
       }
     } catch (err) {
-      // swallow; UI remains
+      setErrors({ general: 'Google Sign-In failed. Please try again.' });
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -189,7 +195,14 @@ const SignupForm: React.FC = () => {
           )}
 
           <div className="flex justify-center">
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => {}} useOneTap={false} />
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                setGoogleLoading(false);
+                setErrors({ general: 'Google Sign-In failed. Please try again.' });
+              }}
+              useOneTap={false}
+            />
           </div>
           <div className="flex items-center gap-3 my-2">
             <div className="h-px bg-gray-700 flex-1" />
@@ -342,6 +355,15 @@ const SignupForm: React.FC = () => {
           </p>
         </form>
       </div>
+
+      {googleLoading && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 bg-gray-900/80 border border-gray-700 rounded-xl px-6 py-5">
+            <Loader2 className="h-6 w-6 animate-spin text-white" />
+            <p className="text-sm text-gray-300">Signing in with Google...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

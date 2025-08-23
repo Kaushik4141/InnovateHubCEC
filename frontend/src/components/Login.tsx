@@ -11,6 +11,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,9 +29,10 @@ const Login: React.FC = () => {
   };
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
+    setError('');
+    setLoading(true);
+    setGoogleLoading(true);
     try {
-      setError('');
-      setLoading(true);
       const idToken = credentialResponse?.credential;
       if (!idToken) {
         setError('Invalid Google response');
@@ -51,6 +53,7 @@ const Login: React.FC = () => {
       setError(err.response?.data?.message || 'Google Sign-In failed');
     } finally {
       setLoading(false);
+      setGoogleLoading(false);
     }
   };
 
@@ -75,7 +78,14 @@ const Login: React.FC = () => {
           {error && <p className="text-red-400 bg-red-500/10 border border-red-500/30 px-3 py-2 rounded text-sm text-center">{error}</p>}
 
           <div className="flex justify-center">
-            <GoogleLogin onSuccess={handleGoogleSuccess} onError={() => setError('Google Sign-In failed')} useOneTap={false} />
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                setGoogleLoading(false);
+                setError('Google Sign-In failed');
+              }}
+              useOneTap={false}
+            />
           </div>
           <div className="flex items-center gap-3">
             <div className="h-px bg-gray-700 flex-1" />
@@ -137,6 +147,14 @@ const Login: React.FC = () => {
           </p>
         </form>
       </div>
+      {googleLoading && (
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3 bg-gray-900/80 border border-gray-700 rounded-xl px-6 py-5">
+            <Loader2 className="h-6 w-6 animate-spin text-white" />
+            <p className="text-sm text-gray-300">Signing in with Google...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
