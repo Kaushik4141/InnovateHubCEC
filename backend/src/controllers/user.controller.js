@@ -574,6 +574,7 @@ const acceptFollow = asyncHandler(async (req, res) => {
         .json(new ApiError(404, { error: "User not found." }, "User not found."));
 
     me.followRequests = me.followRequests.filter(id => !id.equals(fromUserId));
+    me.notifications = me.notifications.filter(n => !(n.type === 'follow-request' && n.from && n.from.equals(fromUserId)));
     if (!me.followers.includes(fromUserId)) me.followers.push(fromUserId);
     if (!fromUser.following.includes(myUserId)) fromUser.following.push(myUserId);
 
@@ -602,6 +603,7 @@ const rejectFollow = asyncHandler(async (req, res) => {
         .json(new ApiError(404, { error: "User not found." }, "User not found."));
 
     me.followRequests = me.followRequests.filter(id => !id.equals(fromUserId));
+    me.notifications = me.notifications.filter(n => !(n.type === 'follow-request' && n.from && n.from.equals(fromUserId)));
     await me.save();
 
     res
