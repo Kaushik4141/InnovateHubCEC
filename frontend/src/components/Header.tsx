@@ -15,6 +15,11 @@ const Header = () => {
   const apiBase = import.meta.env.VITE_API_URL;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ users: any[]; posts: any[] }>({ users: [], posts: [] });
 
   const fetchNotifications = async () => {
     try {
@@ -34,6 +39,67 @@ const Header = () => {
   useEffect(() => {
     if (showNotifications) fetchNotifications();
   }, [showNotifications]);
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true });
+        setUser(res.data?.data || res.data);
+      } catch (e) {
+        console.error('Failed to fetch current user', e);
+      }
+    };
+    fetchMe();
+  }, [apiBase]);
+
+  const avatarUrl = (u: { _id?: string; fullname?: string; avatar?: string } | null) => (
+    !u?.avatar || (u.avatar && u.avatar.includes('default_avatar'))
+      ? `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(u?._id || u?.fullname || 'user')}&size=48`
+      : (u.avatar as string)
+  );
+
+  const initials = (name?: string) => {
+    if (!name) return 'ME';
+    const parts = name.trim().split(/\s+/);
+    return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+  };
+
+  //Default avatar fallback
+  const defaultAvatarFallback = (apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png';
+  const onImgErr = (e: any) => {
+    const img = e.currentTarget as HTMLImageElement;
+    img.onerror = null;
+    img.src = defaultAvatarFallback;
+  };
+
+  //Debounced search i am using instagram knowledge
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearchResults({ users: [], posts: [] });
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    setSearchOpen(true);
+    const t = setTimeout(async () => {
+      try {
+        const [uRes, pRes] = await Promise.all([
+          axios.get(`${apiBase}/api/v1/users/search`, { params: { q }, withCredentials: true }),
+          axios.get(`${apiBase}/api/v1/posts/getAllPost`, { params: { query: q, limit: 5 }, withCredentials: true }),
+          
+        ]);
+        const users = uRes.data?.data || [];
+        const posts = pRes.data?.data?.result || [];
+        setSearchResults({ users, posts });
+      } catch (e) {
+
+        setSearchResults({ users: [], posts: [] });
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, apiBase]);
 
   const handleAccept = async (fromUserId: string) => {
     try {
@@ -88,9 +154,63 @@ const Header = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search projects, competitions, mentors..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Search people, posts/projects..."
                 className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
               />
+              {searchOpen && (searchQuery.trim().length >= 2 || searchLoading) && (
+                <div className="absolute mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+                  {searchLoading ? (
+                    <div className="p-4 text-gray-400 text-sm">Searching...</div>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-2 border-b border-gray-700">
+                        <p className="text-xs uppercase text-gray-400 px-2">People</p>
+                        {searchResults.users.length === 0 && (
+                          <div className="px-2 py-2 text-sm text-gray-500">No people found</div>
+                        )}
+                        {searchResults.users.map((u) => (
+                          <button
+                            key={u._id}
+                            onClick={() => { setSearchOpen(false); setSearchQuery(''); navigate(`/profile/c/${encodeURIComponent(u.fullname)}`); }}
+                            className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                          >
+                            <img src={avatarUrl(u)} onError={onImgErr} alt={u.fullname} className="w-8 h-8 rounded-full object-cover" />
+                            <span className="text-sm text-white">{u.fullname}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="p-2">
+                        <p className="text-xs uppercase text-gray-400 px-2">Posts / Projects</p>
+                        {searchResults.posts.length === 0 && (
+                          <div className="px-2 py-2 text-sm text-gray-500">No posts/projects found</div>
+                        )}
+                        {searchResults.posts.map((p: any) => (
+                          <button
+                            key={p._id}
+                            onClick={() => { setSearchOpen(false); setSearchQuery(''); if (p.owner?.fullname) navigate(`/profile/c/${encodeURIComponent(p.owner.fullname)}`); }}
+                            className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                          >
+                            {Array.isArray(p.postFile) && p.postFile[0] ? (
+                              <img src={p.postFile[0]} alt="thumb" className="w-10 h-10 rounded object-cover" />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-700 rounded" />
+                            )}
+                            <div>
+                              <p className="text-sm text-white line-clamp-1">{p.description || 'Project post'}</p>
+                              {p.owner?.fullname && (
+                                <p className="text-xs text-gray-400">by {p.owner.fullname}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <button
@@ -182,9 +302,10 @@ const Header = () => {
                         {n.type === 'follow-request' ? (
                           <div className="flex items-center gap-3">
                             <img
-                              src={n.from?.avatar}
+                              src={avatarUrl(n.from)}
                               alt={n.from?.fullname || 'User'}
                               className="w-8 h-8 rounded-full object-cover"
+                              onError={onImgErr}
                             />
                             <div className="flex-1">
                               <p className="text-sm text-white">
@@ -236,10 +357,20 @@ const Header = () => {
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
                 className="flex items-center text-gray-400 hover:text-purple-400 transition-colors"
               >
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-2">
-                  YU
-                </div>
-                <span className="text-xs">Me</span>
+                {user ? (
+                  <img
+                    src={avatarUrl(user)}
+                    alt={user?.fullname || 'User'}
+                    className="w-8 h-8 rounded-full object-cover mr-2"
+                    onError={onImgErr}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-2">
+                    ME
+                  </div>
+                )}
+                <span className="text-xs">{user?.fullname?.split(' ')[0] || 'Me'}</span>
                 <ChevronDown className="h-4 w-4 ml-1" />
               </button>
               
@@ -247,12 +378,24 @@ const Header = () => {
                 <div className="absolute right-0 mt-2 w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
                   <div className="p-4 border-b border-gray-700">
                     <div className="flex items-center">
-                      <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                        YU
-                      </div>
+                      {user ? (
+                        <img
+                          src={avatarUrl(user)}
+                          alt={user?.fullname || 'User'}
+                          className="w-12 h-12 rounded-full object-cover mr-3"
+                          onError={onImgErr}
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                          {initials('Me')}
+                        </div>
+                      )}
                       <div>
-                        <p className="font-semibold text-white">Your Name</p>
-                        <p className="text-sm text-gray-400">3rd Year CSE</p>
+                        <p className="font-semibold text-white">{user?.fullname || 'Me'}</p>
+                        {user?.year && (
+                          <p className="text-sm text-gray-400">Year: {user.year}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -278,7 +421,12 @@ const Header = () => {
             </div>
 
             {/* Post Button */}
-            <button className="bg-purple-600 text-white p-2 rounded-lg hover:bg-purple-700 transition-colors">
+            <button
+              onClick={() => navigate('/addpost')}
+              className="bg-purple-600 text-white p-2 rounded-lg hover:bg-purple-700 transition-colors"
+              aria-label="Add Project"
+              title="Add Project"
+            >
               <Plus className="h-5 w-5" />
             </button>
           </nav>
@@ -300,9 +448,63 @@ const Header = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
-              placeholder="Search projects, competitions, mentors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchOpen(true)}
+              placeholder="Search people, posts/projects..."
               className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
             />
+            {searchOpen && (searchQuery.trim().length >= 2 || searchLoading) && (
+              <div className="absolute mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+                {searchLoading ? (
+                  <div className="p-4 text-gray-400 text-sm">Searching...</div>
+                ) : (
+                  <div className="max-h-96 overflow-y-auto">
+                    <div className="p-2 border-b border-gray-700">
+                      <p className="text-xs uppercase text-gray-400 px-2">People</p>
+                      {searchResults.users.length === 0 && (
+                        <div className="px-2 py-2 text-sm text-gray-500">No people found</div>
+                      )}
+                      {searchResults.users.map((u) => (
+                        <button
+                          key={u._id}
+                          onClick={() => { setSearchOpen(false); setMobileSearchOpen(false); setSearchQuery(''); navigate(`/profile/c/${encodeURIComponent(u.fullname)}`); }}
+                          className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                        >
+                          <img src={avatarUrl(u)} onError={onImgErr} alt={u.fullname} className="w-8 h-8 rounded-full object-cover" />
+                          <span className="text-sm text-white">{u.fullname}</span>
+                        </button>
+                      ))}
+                    </div>
+                    <div className="p-2">
+                      <p className="text-xs uppercase text-gray-400 px-2">Posts / Projects</p>
+                      {searchResults.posts.length === 0 && (
+                        <div className="px-2 py-2 text-sm text-gray-500">No posts/projects found</div>
+                      )}
+                      {searchResults.posts.map((p: any) => (
+                        <button
+                          key={p._id}
+                          onClick={() => { setSearchOpen(false); setMobileSearchOpen(false); setSearchQuery(''); if (p.owner?.fullname) navigate(`/profile/c/${encodeURIComponent(p.owner.fullname)}`); }}
+                          className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                        >
+                          {Array.isArray(p.postFile) && p.postFile[0] ? (
+                            <img src={p.postFile[0]} alt="thumb" className="w-10 h-10 rounded object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 bg-gray-700 rounded" />
+                          )}
+                          <div>
+                            <p className="text-sm text-white line-clamp-1">{p.description || 'Project post'}</p>
+                            {p.owner?.fullname && (
+                              <p className="text-xs text-gray-400">by {p.owner.fullname}</p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
