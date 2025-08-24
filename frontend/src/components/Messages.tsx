@@ -33,6 +33,7 @@ const Messages = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState('');
+  const [messageSearch, setMessageSearch] = useState('');
   const [openNewModal, setOpenNewModal] = useState(false);
   const [searchParams] = useSearchParams();
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -68,11 +69,7 @@ const Messages = () => {
     fetchContacts();
   }, []);
 
-  useEffect(() => {
-    if (!selectedChat && contacts.length > 0) {
-      setSelectedChat(contacts[0].user._id);
-    }
-  }, [contacts, selectedChat]);
+  // Removed auto-selection of first chat - let user choose
 
   useEffect(() => {
     const to = searchParams.get('to');
@@ -108,7 +105,7 @@ const Messages = () => {
         setThread(msgs || []);
         
         // Check for pinned message
-        const pinned = msgs.find(m => m.pinned);
+        const pinned = (msgs as any[]).find((m) => (m as any).pinned);
         if (pinned) {
           setPinnedMessage(pinned);
         }
@@ -281,6 +278,18 @@ const Messages = () => {
     return contacts.filter(c => c.user.fullname.toLowerCase().includes(q));
   }, [contacts, search]);
 
+  // Filter messages based on search
+  const filteredMessages = useMemo(() => {
+    const q = messageSearch.trim().toLowerCase();
+    if (!q) return thread;
+    return thread.filter(m => {
+      if (m.type === 'text') {
+        return m.content.toLowerCase().includes(q);
+      }
+      return false; // For media messages, you might want to search in metadata
+    });
+  }, [thread, messageSearch]);
+
   const messageDomId = (m: ChatMsg, idx: number) => (m as any)?._id || `idx-${idx}`;
   const jumpToMessage = (id?: string) => {
     if (!id) return;
@@ -315,13 +324,13 @@ const Messages = () => {
     setReactionPicker(null);
   };
   
-  const emojis = ['👍', '❤️', '😂', '😮', '😢', '🔥', '👏'];
+  const emojis = ['👍', '❤', '😂', '😮', '😢', '🔥', '👏'];
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
       <Header />
       
-      {/* Container for the chat interface. `h-screen` ensures it takes up full viewport height */}
+      {/* Container for the chat interface. h-screen ensures it takes up full viewport height */}
       <div className="h-[calc(100vh-64px)] overflow-hidden">
         <div className="flex h-full relative">
           {/* Mobile Drawer */}
@@ -384,7 +393,7 @@ const Messages = () => {
                               <h3 className="font-semibold text-white truncate">{convo.name}</h3>
                               <span className="text-xs text-gray-400">{convo.timestamp}</span>
                             </div>
-                            <p className={`text-sm text-blue-400 mb-1`}>{convo.role}</p>
+                            <p className="text-sm text-blue-400 mb-1">{convo.role}</p>
                             <p className="text-sm text-gray-400 truncate">{convo.lastMessage}</p>
                           </div>
                         </div>
@@ -395,6 +404,16 @@ const Messages = () => {
               </div>
             </div>
           )}
+
+          {/* Floating New Chat Button for Mobile */}
+          <button 
+            className="md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-colors flex items-center justify-center"
+            onClick={() => setOpenNewModal(true)}
+            title="New conversation"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+
           {/* Conversations Sidebar */}
           <div className="hidden md:flex md:w-80 border-r border-gray-700 flex-col">
             <div className="p-6 border-b border-gray-700">
@@ -455,7 +474,7 @@ const Messages = () => {
                             <span className="text-xs text-gray-400">{convo.timestamp}</span>
                           </div>
                         </div>
-                        <p className={`text-sm text-blue-400 mb-1`}>
+                        <p className="text-sm text-blue-400 mb-1">
                           {convo.role}
                         </p>
                         <p className="text-sm text-gray-400 truncate">{convo.lastMessage}</p>
@@ -473,8 +492,8 @@ const Messages = () => {
               <>
                 {/* Chat Header */}
                 <div className="p-6 border-b border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center flex-1 min-w-0 mr-4">
                       <button className="md:hidden mr-3 text-gray-300 hover:text-white" onClick={() => setMobileSidebarOpen(true)} aria-label="Open conversations">
                         <Menu className="h-6 w-6" />
                       </button>
@@ -493,9 +512,9 @@ const Messages = () => {
                           <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-white">{selectedConversation.name}</h3>
-                        <p className={`text-sm text-blue-400`}>{selectedConversation.role}</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-white truncate">{selectedConversation.name}</h3>
+                        <p className="text-sm text-blue-400">{selectedConversation.role}</p>
                         {selectedConversation.online && (
                           <p className="text-xs text-green-400">Active now</p>
                         )}
@@ -512,6 +531,18 @@ const Messages = () => {
                         </button>
                       )}
                     </div>
+                  </div>
+                  
+                  {/* Message Search Bar */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search messages..."
+                      value={messageSearch}
+                      onChange={(e) => setMessageSearch(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                    />
                   </div>
                 </div>
 
@@ -542,9 +573,20 @@ const Messages = () => {
                   </div>
                 )}
                 
+                {/* Search Results Info */}
+                {messageSearch && (
+                  <div className="px-6 py-2 bg-gray-800 border-b border-gray-700 text-sm text-gray-400">
+                    {filteredMessages.length === 0 ? (
+                      "No messages found"
+                    ) : (
+                      `Found ${filteredMessages.length} message${filteredMessages.length === 1 ? '' : 's'}`
+                    )}
+                  </div>
+                )}
+                
                 {/* Messages */}
                 <div ref={messagesRef} className="flex-1 overflow-y-auto p-6 space-y-4">
-                  {thread.map((m, idx) => {
+                  {filteredMessages.map((m, idx) => {
                     const senderId = typeof m.sender === 'string' ? m.sender : m.sender?._id;
                     const isOwn = senderId !== selectedChat;
                     const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
@@ -552,6 +594,7 @@ const Messages = () => {
                     const sel = contacts.find(c => c.user._id === selectedChat);
                     const avatarUrl = isOwn ? null : avatarUrlFrom(sel?.user?._id, sel?.user?.fullname, sel?.user?.avatar);
                     const mid = messageDomId(m, idx);
+                    const reactions = ((m as any).reactions) as Record<string, string[]> | undefined;
                     return (
                       <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group`}>
                         <div className={`flex items-end space-x-2 max-w-[90%] sm:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
@@ -595,13 +638,13 @@ const Messages = () => {
                             ) : (
                               <p className="text-sm whitespace-pre-wrap break-words max-w-full">{m.content}</p>
                             )}
-                            {m.reactions && Object.keys(m.reactions).some(emoji => m.reactions![emoji].length > 0) && (
+                            {reactions && Object.values(reactions).some(arr => (arr?.length || 0) > 0) && (
                               <div className="flex items-center space-x-1 mt-1 flex-wrap">
-                                {Object.entries(m.reactions).map(([emoji, users]) => users.length > 0 && (
+                                {Object.entries(reactions).map(([emoji, users]) => (users && users.length > 0) ? (
                                   <span key={emoji} className={`text-xs rounded-full px-2 py-0.5 mb-1 ${isOwn ? 'bg-purple-700 text-white' : 'bg-gray-600 text-gray-300'}`}>
                                     {emoji} {users.length}
                                   </span>
-                                ))}
+                                ) : null)}
                               </div>
                             )}
                             <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'}`}>{time}</p>
@@ -751,8 +794,8 @@ const Messages = () => {
                     <Users className="h-8 w-8 text-gray-400" />
                   </div>
                   <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a conversation</h3>
-                  <p className="text-gray-500">Choose a conversation from the sidebar to start messaging</p>
-                  <button className="md:hidden mt-4 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700" onClick={() => setMobileSidebarOpen(true)}>
+                  <p className="text-gray-500 mb-4">Choose a conversation from the sidebar to start messaging</p>
+                  <button className="md:hidden bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700" onClick={() => setMobileSidebarOpen(true)}>
                     Open conversations
                   </button>
                 </div>

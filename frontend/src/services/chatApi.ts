@@ -12,6 +12,8 @@ export type Message = {
   createdAt?: string;
   replyTo?: { _id: string; content: string; type: 'text'|'image'|'video'; sender?: any; createdAt?: string } | null;
   clientId?: string | null;
+  reactions?: Record<string, string[]>;
+  pinned?: boolean;
 };
 
 const apiBase = import.meta.env.VITE_API_URL;
@@ -42,3 +44,4 @@ export async function uploadChatFile(file: File) {
   const { data } = await axios.post(`${apiBase}/api/v1/chat/upload`, form, { withCredentials: true, headers: { 'Content-Type': 'multipart/form-data' } });
   return data?.data as { url: string; type: 'image'|'video' };
 }
+
