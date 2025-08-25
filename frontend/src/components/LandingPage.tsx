@@ -7,10 +7,18 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); 
   const [minLoadingElapsed, setMinLoadingElapsed] = useState(false);
-  const apiBase = import.meta.env.VITE_API_URL;
+  const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
   const [contributors, setContributors] = useState<any[]>([]);
   const [contributorsLoading, setContributorsLoading] = useState(false);
   const [contributorsError, setContributorsError] = useState<string | null>(null);
+  const [stats, setStats] = useState<{
+    publishedProjects: number;
+    mentors: number;
+    competitions: number;
+    activeStudents: number;
+  } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState<string | null>(null);
   
 
   useEffect(() => {
@@ -41,6 +49,23 @@ const LandingPage = () => {
       })
       .catch(() => setContributorsError('Failed to load contributors from GitHub.'))
       .finally(() => setContributorsLoading(false));
+  }, []);
+
+  // Fetch Landing Stats (projects, mentors, competitions, active students)
+  useEffect(() => {
+    setStatsLoading(true);
+    setStatsError(null);
+    fetch(`${apiBase}/api/v1/stats/landing`)
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data) => {
+        if (data && data.data) {
+          setStats(data.data);
+        } else {
+          setStatsError('Invalid response from stats API.');
+        }
+      })
+      .catch(() => setStatsError('Failed to load stats.'))
+      .finally(() => setStatsLoading(false));
   }, []);
 
   if (isLoggedIn === null || !minLoadingElapsed) {
@@ -129,7 +154,7 @@ const LandingPage = () => {
             </div>
             <div className="relative">
               <img 
-                src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                src="/landingpage.webp" 
                 alt="Students collaborating" 
                 className="w-full h-auto rounded-2xl shadow-2xl object-cover"
               />
@@ -139,7 +164,10 @@ const LandingPage = () => {
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="text-white font-semibold">50+ Active Students</p>
+                    <p className="text-white font-semibold">
+                      {statsLoading && 'Loading…'}
+                      {!statsLoading && (stats ? `${stats.activeStudents.toLocaleString()} Active Students` : 'Active Students')}
+                    </p>
                     <p className="text-gray-400 text-sm">Building the future together</p>
                   </div>
                 </div>
@@ -157,7 +185,7 @@ const LandingPage = () => {
             <p className="text-xl text-gray-300">InnovateHubCEC offers a range of features designed to support your innovative journey.</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-2">
             <div className="bg-gradient-to-br from-purple-900/50 to-gray-800 rounded-2xl p-8 border border-gray-700 hover:border-purple-500 transition-all duration-300">
               <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center mb-6">
                 <Code className="h-8 w-8 text-white" />
@@ -182,19 +210,30 @@ const LandingPage = () => {
               <p className="text-gray-300 leading-relaxed">Join exciting competitions and challenge yourself with innovative projects.</p>
             </div>
           </div>
+          {statsError && (
+            <div className="mx-auto max-w-2xl mb-6 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-3 text-center">
+              {statsError}
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-gray-900 rounded-2xl p-8 text-center border border-gray-700">
-              <h3 className="text-4xl font-bold text-purple-400 mb-2">250+</h3>
+              <h3 className="text-4xl font-bold text-purple-400 mb-2">
+                {statsLoading ? '…' : stats ? stats.publishedProjects.toLocaleString() : '—'}
+              </h3>
               <p className="text-gray-300">Projects Showcased</p>
             </div>
             <div className="bg-gray-900 rounded-2xl p-8 text-center border border-gray-700">
-              <h3 className="text-4xl font-bold text-blue-400 mb-2">50+</h3>
+              <h3 className="text-4xl font-bold text-blue-400 mb-2">
+                {statsLoading ? '…' : stats ? stats.mentors.toLocaleString() : '—'}
+              </h3>
               <p className="text-gray-300">Mentors Available</p>
             </div>
             <div className="bg-gray-900 rounded-2xl p-8 text-center border border-gray-700">
-              <h3 className="text-4xl font-bold text-green-400 mb-2">10+</h3>
+              <h3 className="text-4xl font-bold text-green-400 mb-2">
+                {statsLoading ? '…' : stats ? stats.competitions.toLocaleString() : '—'}
+              </h3>
               <p className="text-gray-300">Competitions Held</p>
             </div>
           </div>
