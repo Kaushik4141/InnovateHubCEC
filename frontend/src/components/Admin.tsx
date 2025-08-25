@@ -16,7 +16,7 @@ interface MentorApplication {
 }
 
 const Admin = () => {
-  const apiBase = import.meta.env.VITE_API_URL;
+  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
   const [apps, setApps] = useState<MentorApplication[]>([]);
   const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'rejected' | 'all'>('pending');
   const [loading, setLoading] = useState(false);

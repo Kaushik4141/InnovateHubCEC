@@ -15,7 +15,9 @@ const userSchema = new mongoose.Schema({
     required: function () { return this.onboardingCompleted === true || this.provider === 'local'; },
     unique: true,
     index: true,
-    trim: true
+    trim: true,
+    set: function(v) { return typeof v === 'string' ? v.trim().toUpperCase() : v; },
+    match: [/^4CB/, 'Invalid USN.']
   },
   year: {
     type: Number,

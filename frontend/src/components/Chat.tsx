@@ -444,8 +444,7 @@ const Chat: React.FC = () => {
       console.error('Failed to copy message:', err);
     }
   };
-  // ----- Render -----
-  return (
+    return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       <div className="h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] bg-gray-900 text-white flex overflow-hidden">
@@ -642,7 +641,7 @@ const Chat: React.FC = () => {
           </header>
           
           {/* Messages Area */}
-          <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 bg-gray-900">
+          <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 pb-28 space-y-3 bg-gray-900">
             {showWelcomeScreen && (
               <div className="flex flex-col items-center justify-center h-full text-gray-500">
                 <div className="bg-gray-800 p-6 rounded-xl text-center max-w-md mx-4">
@@ -906,7 +905,7 @@ const Chat: React.FC = () => {
         {!mobileSidebarOpen && !onlineUsersOpen && (
           <button
             onClick={() => setOpenNewModal(true)}
-            className="md:hidden fixed bottom-24 right-6 z-30 bg-purple-600 text-white p-4 rounded-full shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105"
+            className="md:hidden fixed right-4 bottom-24 z-20 bg-purple-600 text-white w-12 h-12 rounded-full shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105 flex items-center justify-center"
             aria-label="New conversation"
           >
             <Plus className="h-6 w-6" />

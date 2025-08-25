@@ -28,7 +28,7 @@ type Me = {
 const useMe = () => {
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
-  const apiBase = import.meta.env.VITE_API_URL;
+  const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
   useEffect(() => {
     let mounted = true;
     (async () => {

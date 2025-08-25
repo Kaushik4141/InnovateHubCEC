@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const RAW_API = import.meta.env.VITE_API_URL as string | undefined;
+const API_BASE_URL = RAW_API ? RAW_API.replace(/\/+$/, '') : '';
 
 const api = axios.create({
   baseURL: `${API_BASE_URL}/api/v1`,

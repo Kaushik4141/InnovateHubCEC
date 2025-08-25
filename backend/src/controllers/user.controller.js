@@ -120,7 +120,11 @@ const completeOnboarding = asyncHandler(async (req, res) => {
   const u = await User.findById(req.user._id);
   if (!u) throw new ApiError(404, "User not found");
   if (fullname) u.fullname = fullname;
-  u.usn = usn;
+  const usnNorm = String(usn).trim().toUpperCase();
+  if (!/^4CB/.test(usnNorm)) {
+    throw new ApiError(400, "Invalid USN. USN must start with 4CB");
+  }
+  u.usn = usnNorm;
   u.year = Number(year);
   u.onboardingCompleted = true;
   await u.save();
@@ -146,19 +150,28 @@ const registerUser = asyncHandler(async (req, res, next) => {
       
       throw new ApiError(400, "Please provide all required fields");
     }
+    const fullnameNorm = String(fullname).trim();
+    const emailNorm = String(email).toLowerCase().trim();
+    const usnNorm = String(usn).trim().toUpperCase();
+    const yearNum = Number(year);
+
+    if (!/^4CB/.test(usnNorm)) {
+      throw new ApiError(400, "Invalid USN. USN must start with 4CB");
+    }
+
     const existeduser = await User.findOne({
-      $or: [{ email }, { usn },{ fullname }],
+      $or: [{ email: emailNorm }, { usn: usnNorm }, { fullname: fullnameNorm }],
     });
     if (existeduser) {
-      if (existeduser.email === email) {
+      if (existeduser.email === emailNorm) {
         console.log("User with this email already exists");
         throw new ApiError(409, "User with this email already exists");
         
       }
-      if (existeduser.usn === usn) {
+      if (existeduser.usn === usnNorm) {
         throw new ApiError(409, "User with this USN already exists");
       }
-      if (existeduser.fullname === fullname) {
+      if (existeduser.fullname === fullnameNorm) {
         throw new ApiError(409, "User with this fullname already exists");
       }
       else{
@@ -185,10 +198,10 @@ const registerUser = asyncHandler(async (req, res, next) => {
     }
 
     const user = await User.create({
-      fullname,
-      email,
-      usn,
-      year,
+      fullname: fullnameNorm,
+      email: emailNorm,
+      usn: usnNorm,
+      year: yearNum,
       password,
       ...(avatarUrl && { avatar: avatarUrl }),
       ...(coverimageUrl && { coverimage: coverimageUrl }),

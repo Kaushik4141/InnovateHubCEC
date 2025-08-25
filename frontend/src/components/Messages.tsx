@@ -407,7 +407,7 @@ const Messages = () => {
 
           {/* Floating New Chat Button for Mobile */}
           <button 
-            className="md:hidden fixed bottom-6 right-6 z-30 w-14 h-14 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-colors flex items-center justify-center"
+            className="md:hidden fixed right-4 bottom-24 z-20 w-12 h-12 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-colors flex items-center justify-center"
             onClick={() => setOpenNewModal(true)}
             title="New conversation"
           >
@@ -585,7 +585,7 @@ const Messages = () => {
                 )}
                 
                 {/* Messages */}
-                <div ref={messagesRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+                <div ref={messagesRef} className="flex-1 overflow-y-auto p-6 pb-28 space-y-4">
                   {filteredMessages.map((m, idx) => {
                     const senderId = typeof m.sender === 'string' ? m.sender : m.sender?._id;
                     const isOwn = senderId !== selectedChat;
@@ -772,7 +772,7 @@ const Messages = () => {
                         type="text"
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Type a message..."
                         className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
                       />

@@ -88,6 +88,12 @@ const SignupForm: React.FC = () => {
     const errs: FormErrors = {};
     if (!formData.fullname.trim()) errs.fullname = 'Full name is required';
     if (!formData.usn.trim()) errs.usn = 'USN is required';
+    else {
+      const usn = formData.usn.trim().toUpperCase();
+      if (!/^4CB/.test(usn)) {
+        errs.usn = 'Invalid USN.';
+      }
+    }
     if (!formData.year) errs.year = 'Please select your graduation year';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) errs.email = 'Email is required';
