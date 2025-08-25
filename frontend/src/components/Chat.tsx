@@ -53,7 +53,7 @@ const Chat: React.FC = () => {
   const [onlineUsersOpen, setOnlineUsersOpen] = useState(false);
   const [openNewModal, setOpenNewModal] = useState(false);
   // extra features
-  const [reactionPicker, setReactionPicker] = useState<string | null>(null); // messageDomId
+  const [reactionPicker, setReactionPicker] = useState<string | null>(null); 
   const [activeDeleteMenu, setActiveDeleteMenu] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [searchParams] = useSearchParams();
