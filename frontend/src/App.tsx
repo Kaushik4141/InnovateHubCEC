@@ -17,10 +17,12 @@ import UserProfileView from './components/UserProfileView';
 import Chat from './components/Chat';
 import Onboarding from './components/Onboarding';
 import Mentors from './components/Mentors';
+import Admin from './components/Admin';
 
 type Me = {
   _id: string;
   onboardingCompleted?: boolean;
+  isAdmin?: boolean;
 };
 
 const useMe = () => {
@@ -71,6 +73,14 @@ const OnboardingOnly = () => {
   return <Onboarding />;
 };
 
+const RequireAdmin = ({ children }: { children: JSX.Element }) => {
+  const { me, loading } = useMe();
+  if (loading) return null;
+  if (!me) return <Navigate to="/login" replace />;
+  if (!me.isAdmin) return <Navigate to="/dashboard" replace />;
+  return children;
+};
+
 function App() {
   return (
     <Router>
@@ -79,6 +89,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/team" element={<Team />} />
           <Route path="/mentors" element={<Mentors />} />
+          <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
           <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
           <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />
           <Route path="/messages" element={<RequireOnboardingComplete><Messages /></RequireOnboardingComplete>} />

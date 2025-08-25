@@ -119,6 +119,10 @@ const userSchema = new mongoose.Schema({
     title: { type: String, required: true },
     url: { type: String, required: true }
   }],
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
   refreshToken: {
     type: String
   },

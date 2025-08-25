@@ -1,6 +1,6 @@
 import React,{useState,useEffect} from 'react';
 import { useNavigate, } from 'react-router-dom';
-import { Home, Users, Trophy, Code, MessageCircle, Bookmark, Menu, X, UserPlus } from 'lucide-react';
+import { Home, Users, Trophy, Code, MessageCircle, Bookmark, Menu, X, UserPlus, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
 import { networkApi, type ConnectionSuggestion } from '../services/networkApi';
 
@@ -58,6 +58,7 @@ interface User {
     mentees?: number;
     competitions?: number;
   };
+  isAdmin?: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
@@ -214,6 +215,17 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
               Messages
             </button>
           </li>
+          {user?.isAdmin && (
+            <li>
+              <button 
+                onClick={() => navigate('/admin')}
+                className="w-full flex items-center px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors"
+              >
+                <ShieldCheck className="h-5 w-5 mr-3" />
+                Admin
+              </button>
+            </li>
+          )}
           <li>
             <button className="w-full flex items-center px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700 transition-colors">
               <Bookmark className="h-5 w-5 mr-3" />
