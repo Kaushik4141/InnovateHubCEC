@@ -16,6 +16,7 @@ import AddPost from './components/addpost';
 import UserProfileView from './components/UserProfileView';
 import Chat from './components/Chat';
 import Onboarding from './components/Onboarding';
+import Mentors from './components/Mentors';
 
 type Me = {
   _id: string;
@@ -77,6 +78,7 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/team" element={<Team />} />
+          <Route path="/mentors" element={<Mentors />} />
           <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
           <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />
           <Route path="/messages" element={<RequireOnboardingComplete><Messages /></RequireOnboardingComplete>} />

@@ -313,7 +313,7 @@ const LandingPage = () => {
               <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
               <ul className="space-y-2">
                 <li><button onClick={() => navigate('/dashboard')} className="text-gray-300 hover:text-white transition-colors">Browse Projects</button></li>
-                <li><button onClick={() => navigate('/network')} className="text-gray-300 hover:text-white transition-colors">Find Mentors</button></li>
+                <li><button onClick={() => navigate('/mentors')} className="text-gray-300 hover:text-white transition-colors">Find Mentors</button></li>
                 <li><button onClick={() => navigate('/jobs')} className="text-gray-300 hover:text-white transition-colors">Competitions</button></li>
               </ul>
             </div>

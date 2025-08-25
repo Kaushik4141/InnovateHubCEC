@@ -1,180 +1,108 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ChangeEvent, FormEvent } from 'react';
 import { 
   MessageCircle, Star, Award, Code, Cpu, Palette, Brain, Database, Smartphone,
   Search, Users, Calendar, Video, Phone
 } from 'lucide-react';
 
+const API_BASE: string = ((import.meta as any).env?.VITE_API_URL as string | undefined) || '';
+
 const MentorsList = () => {
+  type Mentor = {
+    id: string | number;
+    name: string;
+    year: string;
+    specialization: string;
+    bio: string;
+    skills: string[];
+    rating: number;
+    totalReviews: number;
+    mentees: number;
+    projects: number;
+    sessionsCompleted: number;
+    responseTime: string;
+    avatar: string;
+    available: boolean;
+    nextAvailable: string;
+    hourlyRate: string;
+    languages: string[];
+    achievements: string[];
+    experience: string;
+    company: string;
+    location: string;
+    joinedDate: string;
+    sessionTypes: string[];
+    expertise: string[];
+  };
+
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showMentorModal, setShowMentorModal] = useState(false);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState<string | null>(null);
 
-  const mentors = [
-    {
-      id: 1,
-      name: "Aditya Kumar",
-      year: "Final Year CSE",
-      specialization: "Full Stack Development",
-      bio: "Passionate about building scalable web applications and mentoring junior developers. 3+ years of experience in React, Node.js, and cloud technologies.",
-      skills: ["React", "Node.js", "Python", "AWS", "MongoDB", "TypeScript"],
-      rating: 4.9,
-      totalReviews: 45,
-      mentees: 15,
-      projects: 8,
-      sessionsCompleted: 120,
-      responseTime: "< 2 hours",
-      icon: Code,
-      avatar: "AK",
-      available: true,
-      nextAvailable: "Today 3:00 PM",
-      hourlyRate: "Free",
-      languages: ["English", "Hindi"],
-      achievements: ["Best Mentor 2023", "Top Contributor"],
-      experience: "3+ years",
-      company: "Tech Startup Intern",
-      location: "Bangalore",
-      joinedDate: "2023-01-15",
-      sessionTypes: ["1-on-1", "Group", "Code Review"],
-      expertise: ["Web Development", "System Design", "Career Guidance"]
-    },
-    {
-      id: 2,
-      name: "Sneha Agarwal",
-      year: "4th Year CSE",
-      specialization: "Machine Learning & AI",
-      bio: "ML enthusiast with research experience in computer vision and NLP. Published 2 papers and worked on industry projects.",
-      skills: ["TensorFlow", "PyTorch", "Python", "Data Science", "OpenCV", "Scikit-learn"],
-      rating: 4.8,
-      totalReviews: 32,
-      mentees: 12,
-      projects: 6,
-      sessionsCompleted: 89,
-      responseTime: "< 4 hours",
-      icon: Brain,
-      avatar: "SA",
-      available: false,
-      nextAvailable: "Tomorrow 10:00 AM",
-      hourlyRate: "Free",
-      languages: ["English", "Hindi"],
-      achievements: ["Research Excellence", "AI Competition Winner"],
-      experience: "2+ years",
-      company: "Research Lab",
-      location: "Bangalore",
-      joinedDate: "2023-02-20",
-      sessionTypes: ["1-on-1", "Research Guidance"],
-      expertise: ["Machine Learning", "Research", "Data Analysis"]
-    },
-    {
-      id: 3,
-      name: "Vikram Singh",
-      year: "Final Year ECE",
-      specialization: "IoT & Embedded Systems",
-      bio: "Hardware enthusiast with expertise in IoT solutions and embedded programming. Built 10+ IoT projects for smart campus initiatives.",
-      skills: ["Arduino", "Raspberry Pi", "C++", "PCB Design", "MQTT", "Sensors"],
-      rating: 4.7,
-      totalReviews: 28,
-      mentees: 10,
-      projects: 12,
-      sessionsCompleted: 67,
-      responseTime: "< 6 hours",
-      icon: Cpu,
-      avatar: "VS",
-      available: true,
-      nextAvailable: "Today 5:00 PM",
-      hourlyRate: "Free",
-      languages: ["English", "Hindi", "Punjabi"],
-      achievements: ["IoT Innovation Award", "Best Project 2023"],
-      experience: "2+ years",
-      company: "Hardware Startup",
-      location: "Bangalore",
-      joinedDate: "2023-03-10",
-      sessionTypes: ["1-on-1", "Project Review", "Hardware Demo"],
-      expertise: ["IoT Development", "Hardware Design", "Embedded Systems"]
-    },
-    {
-      id: 4,
-      name: "Priyanka Joshi",
-      year: "4th Year IT",
-      specialization: "UI/UX Design",
-      bio: "Creative designer focused on user-centered design and accessibility. Worked with 5+ startups on product design and user research.",
-      skills: ["Figma", "Adobe XD", "Prototyping", "User Research", "Design Systems", "Sketch"],
-      rating: 4.9,
-      totalReviews: 41,
-      mentees: 18,
-      projects: 15,
-      sessionsCompleted: 156,
-      responseTime: "< 1 hour",
-      icon: Palette,
-      avatar: "PJ",
-      available: true,
-      nextAvailable: "Today 2:00 PM",
-      hourlyRate: "Free",
-      languages: ["English", "Hindi", "Marathi"],
-      achievements: ["Design Excellence", "User Choice Award"],
-      experience: "3+ years",
-      company: "Design Agency",
-      location: "Mumbai",
-      joinedDate: "2022-12-05",
-      sessionTypes: ["1-on-1", "Portfolio Review", "Design Critique"],
-      expertise: ["UI/UX Design", "Product Design", "User Research"]
-    },
-    {
-      id: 5,
-      name: "Rohit Sharma",
-      year: "Final Year CSE",
-      specialization: "Database Systems & Backend",
-      bio: "Backend specialist with deep knowledge of database optimization and system architecture. Experienced in building high-performance APIs.",
-      skills: ["MySQL", "MongoDB", "PostgreSQL", "System Design", "Redis", "Docker"],
-      rating: 4.6,
-      totalReviews: 23,
-      mentees: 8,
-      projects: 5,
-      sessionsCompleted: 45,
-      responseTime: "< 8 hours",
-      icon: Database,
-      avatar: "RS",
-      available: false,
-      nextAvailable: "Monday 11:00 AM",
-      hourlyRate: "Free",
-      languages: ["English", "Hindi"],
-      achievements: ["Database Expert", "Performance Optimization"],
-      experience: "2+ years",
-      company: "Enterprise Software",
-      location: "Bangalore",
-      joinedDate: "2023-04-18",
-      sessionTypes: ["1-on-1", "System Design", "Code Review"],
-      expertise: ["Database Design", "Backend Development", "System Architecture"]
-    },
-    {
-      id: 6,
-      name: "Kavya Reddy",
-      year: "4th Year IT",
-      specialization: "Mobile Development",
-      bio: "Mobile app developer with expertise in cross-platform development. Published 3 apps on app stores with 10k+ downloads.",
-      skills: ["React Native", "Flutter", "iOS", "Android", "Firebase", "API Integration"],
-      rating: 4.8,
-      totalReviews: 36,
-      mentees: 14,
-      projects: 9,
-      sessionsCompleted: 98,
-      responseTime: "< 3 hours",
-      icon: Smartphone,
-      avatar: "KR",
-      available: true,
-      nextAvailable: "Today 4:00 PM",
-      hourlyRate: "Free",
-      languages: ["English", "Hindi", "Telugu"],
-      achievements: ["App Store Featured", "Mobile Innovation"],
-      experience: "2+ years",
-      company: "Mobile App Startup",
-      location: "Hyderabad",
-      joinedDate: "2023-01-30",
-      sessionTypes: ["1-on-1", "App Review", "Publishing Guidance"],
-      expertise: ["Mobile Development", "App Store Optimization", "Cross-platform"]
+  useEffect(() => {
+    let mounted = true;
+    async function loadMentors() {
+      try {
+        const url = `${API_BASE}/api/v1/mentors`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!res.ok) throw new Error('Failed to load mentors');
+        const json = await res.json();
+      
+        const data = Array.isArray(json) ? json : (json?.data ?? []);
+        const normalized = (data as any[]).map((m) => ({
+          id: m.id || m._id || m.name || Math.random().toString(36).slice(2),
+          name: m.name || '',
+          year: m.year || '',
+          specialization: m.specialization || '',
+          bio: m.bio || '',
+          skills: Array.isArray(m.skills) ? m.skills : [],
+          rating: typeof m.rating === 'number' ? m.rating : 0,
+          totalReviews: typeof m.totalReviews === 'number' ? m.totalReviews : 0,
+          mentees: typeof m.mentees === 'number' ? m.mentees : 0,
+          projects: typeof m.projects === 'number' ? m.projects : 0,
+          sessionsCompleted: typeof m.sessionsCompleted === 'number' ? m.sessionsCompleted : 0,
+          responseTime: m.responseTime || '',
+          avatar: m.avatar || (m.name ? m.name[0] : '?'),
+          available: !!m.available,
+          nextAvailable: m.nextAvailable || '',
+          hourlyRate: m.hourlyRate || 'Free',
+          languages: Array.isArray(m.languages) ? m.languages : [],
+          achievements: Array.isArray(m.achievements) ? m.achievements : [],
+          experience: m.experience || '',
+          company: m.company || '',
+          location: m.location || '',
+          joinedDate: m.joinedDate || new Date().toISOString(),
+          sessionTypes: Array.isArray(m.sessionTypes) ? m.sessionTypes : [],
+          expertise: Array.isArray(m.expertise) ? m.expertise : [],
+        }));
+        if (mounted) setMentors(normalized as Mentor[]);
+      } catch (e) {
+        // Fallback: if fetch fails, keep mentors empty
+        if (mounted) setMentors([]);
+      } finally {
+        if (mounted) setLoading(false);
+      }
     }
-  ];
+    loadMentors();
+    return () => { mounted = false; };
+  }, []);
 
-  const specializations = [
+  const iconFor = (spec: string) => {
+    if (spec.includes('Full Stack')) return Code;
+    if (spec.includes('Machine Learning')) return Brain;
+    if (spec.includes('Embedded') || spec.includes('IoT')) return Cpu;
+    if (spec.includes('UI/UX') || spec.includes('Design')) return Palette;
+    if (spec.includes('Mobile')) return Smartphone;
+    if (spec.includes('Database')) return Database;
+    return Users;
+  };
+
+  const specializations = useMemo(() => [
     { name: "All", value: "all", count: mentors.length },
     { name: "Full Stack Development", value: "Full Stack Development", count: mentors.filter(m => m.specialization.includes("Full Stack")).length },
     { name: "Machine Learning & AI", value: "Machine Learning & AI", count: mentors.filter(m => m.specialization.includes("Machine Learning")).length },
@@ -182,7 +110,7 @@ const MentorsList = () => {
     { name: "UI/UX Design", value: "UI/UX Design", count: mentors.filter(m => m.specialization.includes("UI/UX")).length },
     { name: "Mobile Development", value: "Mobile Development", count: mentors.filter(m => m.specialization.includes("Mobile")).length },
     { name: "Database Systems", value: "Database Systems", count: mentors.filter(m => m.specialization.includes("Database")).length }
-  ];
+  ], [mentors]);
 
   const filteredMentors = mentors.filter(mentor => {
     const matchesSpecialization = filter === 'all' || mentor.specialization.includes(filter);
@@ -203,10 +131,22 @@ const MentorsList = () => {
           <h2 className="text-2xl font-bold text-white">Find Mentors</h2>
           <p className="text-gray-400">Connect with experienced seniors for guidance and support</p>
         </div>
-        <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors">
+        <button onClick={() => { setSubmitMessage(null); setShowMentorModal(true); }} className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors">
           Become a Mentor
         </button>
       </div>
+
+      {/* Submission status banner */}
+      {submitLoading && (
+        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-300 px-4 py-3">
+          Submitting your application...
+        </div>
+      )}
+      {submitMessage && !submitLoading && (
+        <div className="rounded-lg border border-gray-700 bg-gray-800 text-gray-200 px-4 py-3">
+          {submitMessage}
+        </div>
+      )}
 
       {/* Search and Filters */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
@@ -265,26 +205,29 @@ const MentorsList = () => {
             Top Rated Mentors
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {mentors.filter(m => m.rating >= 4.8).slice(0, 3).map((mentor) => (
-              <div key={mentor.id} className="bg-gray-700 rounded-lg p-4 border border-yellow-500 border-opacity-30">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
-                      {mentor.avatar}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white text-sm">{mentor.name}</h4>
-                      <div className="flex items-center">
-                        <Star className="h-3 w-3 text-yellow-400 fill-current" />
-                        <span className="text-xs text-gray-400 ml-1">{mentor.rating}</span>
+            {mentors.filter(m => m.rating >= 4.8).slice(0, 3).map((mentor) => {
+              const Icon = iconFor(mentor.specialization);
+              return (
+                <div key={mentor.id} className="bg-gray-700 rounded-lg p-4 border border-yellow-500 border-opacity-30">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center">
+                      <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
+                        {mentor.avatar}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-white text-sm">{mentor.name}</h4>
+                        <div className="flex items-center">
+                          <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                          <span className="text-xs text-gray-400 ml-1">{mentor.rating}</span>
+                        </div>
                       </div>
                     </div>
+                    <Icon className="h-5 w-5 text-gray-400" />
                   </div>
-                  <mentor.icon className="h-5 w-5 text-gray-400" />
+                  <p className="text-xs text-gray-400">{mentor.specialization}</p>
                 </div>
-                <p className="text-xs text-gray-400">{mentor.specialization}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -314,7 +257,7 @@ const MentorsList = () => {
                   </div>
                 </div>
               </div>
-              <mentor.icon className="h-6 w-6 text-gray-400 flex-shrink-0" />
+              {(() => { const Icon = iconFor(mentor.specialization); return <Icon className="h-6 w-6 text-gray-400 flex-shrink-0" />; })()}
             </div>
 
             {/* Specialization */}
@@ -440,13 +383,156 @@ const MentorsList = () => {
       )}
 
       {/* No Results */}
-      {filteredMentors.length === 0 && (
+      {filteredMentors.length === 0 && !loading && (
         <div className="text-center py-12">
           <Users className="h-16 w-16 text-gray-600 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-400 mb-2">No mentors found</h3>
           <p className="text-gray-500">Try adjusting your search or filter criteria</p>
         </div>
       )}
+
+      {/* Become a Mentor Modal */}
+      {showMentorModal && (
+        <BecomeMentorModal 
+          onClose={() => setShowMentorModal(false)} 
+          onSubmitStart={() => { setSubmitMessage(null); setSubmitLoading(true); }}
+          onSubmitEnd={(message) => { setSubmitLoading(false); setSubmitMessage(message); }}
+        />
+      )}
+    </div>
+  );
+};
+
+type BecomeMentorForm = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  linkedin?: string;
+  github?: string;
+  portfolio?: string;
+  specialization: string;
+  whySuitable: string;
+};
+
+const BecomeMentorModal = ({ onClose, onSubmitStart, onSubmitEnd }: { onClose: () => void; onSubmitStart: () => void; onSubmitEnd: (message: string) => void; }) => {
+  const [form, setForm] = useState<BecomeMentorForm>({
+    fullName: '',
+    email: '',
+    phone: '',
+    linkedin: '',
+    github: '',
+    portfolio: '',
+    specialization: '',
+    whySuitable: ''
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [userLoaded, setUserLoaded] = useState(false);
+
+  // Auto-fill from current user profile
+  useEffect(() => {
+    let mounted = true;
+    async function loadCurrentUser() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/users/current-user`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' }
+        });
+        const json = await res.json().catch(() => ({}));
+        const user = json?.data || {};
+        if (mounted && user) {
+          setForm(prev => ({
+            ...prev,
+            fullName: user.fullname || prev.fullName,
+            email: user.email || prev.email,
+            linkedin: user.linkedin || prev.linkedin,
+            github: user.github || prev.github,
+            // portfolio may not exist on profile; keep as-is if absent
+            portfolio: user.portfolio || prev.portfolio,
+          }));
+          setUserLoaded(!!(user && (user.fullname || user.email)));
+        }
+      } catch (_) {
+        // ignore; user may be unauthenticated
+      }
+    }
+    loadCurrentUser();
+    return () => { mounted = false; };
+  }, []);
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    onSubmitStart();
+    try {
+      const payload = {
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone,
+        linkedin: form.linkedin,
+        github: form.github,
+        portfolio: form.portfolio,
+        specialization: form.specialization,
+        whySuitable: form.whySuitable,
+        page: typeof window !== 'undefined' ? window.location.href : '',
+        sent_at: new Date().toISOString()
+      };
+      const res = await fetch(`${API_BASE}/api/v1/mentors/apply`, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && (json?.success ?? res.status < 400)) {
+        onSubmitEnd('Thanks! Your mentor application has been sent.');
+        onClose();
+      } else {
+        const serverMsg = json?.message || '';
+        onSubmitEnd(serverMsg ? `Submission error: ${serverMsg}` : 'Failed to send application. Please try again.');
+      }
+    } catch (err) {
+      onSubmitEnd('An error occurred. Please try again later.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true">
+      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-white">Become a Mentor</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input name="fullName" placeholder="Full Name" required value={form.fullName} onChange={handleChange} readOnly={userLoaded} className={`bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white ${userLoaded ? 'opacity-80 cursor-not-allowed' : ''}`} />
+            <input type="email" name="email" placeholder="Email" required value={form.email} onChange={handleChange} readOnly={userLoaded} className={`bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white ${userLoaded ? 'opacity-80 cursor-not-allowed' : ''}`} />
+            <input name="phone" placeholder="Phone (optional)" value={form.phone} onChange={handleChange} className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" />
+            <input name="linkedin" placeholder="LinkedIn URL" value={form.linkedin} onChange={handleChange} readOnly={userLoaded} className={`bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white ${userLoaded ? 'opacity-80 cursor-not-allowed' : ''}`} />
+            <input name="specialization" placeholder="Specialization (e.g., Full Stack)" required value={form.specialization} onChange={handleChange} className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white" />
+          </div>
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-300 mb-2">Links (optional)</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <input name="github" placeholder="GitHub URL" value={form.github} onChange={handleChange} className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white" />
+              <input name="portfolio" placeholder="Portfolio URL" value={form.portfolio} onChange={handleChange} className="bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-white" />
+            </div>
+          </div>
+          <textarea name="whySuitable" placeholder="Why are you suitable to be a mentor?" required value={form.whySuitable} onChange={handleChange} className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white w-full min-h-[120px]"></textarea>
+          <div className="flex items-center justify-end gap-3">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:bg-gray-800">Cancel</button>
+            <button type="submit" disabled={submitting} className="px-5 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-60">
+              {submitting ? 'Submitting...' : 'Submit Application'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };
