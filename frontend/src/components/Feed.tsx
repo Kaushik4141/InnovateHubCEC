@@ -63,7 +63,13 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
   
   const displayImages = showAll ? imageFiles : imageFiles.slice(0, 4);
   const remainingCount = imageCount - 4;
-  
+
+  const secureUrl = (url: string) => {
+  if (!url) return url;
+  return url.startsWith("http://res.cloudinary.com")
+    ? url.replace("http://", "https://")
+    : url;
+};
   return (
     <div className="mt-3">
       {/* Images Grid */}
@@ -73,7 +79,7 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
             {displayImages.map((fileUrl, index) => (
               <div key={index} className="relative overflow-hidden">
                 <img
-                  src={fileUrl}
+                  src={secureUrl(fileUrl)}
                   alt={`Project image ${index + 1}`}
                   className={getImageClass(index)}
                   onClick={() => openLightbox({ type: 'image', url: fileUrl })}
@@ -110,7 +116,7 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
             <video
               key={idx}
               controls
-              src={fileUrl}
+              src={secureUrl(fileUrl)}
               className="w-full max-h-64 rounded-lg border border-gray-700 cursor-pointer"
               onClick={() => openLightbox({ type: 'video', url: fileUrl })}
             >
