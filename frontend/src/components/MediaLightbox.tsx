@@ -18,11 +18,22 @@ const MediaLightbox: React.FC<Props> = ({ open, media, onClose }) => {
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
+  // Force HTTPS for Cloudinary URLs
+  const secureUrl = (url: string) => {
+    if (!url) return url;
+    return url.startsWith("http://res.cloudinary.com")
+      ? url.replace("http://", "https://")
+      : url;
+  };
+
   if (!open || !media) return null;
 
   return (
     <div className="fixed inset-0 z-[100]">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm opacity-100 transition-opacity" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/80 backdrop-blur-sm opacity-100 transition-opacity"
+        onClick={onClose}
+      />
       <div className="relative w-full h-full flex items-center justify-center p-4">
         <button
           onClick={onClose}
@@ -34,13 +45,13 @@ const MediaLightbox: React.FC<Props> = ({ open, media, onClose }) => {
         <div className="max-w-6xl max-h-[85vh] w-full flex items-center justify-center">
           {media.type === 'image' ? (
             <img
-              src={media.url}
+              src={secureUrl(media.url)}   
               alt="media"
               className="max-h-[85vh] max-w-full rounded-lg shadow-2xl transition-transform duration-200 ease-out"
             />
           ) : (
             <video
-              src={media.url}
+              src={secureUrl(media.url)}  
               controls
               autoPlay
               className="max-h-[85vh] max-w-full rounded-lg shadow-2xl transition-transform duration-200 ease-out"
