@@ -124,15 +124,17 @@ export const getPrivateContacts = asyncHandler(async (req, res) => {
     model: "User",
     select: "fullname avatar",
   });
-  const formatted = results.map((r) => ({
-    user: {
-      _id: r._id._id.toString(),
-      fullname: r._id.fullname,
-      avatar: r._id.avatar,
-    },
-    lastMessage: r.lastMessage,
-    online: presenceStore.isUserOnline(r._id._id.toString()),
-  }));
+  const formatted = results
+    .filter(r => r._id) 
+    .map((r) => ({
+      user: {
+        _id: r._id._id.toString(),
+        fullname: r._id.fullname,
+        avatar: r._id.avatar,
+      },
+      lastMessage: r.lastMessage,
+      online: presenceStore.isUserOnline(r._id._id.toString()),
+    }));
   return res
     .status(200)
     .json(new ApiResponse(200, formatted, "Contacts fetched"));
