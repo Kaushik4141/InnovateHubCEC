@@ -322,6 +322,7 @@ const UserProfileView = () => {
     usn: string;
     fullname: string;
     year: number;
+    branch?: string;
     email: string;
     avatar?: string;
     skills: string[];
@@ -462,7 +463,7 @@ const UserProfileView = () => {
                 <div>
                   <h1 className="text-3xl font-bold">{user.fullname}</h1>
                   <p className="text-purple-400">
-                    {getOrdinalSuffix(user.year)} Year CSE
+                    {getOrdinalSuffix(user.year)} Year {user.branch || '—'}
                   </p>
                   {/* Connect button (if not self) */}
                   {currentUser && user && (

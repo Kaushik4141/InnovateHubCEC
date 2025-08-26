@@ -65,7 +65,6 @@ const MentorsList = () => {
           year: m.year || '',
           specialization: m.specialization || '',
           bio: m.bio || '',
-          // prefer skills; fallback to expertise from backend
           skills: Array.isArray(m.skills) && m.skills.length > 0 ? m.skills : (Array.isArray(m.expertise) ? m.expertise : []),
           rating: typeof m.rating === 'number' ? m.rating : 0,
           totalReviews: typeof m.totalReviews === 'number' ? m.totalReviews : 0,
@@ -85,12 +84,11 @@ const MentorsList = () => {
           joinedDate: m.joinedDate || new Date().toISOString(),
           sessionTypes: Array.isArray(m.sessionTypes) ? m.sessionTypes : [],
           expertise: Array.isArray(m.expertise) ? m.expertise : [],
-          // use enriched userId from backend if present for messaging/connect
+        
           uid: m.userId || m._id || null,
         }));
         if (mounted) setMentors(normalized as Mentor[]);
       } catch (e) {
-        // Fallback: if fetch fails, keep mentors empty
         if (mounted) setMentors([]);
       } finally {
         if (mounted) setLoading(false);
@@ -118,7 +116,6 @@ const MentorsList = () => {
     return () => { mounted = false; };
   }, []);
 
-  // Note: simplified UI does not include filters/search; show all mentors
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">

@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
     type: Number,
     required: function () { return this.onboardingCompleted === true || this.provider === 'local'; }
   },
+  branch: {
+    type: String,
+    enum: ['CSE', 'ISE', 'AIML', 'CSD', 'CSBS', 'ECE'],
+    required: function () { return this.onboardingCompleted === true || this.provider === 'local'; },
+    set: function(v) { return typeof v === 'string' ? v.trim().toUpperCase() : v; }
+  },
   email: {
     type: String,
     required: true,

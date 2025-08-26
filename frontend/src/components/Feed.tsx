@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../cookiescheker";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import LinkedinPostFeed from "./LinkedinPostFeed"; 
 import { useNavigate } from "react-router-dom";
 import Loader from './loading'
@@ -167,74 +168,64 @@ interface Post {
   githubLink?: string;
 }
 
+interface FeedPage {
+  posts: Post[];
+  total: number;
+  page: number;
+}
+
 const Feed: React.FC = () => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<'project' | 'post'>('project');
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [total, setTotal] = useState(0);
   const apiBase = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
+  const query = useInfiniteQuery({
+    queryKey: ['feed', 'project'],
+    enabled: tab === 'project',
+    initialPageParam: 1,
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await axios.get(`${apiBase}/api/v1/posts/getAllPost`, {
+        params: { page: pageParam, limit: 10 },
+        withCredentials: true,
+      });
+      const d = res.data;
+      const postsData: Post[] = d?.data?.result ?? (Array.isArray(d?.data) ? d.data : []);
+      const total: number = d?.data?.total ?? postsData.length;
+      return { posts: postsData, total, page: pageParam };
+    },
+    getNextPageParam: (lastPage: FeedPage, pages: FeedPage[]) => {
+      const loaded = pages.reduce((sum: number, p: FeedPage) => sum + p.posts.length, 0);
+      return loaded < lastPage.total ? lastPage.page + 1 : undefined;
+    },
+    staleTime: 60_000,
+  });
+
   useEffect(() => {
-    if (tab === 'project') {
-      setPosts([]);
-      setPage(1);
-      setHasMore(true);
-    }
+    if (tab !== 'project') return;
+    // Reset and refetch when switching to project
+    query.refetch();
   }, [tab]);
 
   useEffect(() => {
-    if (tab === 'project') {
-      const fetchPosts = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-          const res = await axios.get(`${apiBase}/api/v1/posts/getAllPost?page=${page}&limit=10`, {
-            withCredentials: true,
-          });
-          let postsData = [];
-          if (res.data?.data?.result) {
-            postsData = res.data.data.result;
-          } else if (Array.isArray(res.data.data)) {
-            postsData = res.data.data;
-          }
-          setTotal(res.data.data.total);
-          setPosts(prev => {
-            const newPosts = page === 1 ? postsData : [...prev, ...postsData];
-            setHasMore(newPosts.length < res.data.data.total);
-            return newPosts;
-          });
-        } catch (err: any) {
-          setError(err.response?.data?.message || "Failed to load posts");
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchPosts();
-    }
-  }, [tab, apiBase, page]);
-
-  useEffect(() => {
-    if (tab !== 'project' || !hasMore || loading) return;
-    
+    if (tab !== 'project') return;
     const handleScroll = () => {
       const sentinel = document.getElementById('scroll-sentinel');
       if (!sentinel) return;
-      
       const rect = sentinel.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 100) {
-        setPage(prev => prev + 1);
+      if (rect.top < window.innerHeight + 100 && query.hasNextPage && !query.isFetchingNextPage) {
+        query.fetchNextPage();
       }
     };
-    
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [tab, hasMore, loading]);
+  }, [tab, query.hasNextPage, query.isFetchingNextPage]);
 
-  console.log({ page, postsLength: posts.length, hasMore, total });
+  const posts: Post[] = (query.data?.pages ?? []).flatMap((p: FeedPage) => p.posts);
+  const loading = (query.status === 'pending' && tab === 'project') || query.isFetching && posts.length === 0;
+  const hasMore = !!query.hasNextPage;
+  const total = query.data?.pages?.[0]?.total ?? 0;
+  const error = query.error as any;
+  console.log({ pages: query.data?.pages?.length ?? 0, postsLength: posts.length, hasMore, total });
   const avatarUrlFrom = (name: string, avatar?: string) => {
     const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
     const isDefault = avatar && avatar.includes('default_avatar');
@@ -248,7 +239,7 @@ const Feed: React.FC = () => {
   if (tab === 'project' && loading)
     return <Loader />;
   if (tab === 'project' && error)
-    return <div className="text-center text-red-500 py-8">{error}</div>;
+    return <div className="text-center text-red-500 py-8">{error?.message || 'Failed to load posts'}</div>;
 
   return (
     <div>
@@ -346,7 +337,7 @@ const Feed: React.FC = () => {
                 )}
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
-                    {post.tags.map((tag) => (
+                    {post.tags.map((tag: string) => (
                       <span
                         key={tag}
                         className="px-3 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded-full text-xs"

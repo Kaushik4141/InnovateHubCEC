@@ -12,7 +12,10 @@ const generateAccessAndRefreshToken = async (userId) => {
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
     user.refreshToken = refreshToken;
-    await user.save({ validatebeforeSave: false });
+    if (!user.branch) {
+      user.branch = 'CSE';
+    }
+    await user.save({ validateBeforeSave: false });
     return { accessToken, refreshToken, newRefreshToken: refreshToken };
   } catch (error) {
     throw new ApiError(500, "Error generating tokens");
@@ -88,7 +91,7 @@ const googleAuth = asyncHandler(async (req, res) => {
       user.provider = 'google';
       user.isVerified = true;
   
-      await user.save({ validatebeforeSave: false });
+      await user.save({ validateBeforeSave: false });
     }
 
     const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
@@ -113,9 +116,9 @@ const googleAuth = asyncHandler(async (req, res) => {
 });
 
 const completeOnboarding = asyncHandler(async (req, res) => {
-  const { usn, year, fullname } = req.body || {};
-  if (!usn || !year) {
-    throw new ApiError(400, "USN and year are required to complete onboarding");
+  const { usn, year, fullname, branch } = req.body || {};
+  if (!usn || !year || !branch) {
+    throw new ApiError(400, "USN, year and branch are required to complete onboarding");
   }
   const u = await User.findById(req.user._id);
   if (!u) throw new ApiError(404, "User not found");
@@ -124,8 +127,14 @@ const completeOnboarding = asyncHandler(async (req, res) => {
   if (!/^4CB/.test(usnNorm)) {
     throw new ApiError(400, "Invalid USN. USN must start with 4CB");
   }
+  const branchNorm = String(branch).trim().toUpperCase();
+  const allowedBranches = ['CSE','ISE','AIML','CSD','CSBS','ECE'];
+  if (!allowedBranches.includes(branchNorm)) {
+    throw new ApiError(400, "Invalid branch. Allowed: CSE, ISE, AIML, CSD, CSBS, ECE");
+  }
   u.usn = usnNorm;
   u.year = Number(year);
+  u.branch = branchNorm;
   u.onboardingCompleted = true;
   await u.save();
   const safeUser = await User.findById(u._id).select("-password -refreshToken");
@@ -144,9 +153,9 @@ const registerUser = asyncHandler(async (req, res, next) => {
     //check if user is created successfully
     //return response
 
-    const { fullname, email, usn, password, year } = req.body;
+    const { fullname, email, usn, password, year, branch } = req.body;
 
-    if (!fullname || !email || !usn || !password || !year) {
+    if (!fullname || !email || !usn || !password || !year || !branch) {
       
       throw new ApiError(400, "Please provide all required fields");
     }
@@ -154,9 +163,14 @@ const registerUser = asyncHandler(async (req, res, next) => {
     const emailNorm = String(email).toLowerCase().trim();
     const usnNorm = String(usn).trim().toUpperCase();
     const yearNum = Number(year);
+    const branchNorm = String(branch).trim().toUpperCase();
 
     if (!/^4CB/.test(usnNorm)) {
       throw new ApiError(400, "Invalid USN. USN must start with 4CB");
+    }
+    const allowedBranches = ['CSE','ISE','AIML','CSD','CSBS','ECE'];
+    if (!allowedBranches.includes(branchNorm)) {
+      throw new ApiError(400, "Invalid branch. Allowed: CSE, ISE, AIML, CSD, CSBS, ECE");
     }
 
     const existeduser = await User.findOne({
@@ -202,6 +216,7 @@ const registerUser = asyncHandler(async (req, res, next) => {
       email: emailNorm,
       usn: usnNorm,
       year: yearNum,
+      branch: branchNorm,
       password,
       ...(avatarUrl && { avatar: avatarUrl }),
       ...(coverimageUrl && { coverimage: coverimageUrl }),
@@ -390,7 +405,7 @@ const changeCurrrentPassword = asyncHandler(async (req, res) => {
     throw new ApiError(401, "Current password is incorrect")
   }
   user.password = newPassword
-  await user.save({ validatebeforeSave: false })
+  await user.save({ validateBeforeSave: false })
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "Password changed successfully"))
@@ -403,13 +418,13 @@ const getcurrentUser = asyncHandler(async (req, res) => {
 })
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullname, email, usn, year, skills, linkedin, github, leetcode, certifications, projects, bio, achievements, otherLinks } = req.body;
-  if (!fullname || !email || !usn || !year) {
+  const { fullname, email, usn, year, branch, skills, linkedin, github, leetcode, certifications, projects, bio, achievements, otherLinks } = req.body;
+  if (!fullname || !email || !usn || !year || !branch) {
     throw new ApiError(400, "Please provide all required fields");
   }
   const user = await User.findByIdAndUpdate(
     req.user._id,
-    { fullname, email, usn, year, skills, linkedin, github, leetcode, certifications, projects, bio, achievements, otherLinks },
+    { fullname, email, usn, year, branch, skills, linkedin, github, leetcode, certifications, projects, bio, achievements, otherLinks },
     { new: true, runValidators: true }
   ).select("-password -refreshToken");
   if (!user) {
@@ -508,6 +523,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
         email: 1,
         usn: 1,
         year: 1,
+        branch: 1,
         skills: 1,
         linkedin: 1,
         github: 1,

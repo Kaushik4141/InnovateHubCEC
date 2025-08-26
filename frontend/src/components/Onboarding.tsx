@@ -16,8 +16,10 @@ const Onboarding: React.FC = () => {
   const [fullname, setFullname] = useState('');
   const [usn, setUsn] = useState('');
   const [year, setYear] = useState('');
+  const [branch, setBranch] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const BRANCHES = ['CSE','ISE','AIML','CSD','CSBS','ECE'];
 
   useEffect(() => {
     let mounted = true;
@@ -40,15 +42,15 @@ const Onboarding: React.FC = () => {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (!usn || !year) {
-      setError('Please provide your USN and Graduation Year');
+    if (!usn || !year || !branch) {
+      setError('Please provide your USN, Graduation Year and Branch');
       return;
     }
     setLoading(true);
     try {
       await axios.post(
         `${apiBase}/api/v1/users/auth/complete-onboarding`,
-        { usn, year, fullname },
+        { usn: usn.trim().toUpperCase(), year: Number(year), fullname, branch },
         { withCredentials: true }
       );
       navigate('/dashboard');
@@ -116,6 +118,24 @@ const Onboarding: React.FC = () => {
               {Array.from({ length: 11 }, (_, i) => 2020 + i).map(y => (
                 <option key={y} value={String(y)} className="bg-[#243447]">
                   {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <select
+              name="branch"
+              value={branch}
+              onChange={(e) => setBranch(e.target.value)}
+              className="w-full p-4 rounded-lg bg-gray-900/60 text-white border border-gray-700 focus:outline-none appearance-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition"
+            >
+              <option value="" disabled>
+                Select Branch
+              </option>
+              {BRANCHES.map(b => (
+                <option key={b} value={b} className="bg-[#243447]">
+                  {b}
                 </option>
               ))}
             </select>

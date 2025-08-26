@@ -8,6 +8,7 @@ interface FormData {
   fullname: string;
   usn: string;
   year: string;
+  branch: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -18,6 +19,7 @@ interface FormErrors {
   fullname?: string;
   usn?: string;
   year?: string;
+  branch?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -28,11 +30,13 @@ interface FormErrors {
 const SignupForm: React.FC = () => {
   const navigate = useNavigate();
   const apiBase = import.meta.env.VITE_API_URL;     
+  const BRANCHES = ['CSE','ISE','AIML','CSD','CSBS','ECE'];
 
   const [formData, setFormData] = useState<FormData>({
     fullname: '',
     usn: '',
     year: '',
+    branch: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -95,6 +99,8 @@ const SignupForm: React.FC = () => {
       }
     }
     if (!formData.year) errs.year = 'Please select your graduation year';
+    if (!formData.branch) errs.branch = 'Please select your branch';
+    else if (!BRANCHES.includes(formData.branch)) errs.branch = 'Invalid branch';
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email.trim()) errs.email = 'Email is required';
     else if (!emailRegex.test(formData.email)) errs.email = 'Invalid email address';
@@ -123,6 +129,7 @@ const SignupForm: React.FC = () => {
         fullname: formData.fullname,
         usn: formData.usn.toUpperCase().trim(),
         year: Number(formData.year),
+        branch: formData.branch,
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
       };
@@ -263,6 +270,27 @@ const SignupForm: React.FC = () => {
               ))}
             </select>
             {errors.year && <p className="text-red-500 text-sm">{errors.year}</p>}
+          </div>
+
+          <div>
+            <select
+              name="branch"
+              value={formData.branch}
+              onChange={handleChange}
+              className={`w-full p-4 rounded-lg bg-gray-900/60 text-white border border-gray-700 focus:outline-none appearance-none focus:ring-2 focus:ring-purple-500/40 focus:border-purple-500 transition ${
+                errors.branch ? 'border-red-500' : ''
+              }`}
+            >
+              <option value="" disabled>
+                Select Branch
+              </option>
+              {BRANCHES.map(b => (
+                <option key={b} value={b} className="bg-[#243447]">
+                  {b}
+                </option>
+              ))}
+            </select>
+            {errors.branch && <p className="text-red-500 text-sm">{errors.branch}</p>}
           </div>
 
           <div>

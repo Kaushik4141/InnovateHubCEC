@@ -32,7 +32,7 @@ const Team = () => {
      github:'Chaithra0206',
      url:'https://github.com/Chaithra0206',
      linkedin:'https://www.linkedin.com/in/chaithra-s-89809430a',
-     avatar:'https://res.cloudinary.com/dtejzccrf/image/upload/v1754383354/fsxktlldebpkubxvqcou.jpg',
+     avatar:'https://res.cloudinary.com/dtejzccrf/image/upload/v1756182744/mwl5trhd9uoqud2hveil.jpg',
     },
     {
         name:'Mohith J Karkera',

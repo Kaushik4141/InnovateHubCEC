@@ -26,6 +26,7 @@ interface User {
   email: string;
   usn: string;
   year: number | string;
+  branch?: string;
   bio?: string;
   skills: string[];
   linkedin?: string;
@@ -46,11 +47,13 @@ interface EditProfileModalProps {
 }
 
 const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, user, onSave }) => {
+  const BRANCHES = ['CSE','ISE','AIML','CSD','CSBS','ECE'];
   const [editForm, setEditForm] = useState<User>({
     fullname: '',
     email: '',
     usn: '',
     year: '',
+    branch: '',
     bio: '',
     skills: [],
     linkedin: '',
@@ -72,6 +75,7 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, user
         email: user.email || '',
         usn: user.usn || '',
         year: user.year ? String(user.year) : '',
+        branch: user.branch || '',
         bio: user.bio || '',
         skills: user.skills || [],
         linkedin: user.linkedin || '',
@@ -121,6 +125,15 @@ const EditProfileModal: React.FC<EditProfileModalProps> = ({ open, onClose, user
           <div>
             <label className="block text-gray-300 mb-1">Year</label>
             <input type="number" name="year" value={editForm.year} onChange={handleEditChange} className="w-full px-3 py-2 rounded bg-gray-800 text-white" />
+          </div>
+          <div>
+            <label className="block text-gray-300 mb-1">Branch</label>
+            <select name="branch" value={editForm.branch || ''} onChange={(e) => setEditForm(prev => ({ ...prev, branch: e.target.value }))} className="w-full px-3 py-2 rounded bg-gray-800 text-white">
+              <option value="" disabled>Select Branch</option>
+              {BRANCHES.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-gray-300 mb-1">Email</label>
