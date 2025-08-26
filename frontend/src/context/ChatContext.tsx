@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { ensureNotificationPermission, notifyNow } from '../services/notifier';
+import { getCurrentUser } from '../services/userApi';
 
 export type ChatMessage = {
     _id?: string;
@@ -42,7 +43,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [connected, setConnected] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set());
     const onlineRef = useRef(onlineUsers);
-    onlineRef.current = onlineUsers;
+        const selfIdRef = useRef<string | null>(null);
 
     const apiBase = useMemo(() => getApiBase(), []);
 
@@ -67,6 +68,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         const onPrivateMessage = async (msg: ChatMessage) => {
+            const me = selfIdRef.current;
+            if (!me) return; 
+            const senderId = typeof msg.sender === 'string' ? msg.sender : msg.sender?._id;
+            const receiverId = msg.receiverUser || null;
+
+            if (senderId === me) return;
+            if (receiverId !== me) return;  
             try {
                 if (await ensureNotificationPermission()) {
                     const sender = typeof msg.sender === 'string' ? undefined : msg.sender;
@@ -107,6 +115,23 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             s.close();
         };
     }, [apiBase]);
+
+    useEffect(() => {
+        let mounted = true;
+        (async () => {
+            try {
+                const me = await getCurrentUser();
+                if (mounted) {
+                    selfIdRef.current = me?._id || null;
+                }
+            } catch (e) {
+                // ignore
+            }
+        })();
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const value = useMemo<ChatContextType>(() => ({
         socket,
