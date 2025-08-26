@@ -18,6 +18,7 @@ import Chat from './components/Chat';
 import Onboarding from './components/Onboarding';
 import Mentors from './components/Mentors';
 import Admin from './components/Admin';
+import MentorApply from './components/MentorApply';
 
 type Me = {
   _id: string;
@@ -89,6 +90,7 @@ function App() {
           <Route path="/" element={<LandingPage />} />
           <Route path="/team" element={<Team />} />
           <Route path="/mentors" element={<Mentors />} />
+          <Route path="/mentors/apply" element={<MentorApply />} />
           <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
           <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
           <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />

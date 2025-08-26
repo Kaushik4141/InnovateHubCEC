@@ -1,4 +1,5 @@
 import { Mentor } from '../models/mentor.model.js';
+import { User } from '../models/user.model.js';
 import { MentorApplication } from '../models/mentorApplication.model.js';
 import { ApiError } from '../utils/apierrorhandler.js';
 import { ApiResponse } from '../utils/apiresponsehandler.js';
@@ -20,7 +21,25 @@ const getMentors = asyncHandler(async (req, res) => {
     ];
   }
   const mentors = await Mentor.find(match).sort({ rating: -1, sessionsCompleted: -1 }).limit(100);
-  return res.status(200).json(new ApiResponse(200, mentors, 'Mentors fetched'));
+  const names = mentors.map(m => m.name).filter(Boolean);
+  const users = await User.find({ fullname: { $in: names } }, 'fullname avatar skills _id bio');
+  const userMap = new Map(users.map(u => [u.fullname, u]));
+
+  const enriched = mentors.map((m) => {
+    const obj = m.toObject();
+    const u = userMap.get(m.name);
+    if (u) {
+      obj.avatar = obj.avatar || u.avatar;
+      if ((!obj.skills || obj.skills.length === 0) && Array.isArray(u.skills)) {
+        obj.skills = u.skills;
+      }
+      if (!obj.bio && u.bio) obj.bio = u.bio;
+      obj.userId = u._id;
+    }
+    return obj;
+  });
+
+  return res.status(200).json(new ApiResponse(200, enriched, 'Mentors fetched'));
 });
 
 const applyForMentor = asyncHandler(async (req, res) => {

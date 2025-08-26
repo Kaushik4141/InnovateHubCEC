@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE: string = ((import.meta as any).env?.VITE_API_URL as string | undefined) || '';
 
@@ -28,10 +29,25 @@ const MentorsList = () => {
     joinedDate: string;
     sessionTypes: string[];
     expertise: string[];
+    uid?: string | null;
   };
 
+  const navigate = useNavigate();
   const [mentors, setMentors] = useState<Mentor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<any>(null);
+  const [connectStatus, setConnectStatus] = useState<Record<string, 'none' | 'requested' | 'loading'>>({});
+
+  const avatarUrlFrom = (m: Mentor) => {
+    const val = m.avatar || '';
+    if (typeof val === 'string') {
+      const isDefault = val.includes('default_avatar');
+      if (val.startsWith('http') && !isDefault) return val;
+      if (val.startsWith('/') && !isDefault) return `${(API_BASE || '').replace(/\/$/, '')}${val}`;
+    }
+    const seed = (m.id?.toString() || m.name || 'user');
+    return `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(seed)}&size=64`;
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -49,14 +65,15 @@ const MentorsList = () => {
           year: m.year || '',
           specialization: m.specialization || '',
           bio: m.bio || '',
-          skills: Array.isArray(m.skills) ? m.skills : [],
+          // prefer skills; fallback to expertise from backend
+          skills: Array.isArray(m.skills) && m.skills.length > 0 ? m.skills : (Array.isArray(m.expertise) ? m.expertise : []),
           rating: typeof m.rating === 'number' ? m.rating : 0,
           totalReviews: typeof m.totalReviews === 'number' ? m.totalReviews : 0,
           mentees: typeof m.mentees === 'number' ? m.mentees : 0,
           projects: typeof m.projects === 'number' ? m.projects : 0,
           sessionsCompleted: typeof m.sessionsCompleted === 'number' ? m.sessionsCompleted : 0,
           responseTime: m.responseTime || '',
-          avatar: m.avatar || (m.name ? m.name[0] : '?'),
+          avatar: m.avatar || '',
           available: !!m.available,
           nextAvailable: m.nextAvailable || '',
           hourlyRate: m.hourlyRate || 'Free',
@@ -68,6 +85,8 @@ const MentorsList = () => {
           joinedDate: m.joinedDate || new Date().toISOString(),
           sessionTypes: Array.isArray(m.sessionTypes) ? m.sessionTypes : [],
           expertise: Array.isArray(m.expertise) ? m.expertise : [],
+          // use enriched userId from backend if present for messaging/connect
+          uid: m.userId || m._id || null,
         }));
         if (mounted) setMentors(normalized as Mentor[]);
       } catch (e) {
@@ -81,12 +100,38 @@ const MentorsList = () => {
     return () => { mounted = false; };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    async function loadMe() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/users/current-user`, { credentials: 'include' });
+        if (!mounted) return;
+        if (res.ok) {
+          const j = await res.json();
+          setMe(j?.data || j || null);
+        }
+      } catch {
+        setMe(null);
+      }
+    }
+    loadMe();
+    return () => { mounted = false; };
+  }, []);
+
   // Note: simplified UI does not include filters/search; show all mentors
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-white">Mentors</h2>
-        <p className="text-gray-400">Explore mentors</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-bold text-white">Mentors</h2>
+          <p className="text-gray-400">Explore mentors</p>
+        </div>
+        <button
+          onClick={() => navigate('/mentors/apply')}
+          className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-700 text-white border border-purple-500 shadow-sm"
+        >
+          Become a Mentor
+        </button>
       </div>
       {loading && (
         <div className="rounded-lg border border-gray-700 bg-gray-800 text-gray-300 px-4 py-3">
@@ -100,8 +145,13 @@ const MentorsList = () => {
         {mentors.map((mentor) => (
           <div key={mentor.id} className="bg-gray-800 rounded-xl p-6 border border-gray-700">
             <div className="flex items-center gap-4 mb-3">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                {mentor.avatar}
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700">
+                <img
+                  src={avatarUrlFrom(mentor)}
+                  alt={mentor.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = `${(API_BASE || '').replace(/\/$/, '')}/default_avatar.png`; }}
+                />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-white">{mentor.name}</h3>
@@ -127,6 +177,45 @@ const MentorsList = () => {
                   <span className="text-xs text-gray-500">—</span>
                 )}
               </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate(`/profile/c/${encodeURIComponent(mentor.name)}`)}
+                className="px-3 py-1.5 rounded bg-gray-700 text-white hover:bg-gray-600 border border-gray-600"
+              >
+                View Profile
+              </button>
+              <button
+                onClick={() => mentor.uid ? navigate(`/messages?to=${mentor.uid}`) : navigate(`/profile/c/${encodeURIComponent(mentor.name)}`)}
+                className="px-3 py-1.5 rounded bg-purple-600 text-white hover:bg-purple-700"
+              >
+                Message
+              </button>
+              {(!me || (mentor.uid && me?._id !== mentor.uid)) && (
+                <button
+                  onClick={async () => {
+                    if (!mentor.uid) {
+                      navigate(`/profile/c/${encodeURIComponent(mentor.name)}`);
+                      return;
+                    }
+                    setConnectStatus((s) => ({ ...s, [mentor.uid as string]: 'loading' }));
+                    try {
+                      await fetch(`${API_BASE}/api/v1/users/${mentor.uid}/request-follow`, {
+                        method: 'POST',
+                        credentials: 'include',
+                      });
+                      setConnectStatus((s) => ({ ...s, [mentor.uid as string]: 'requested' }));
+                    } catch {
+                      setConnectStatus((s) => ({ ...s, [mentor.uid as string]: 'none' }));
+                      alert('Could not send request.');
+                    }
+                  }}
+                  disabled={mentor.uid ? (connectStatus[mentor.uid] === 'loading' || connectStatus[mentor.uid] === 'requested') : false}
+                  className="px-3 py-1.5 rounded bg-green-600 text-white hover:bg-green-700 disabled:opacity-60"
+                >
+                  {mentor.uid && connectStatus[mentor.uid] === 'requested' ? 'Requested' : mentor.uid && connectStatus[mentor.uid] === 'loading' ? 'Sending...' : 'Connect'}
+                </button>
+              )}
             </div>
           </div>
         ))}
