@@ -5,6 +5,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/apiresponsehandler.js";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
+import { emitToUser } from "../socket.js";
 
 const generateAccessAndRefreshToken = async (userId) => {
   try {
@@ -580,6 +581,19 @@ const requestFollow = asyncHandler(async (req, res) => {
     toUser.followRequests.push(fromUserId);
     toUser.notifications.push({ type: 'follow-request', from: fromUserId });
     await toUser.save();
+
+
+    try {
+      const fromUser = await User.findById(fromUserId).select("_id fullname avatar");
+      const payload = {
+        type: 'follow-request',
+        from: fromUser,
+        date: new Date().toISOString(),
+      };
+      emitToUser(String(toUserId), 'followRequest', payload);
+    } catch (emitErr) {
+      console.error('Failed to emit followRequest event', emitErr?.message || emitErr);
+    }
 
     res
       .status(200)

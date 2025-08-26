@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { ensureNotificationPermission, notifyNow } from '../services/notifier';
 
 export type ChatMessage = {
     _id?: string;
@@ -65,16 +66,44 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setOnlineUsers(next);
         };
 
+        const onPrivateMessage = async (msg: ChatMessage) => {
+            try {
+                if (await ensureNotificationPermission()) {
+                    const sender = typeof msg.sender === 'string' ? undefined : msg.sender;
+                    const title = `New message${sender?.fullname ? ` from ${sender.fullname}` : ''}`;
+                    const body = msg.type === 'text' ? String(msg.content).slice(0, 120) : `Sent a ${msg.type}`;
+                    notifyNow(title, body, sender?.avatar);
+                }
+            } finally {
+                window.dispatchEvent(new Event('app:notifications-refresh'));
+            }
+        };
+
+        const onFollowRequest = async (payload: any) => {
+            try {
+                if (await ensureNotificationPermission()) {
+                    const title = `${payload?.from?.fullname || 'Someone'} wants to connect`;
+                    notifyNow(title, 'Open notifications to respond', payload?.from?.avatar);
+                }
+            } finally {
+                window.dispatchEvent(new Event('app:notifications-refresh'));
+            }
+        };
+
         s.on('connect', onConnect);
         s.on('disconnect', onDisconnect);
         s.on('userOnline', onUserOnline);
         s.on('userOffline', onUserOffline);
+        s.on('privateMessage', onPrivateMessage);
+        s.on('followRequest', onFollowRequest);
 
         return () => {
             s.off('connect', onConnect);
             s.off('disconnect', onDisconnect);
             s.off('userOnline', onUserOnline);
             s.off('userOffline', onUserOffline);
+            s.off('privateMessage', onPrivateMessage);
+            s.off('followRequest', onFollowRequest);
             s.close();
         };
     }, [apiBase]);

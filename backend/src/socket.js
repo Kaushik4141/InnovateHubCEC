@@ -7,6 +7,7 @@ import { Message } from "./models/message.model.js";
 
 const userSockets = new Map(); 
 const socketToUser = new Map();
+let ioInstance = null;
 
 function addUserSocket(userId, socketId) {
   if (!userSockets.has(userId)) userSockets.set(userId, new Set());
@@ -40,6 +41,8 @@ export function initSocket(httpServer) {
     },
   });
 
+
+  ioInstance = io;
 
 
 
@@ -193,3 +196,16 @@ export const presenceStore = {
   isUserOnline,
   getUserSockets,
 };
+
+
+export function emitToUser(userId, event, payload) {
+  if (!ioInstance) return false;
+  const sockets = getUserSockets(userId);
+  if (!sockets.length) return false;
+  sockets.forEach((sid) => ioInstance.to(sid).emit(event, payload));
+  return true;
+}
+
+export function getIO() {
+  return ioInstance;
+}
