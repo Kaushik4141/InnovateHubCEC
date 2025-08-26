@@ -75,7 +75,6 @@ const UserProfileView = () => {
 
   // --- Connect Button & Notifications Logic ---
 
-
   const ConnectButton: React.FC<{
     viewedUser: any;
     currentUser: any;
@@ -126,65 +125,6 @@ const UserProfileView = () => {
             : "Connect"}
       </button>
     ) : null;
-  };
-
-  const Notifications: React.FC<{
-    refreshUser: () => void;
-  }> = ({ refreshUser }) => {
-    const [notifications, setNotifications] = useState<any[]>([]);
-    useEffect(() => {
-      axios
-        .get(`${apiBase}/api/v1/users/notifications`, { withCredentials: true })
-        .then((res) => setNotifications(res.data.data.notifications));
-    }, []);
-    const handleAccept = async (fromUserId: string) => {
-      await axios.post(
-        `${apiBase}/api/v1/users/${fromUserId}/accept-follow`,
-        {},
-        { withCredentials: true }
-      );
-      setNotifications(notifications.filter((n) => n.from._id !== fromUserId));
-      refreshUser();
-    };
-    const handleReject = async (fromUserId: string) => {
-      await axios.post(
-        `${apiBase}/api/v1/users/${fromUserId}/reject-follow`,
-        {},
-        { withCredentials: true }
-      );
-      setNotifications(notifications.filter((n) => n.from._id !== fromUserId));
-      refreshUser();
-    };
-    return (
-      <div>
-        <h3>Notifications</h3>
-        {notifications
-          .filter((n) => n.type === "follow-request")
-          .map((n) => (
-            <div key={n._id} className="flex items-center gap-2">
-              <img
-                src={avatarUrlFrom(n.from._id, n.from.fullname, n.from.avatar)}
-                alt={n.from.fullname}
-                className="w-8 h-8 rounded-full"
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
-              />
-              <span>{n.from.fullname} wants to connect.</span>
-              <button
-                onClick={() => handleAccept(n.from._id)}
-                className="bg-green-600 text-white px-2 py-1 rounded"
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => handleReject(n.from._id)}
-                className="bg-red-600 text-white px-2 py-1 rounded"
-              >
-                Reject
-              </button>
-            </div>
-          ))}
-      </div>
-    );
   };
 
   // LinkedIn-style image grid component
@@ -443,11 +383,7 @@ const UserProfileView = () => {
     return (
       <div className="min-h-screen bg-gray-900 text-white">
         <Header />
-        {currentUser && (
-          <div className="mb-6">
-            <Notifications refreshUser={refreshViewedUser} />
-          </div>
-        )}
+        {/* Removed Notifications component from here */}
         <div className="max-w-6xl mx-auto px-6 py-10 space-y-6">
           <div className="bg-[#181f2c] p-6 rounded-xl border border-gray-700">
             <div className="flex flex-col md:flex-row justify-between items-center">

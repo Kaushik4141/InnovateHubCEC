@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Header from './Header';
 import { useNavigate } from 'react-router-dom';
 import { Github, ExternalLink, Linkedin, GitCommit } from 'lucide-react';
 
@@ -32,7 +33,7 @@ const Team = () => {
      github:'Chaithra0206',
      url:'https://github.com/Chaithra0206',
      linkedin:'https://www.linkedin.com/in/chaithra-s-89809430a',
-     avatar:'https://res.cloudinary.com/dtejzccrf/image/upload/v1756182744/mwl5trhd9uoqud2hveil.jpg',
+     avatar:'https://res.cloudinary.com/dtejzccrf/image/upload/v1754383354/fsxktlldebpkubxvqcou.jpg',
     },
     {
         name:'Mohith J Karkera',
@@ -75,50 +76,41 @@ const Team = () => {
 
   
   useEffect(() => {
-    const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=100`;
-    fetch(url)
-      .then((res) => res.ok ? res.json() : Promise.reject())
-      .then((data: any[]) => {
-        if (!Array.isArray(data)) return;
-        const map: Record<string, number> = {};
-        data.forEach((c: any) => {
-          if (c?.login) map[c.login.toLowerCase()] = c?.contributions ?? 0;
-        });
-        setContribMap(map);
-        setContributors(data);
-      })
-      .catch(() => {
+  const url = `https://api.github.com/repos/${owner}/${repo}/contributors?per_page=100`;
+  fetch(url)
+    .then((res) => (res.ok ? res.json() : Promise.reject()))
+    .then((data: any[]) => {
+      if (!Array.isArray(data)) return;
+      const map: Record<string, number> = {};
+      data.forEach((c: any) => {
+        if (c?.login) map[c.login.toLowerCase()] = c?.contributions ?? 0;
       });
-  }, []);
+      setContribMap(map);
+      setContributors(data);
+    })
+    .catch(() => {});
+}, []);
+
 
   return (
-    <div className="relative min-h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white">
-      <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute -top-40 -right-24 w-96 h-96 bg-purple-700/20 rounded-full blur-3xl" />
-        <div className="absolute -top-48 -left-24 w-[28rem] h-[28rem] bg-blue-600/20 rounded-full blur-3xl" />
-      </div>
-      <header className="bg-gray-900/80 backdrop-blur border-b border-gray-700">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3 py-3">
-          <button onClick={() => navigate('/')} className="flex items-center">
-            <img src="/logo1.png" alt="logo" className="h-8 w-8" />
-            <span className="ml-2 text-base sm:text-xl font-bold">InnovateHubCEC</span>
-          </button>
-          <div className="flex items-center gap-3">
-            <a
-              href={repoUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 hover:border-purple-500/50 hover:bg-gray-800 transition"
-            >
-              <Github className="w-5 h-5" />
-              <span>View Repository</span>
-              <ExternalLink className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </header>
+     <div className="min-h-screen bg-gray-900 text-white">
+      <Header />
 
       {/* Hero */}
+      
+      <div className="flex justify-end mt-4 mr-4">
+  <a
+    href={repoUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-700 hover:border-purple-500/50 hover:bg-gray-800 transition"
+  >
+    <Github className="w-5 h-5" />
+    <span>View Repository</span>
+    <ExternalLink className="w-4 h-4" />
+  </a>
+</div>
+
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">Our Team</h1>

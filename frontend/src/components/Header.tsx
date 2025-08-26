@@ -150,7 +150,7 @@ const Header = () => {
           {/* Logo */}
           <div className="flex items-center">
             <button onClick={() => navigate('/')} className="flex items-center">
-              <img src="logo1.png" alt="logo" className="h-8 w-8 text-purple-400" />
+              <img src="/logo1.png" alt="InnovateHubCEC" className="h-8 w-8" />
               <span className="ml-2 text-xl font-bold text-white">InnovateHubCEC</span>
             </button>
           </div>
@@ -438,81 +438,7 @@ const Header = () => {
             </button>
           </nav>
 
-          {/* Mobile notifications button + popover */}
-          <div className="md:hidden relative ml-2">
-            <button
-              className="p-2 text-gray-300 hover:text-white relative"
-              aria-label="Notifications"
-              onClick={() => setShowNotifications((v) => !v)}
-            >
-              <Bell className="h-6 w-6" />
-              {notifications.length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  {Math.min(notifications.length, 99)}
-                </span>
-              )}
-            </button>
-            {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
-                <div className="p-4 border-b border-gray-700">
-                  <h3 className="font-semibold text-white">Notifications</h3>
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 && (
-                    <div className="p-4 text-sm text-gray-400">No notifications</div>
-                  )}
-                  {notifications.map((n: any) => (
-                    <div key={n._id} className="p-4 border-b border-gray-700 hover:bg-gray-700">
-                      {n.type === 'follow-request' ? (
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={avatarUrl(n.from)}
-                            alt={n.from?.fullname || 'User'}
-                            className="w-8 h-8 rounded-full object-cover"
-                            onError={onImgErr}
-                          />
-                          <div className="flex-1">
-                            <p className="text-sm text-white">
-                              <span className="font-medium">{n.from?.fullname}</span> wants to connect.
-                            </p>
-                            <div className="mt-2 flex gap-2">
-                              <button
-                                onClick={() => handleAccept(n.from._id)}
-                                className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
-                              >
-                                Accept
-                              </button>
-                              <button
-                                onClick={() => handleReject(n.from._id)}
-                                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
-                              >
-                                Reject
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <p className="text-sm text-white">Notification</p>
-                          {n.date && (
-                            <p className="text-xs text-gray-400 mt-1">{new Date(n.date).toLocaleString()}</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="p-4">
-                  <button 
-                    onClick={() => navigate('/notifications')}
-                    className="text-purple-400 text-sm hover:text-purple-300"
-                  >
-                    View all notifications
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          
 
             {/* Mobile hamburger */}
             <button
