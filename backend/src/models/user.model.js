@@ -13,8 +13,6 @@ const userSchema = new mongoose.Schema({
   usn: {
     type: String,
     required: function () { return this.onboardingCompleted === true || this.provider === 'local'; },
-    unique: true,
-    index: true,
     trim: true,
     set: function(v) { return typeof v === 'string' ? v.trim().toUpperCase() : v; },
     match: [/^4CB/, 'Invalid USN.']
@@ -155,4 +153,9 @@ userSchema.methods.generateAccessToken = function () {
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign({ _id: this._id }, process.env.REFRESH_TOKEN_SECRET, { expiresIn: process.env.REFRESH_TOKEN_EXPIRY })
 }
+userSchema.index(
+  { usn: 1 },
+  { unique: true, partialFilterExpression: { usn: { $type: 'string' } } }
+);
+
 export const User = mongoose.model("User", userSchema)
