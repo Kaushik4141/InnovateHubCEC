@@ -119,39 +119,20 @@ general_replies = {
     "who are you": "I'm your website assistant bot! I can answer questions about using this platform.",
     "what can you do": "I can help you with doubts about the website features, profiles, projects, and more.",
 }
-# ----------------------------
 
-# -------------------------------
-# 2. Load Models
-# -------------------------------
-# Embedding model
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-# Spell checker
+
 spell = SpellChecker()
 
-# -------------------------------
-# 3. Precompute FAQ Embeddings
-# -------------------------------
+
 question_embeddings = model.encode(questions, convert_to_numpy=True)
 dimension = question_embeddings.shape[1]
 
 index = faiss.IndexFlatL2(dimension)
 index.add(question_embeddings)
 
-# -------------------------------
-# 4. Preprocess Function (spell + clean)
-# -------------------------------
-# def preprocess(text):
-#     # Lowercase
-#     text = text.lower()
-#     # Remove extra spaces & symbols
-#     text = re.sub(r'[^a-z0-9\s]', '', text)
-#     text = re.sub(r'\s+', ' ', text).strip()
 
-#     # Correct spelling word by word
-#     corrected_words = [spell.correction(word) if word not in spell else word for word in text.split()]
-#     return " ".join(corrected_words)
 def preprocess(text):
     text = text.lower()
     text = re.sub(r'[^a-z0-9\s]', '', text)
@@ -159,53 +140,32 @@ def preprocess(text):
     corrected_words = []
     for word in text.split():
         correction = spell.correction(word)
-        if correction is None:  # if spellchecker fails
-            corrected_words.append(word)  # keep original
+        if correction is None:  
+            corrected_words.append(word)  
         else:
             corrected_words.append(correction)
     return " ".join(corrected_words)
 
 
-# -------------------------------
-# 5. Chatbot Function
-# -------------------------------
-# def chatbot(query):
-#     # STEP 1: Preprocess (fix typos, clean spaces)
-#     cleaned_query = preprocess(query)
 
-
-#     if cleaned_query in general_replies:
-#         return general_replies[cleaned_query]
-
-
-#     # STEP 2: Convert into embedding
-#     query_embedding = model.encode([cleaned_query], convert_to_numpy=True)
-
-#     # STEP 3: Search in FAISS
-#     D, I = index.search(query_embedding, k=1)
-#     answer = documents[I[0][0]]
 
     
 
-#     return answer
 
-# -------------------------------
-# 6. Run Chatbot
-# -------------------------------
 def chatbot(query):
-    # STEP 1: Preprocess
+  
     cleaned_query = preprocess(query)
 
-    # STEP 2: Check general replies first
+  
     for key in general_replies:
         if cleaned_query.startswith(key) or cleaned_query == key:
             return general_replies[key]
 
-    # STEP 3: Embedding similarity search
+    
     query_embedding = model.encode([cleaned_query], convert_to_numpy=True)
-    D, I = index.search(query_embedding, k=1)  # nearest match
-    best_sim = 1 / (1 + D[0][0])  # similarity approx
-    # STEP 4: Confidence check
+    D, I = index.search(query_embedding, k=1)  
+    best_sim = 1 / (1 + D[0][0]) 
+   
     if best_sim < 0.4:
         return "Sorry, I didn’t get that 🤔. Can you rephrase your question?"
 
