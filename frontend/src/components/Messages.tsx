@@ -45,6 +45,8 @@ const Messages = () => {
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [activeDeleteMenu, setActiveDeleteMenu] = useState<string | null>(null);
+  const [searchMatches, setSearchMatches] = useState<string[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
 
   const apiBase = import.meta.env.VITE_API_URL;
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
@@ -153,6 +155,20 @@ const Messages = () => {
     const parts = name.trim().split(' ');
     return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
   };
+const messageDomId = (m: ChatMsg, idx: number) => (m as any)?._id || `idx-${idx}`;
+useEffect(() => {
+  if (!messageSearch.trim()) {
+    setSearchMatches([]);
+    setCurrentMatchIndex(0);
+    return;
+  }
+  const q = messageSearch.toLowerCase();
+  const matches = thread
+    .filter(m => m.type === 'text' && m.content.toLowerCase().includes(q))
+    .map((m, idx) => messageDomId(m, idx));
+  setSearchMatches(matches);
+  setCurrentMatchIndex(matches.length > 0 ? 0 : 0);
+}, [messageSearch, thread]);
 
   const handleSendMessage = () => {
     if (!selectedChat) return;
@@ -290,7 +306,6 @@ const Messages = () => {
     });
   }, [thread, messageSearch]);
 
-  const messageDomId = (m: ChatMsg, idx: number) => (m as any)?._id || `idx-${idx}`;
   const jumpToMessage = (id?: string) => {
     if (!id) return;
     const container = messagesRef.current;
@@ -302,6 +317,12 @@ const Messages = () => {
       setTimeout(() => setHighlightId(null), 1200);
     }
   };
+const jumpToCurrentMatch = (index: number) => {
+  if (!searchMatches.length) return;
+  const validIndex = (index + searchMatches.length) % searchMatches.length; // wrap around
+  setCurrentMatchIndex(validIndex);
+  jumpToMessage(searchMatches[validIndex]);
+};
 
   const [reactionPicker, setReactionPicker] = useState<string | null>(null);
 
@@ -491,87 +512,112 @@ const Messages = () => {
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-6 border-b border-gray-700">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center flex-1 min-w-0 mr-4">
-                      <button className="md:hidden mr-3 text-gray-300 hover:text-white" onClick={() => setMobileSidebarOpen(true)} aria-label="Open conversations">
-                        <Menu className="h-6 w-6" />
-                      </button>
-                      <div className="relative">
-                        <img
-                          src={avatarUrlFrom(
-                            selectedConversation.id,
-                            selectedConversation.name,
-                            (contacts.find(c => c.user._id === selectedConversation.id)?.user.avatar)
-                          )}
-                          alt={selectedConversation.name}
-                          className="w-12 h-12 rounded-full object-cover mr-4"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
-                        />
-                        {selectedConversation.online && (
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-white truncate">{selectedConversation.name}</h3>
-                        <p className="text-sm text-blue-400">{selectedConversation.role}</p>
-                        {selectedConversation.online && (
-                          <p className="text-xs text-green-400">Active now</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      {pinnedMessage && (
-                        <button 
-                          className="text-gray-400 hover:text-white"
-                          onClick={() => jumpToMessage((pinnedMessage as any)._id)}
-                          title="Jump to pinned message"
-                        >
-                          <Pin className="h-5 w-5 fill-current text-purple-500" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {/* Message Search Bar */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search messages..."
-                      value={messageSearch}
-                      onChange={(e) => setMessageSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
-                    />
-                  </div>
-                </div>
+<div className="p-6 border-b border-gray-700">
+  <div className="flex items-center justify-between">
+    {/* Left: Avatar + Name */}
+    <div className="flex items-center flex-1 min-w-0 mr-4">
+      <button className="md:hidden mr-3 text-gray-300 hover:text-white" onClick={() => setMobileSidebarOpen(true)} aria-label="Open conversations">
+        <Menu className="h-6 w-6" />
+      </button>
+      <div className="relative">
+        <img
+          src={avatarUrlFrom(
+            selectedConversation.id,
+            selectedConversation.name,
+            (contacts.find(c => c.user._id === selectedConversation.id)?.user.avatar)
+          )}
+          alt={selectedConversation.name}
+          className="w-12 h-12 rounded-full object-cover mr-4"
+          onError={(e) => { 
+            (e.currentTarget as HTMLImageElement).onerror = null; 
+            (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); 
+          }}
+        />
+        {selectedConversation.online && (
+          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-white truncate">{selectedConversation.name}</h3>
+        <p className="text-sm text-blue-400">{selectedConversation.role}</p>
+        {selectedConversation.online && (
+          <p className="text-xs text-green-400">Active now</p>
+        )}
+      </div>
+    </div>
+
+    {/* Right: Pinned + Search beside name */}
+    <div className="flex items-center space-x-3">
+      {pinnedMessage && (
+        <button 
+          className="text-gray-400 hover:text-white"
+          onClick={() => jumpToMessage((pinnedMessage as any)._id)}
+          title="Jump to pinned message"
+        >
+          <Pin className="h-5 w-5 fill-current text-purple-500" />
+        </button>
+      )}
+      <div className="relative flex items-center">
+  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+  <input
+    type="text"
+    placeholder="Search messages..."
+    value={messageSearch}
+    onChange={(e) => setMessageSearch(e.target.value)}
+    className="w-64 pl-8 pr-16 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+  />
+  {searchMatches.length > 0 && (
+    <div className="absolute right-2 flex items-center space-x-1">
+      <button
+        onClick={() => jumpToCurrentMatch(currentMatchIndex - 1)}
+        className="p-1 hover:bg-gray-600 rounded"
+        title="Previous match"
+      >↑</button>
+      <span className="text-xs text-gray-400">{currentMatchIndex + 1}/{searchMatches.length}</span>
+      <button
+        onClick={() => jumpToCurrentMatch(currentMatchIndex + 1)}
+        className="p-1 hover:bg-gray-600 rounded"
+        title="Next match"
+      >↓</button>
+    </div>
+  )}
+</div>
+
+    </div>
+  </div>
+</div>
+
 
                 {/* Pinned message display */}
                 {pinnedMessage && (
-                  <div className="p-3 bg-gray-700 border-b border-gray-600 flex items-center justify-between text-sm text-gray-300">
-                    <div className="flex items-center flex-1 min-w-0">
-                      <Pin className="h-4 w-4 mr-2 flex-shrink-0 text-purple-400" />
-                      <p className="truncate">
-                        {pinnedMessage.type === 'text' 
-                          ? pinnedMessage.content 
-                          : `Media: ${pinnedMessage.type}`
-                        }
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        setPinnedMessage(null);
-                        setThread(prev => prev.map(m => 
-                          (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
-                        ));
-                      }} 
-                      className="text-gray-400 hover:text-white ml-2 flex-shrink-0"
-                      title="Unpin message"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
+  <div className="p-3 bg-gray-700 border-b border-gray-600 flex items-center justify-between text-sm text-gray-300">
+    <div 
+      className="flex items-center flex-1 min-w-0 cursor-pointer"
+      onClick={() => jumpToMessage((pinnedMessage as any)._id)}
+    >
+      <Pin className="h-4 w-4 mr-2 flex-shrink-0 text-purple-400" />
+      <p className="truncate">
+        {pinnedMessage.type === 'text' 
+          ? pinnedMessage.content 
+          : `Media: ${pinnedMessage.type}`
+        }
+      </p>
+    </div>
+    <button 
+      onClick={() => {
+        setPinnedMessage(null);
+        setThread(prev => prev.map(m => 
+          (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
+        ));
+      }} 
+      className="text-gray-400 hover:text-white ml-2 flex-shrink-0"
+      title="Unpin message"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  </div>
+)}
+
                 
                 {/* Search Results Info */}
                 {messageSearch && (
@@ -583,7 +629,7 @@ const Messages = () => {
                     )}
                   </div>
                 )}
-                
+               
                 {/* Messages */}
                 <div ref={messagesRef} className="flex-1 overflow-y-auto p-6 pb-28 space-y-4">
                   {filteredMessages.map((m, idx) => {
