@@ -1,8 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Star, Send, MessageSquare, Bug, Lightbulb, HelpCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+
+
+const SUCCESS_LOTTIE_SRC = 'https://lottie.host/0355c5b5-4902-4f4c-863c-3b20338bd7e0/dRVPPthQTu.lottie';
 
 interface FeedbackData {
   category: string;
@@ -28,6 +31,29 @@ function App() {
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const navigate = useNavigate();
   const apiBase = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
+  // Prefetched Lottie URL and player container
+  const [lottieSrc, setLottieSrc] = useState<string>(SUCCESS_LOTTIE_SRC);
+  const playerContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Prefetch the Lottie file to avoid initial blank delay
+  useEffect(() => {
+    let isMounted = true;
+    let objectUrl: string | null = null;
+    (async () => {
+      try {
+        const res = await fetch(SUCCESS_LOTTIE_SRC, { cache: 'force-cache' as RequestCache });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (isMounted) setLottieSrc(objectUrl);
+      } catch {}
+    })();
+    return () => {
+      isMounted = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, []);
 
   const categories = [
     { id: 'general', label: 'General Feedback', icon: MessageSquare, color: 'bg-purple-600' },
@@ -109,13 +135,32 @@ function App() {
 
       setIsSubmitted(true);
           setFeedback({ category: 'general', rating: 0, title: '', message: '', email: feedback.email, name: feedback.name });
-      setTimeout(() => navigate('/dashboard'), 4600);
     } catch (err: any) {
       setSubmissionError(err?.message || 'Something went wrong');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    if (!isSubmitted) return;
+    const el = playerContainerRef.current?.querySelector('dotlottie-player') as any;
+    let timeoutId: any;
+    const onComplete = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      navigate('/dashboard');
+    };
+    if (el?.addEventListener) {
+      el.addEventListener('complete', onComplete);
+    }
+    timeoutId = setTimeout(onComplete, 5000);
+    return () => {
+      if (el?.removeEventListener) {
+        el.removeEventListener('complete', onComplete);
+      }
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [isSubmitted, navigate]);
 
   const handleRatingClick = (rating: number) => {
     setFeedback(prev => ({ ...prev, rating }));
@@ -126,10 +171,10 @@ function App() {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
         <div className="text-center">
-          <div className=" w-400 h-400">
+          <div ref={playerContainerRef} className="w-[400px] h-[400px] mx-auto">
             <DotLottieReact
-              src="https://lottie.host/48f10868-b5f3-4d44-83b7-6f0236a0af73/llW0ZqYBRX.lottie"
-              loop
+              src={lottieSrc}
+              loop={false}
               autoplay
               style={{ width: '100%', height: '100%' }}
             />
