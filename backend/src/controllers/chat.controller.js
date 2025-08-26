@@ -142,3 +142,62 @@ export const getPrivateContacts = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Failed to fetch private contacts", e.message);
   }
 });
+
+export const getOrCreateChatThread = asyncHandler(async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const me = req.user._id;
+    
+    if (!userId) throw new ApiError(400, "userId required");
+    if (userId === me.toString()) throw new ApiError(400, "Cannot create chat thread with yourself");
+    
+    const existingMessages = await Message.findOne({
+      $or: [
+        { sender: me, receiverUser: userId },
+        { sender: userId, receiverUser: me },
+      ],
+    }).populate("sender", "fullname avatar");
+    
+    if (existingMessages) {
+      const otherUser = await Message.findOne({
+        $or: [
+          { sender: me, receiverUser: userId },
+          { sender: userId, receiverUser: me },
+        ],
+      }).populate("sender", "fullname avatar")
+        .populate("receiverUser", "fullname avatar");
+      
+      const targetUser = otherUser.sender._id.toString() === me.toString() 
+        ? otherUser.receiverUser 
+        : otherUser.sender;
+        
+      return res.status(200).json(new ApiResponse(200, {
+        userId: targetUser._id,
+        user: {
+          _id: targetUser._id,
+          fullname: targetUser.fullname,
+          avatar: targetUser.avatar,
+        },
+        exists: true,
+      }, "Chat thread found"));
+    }
+    
+    const { User } = await import("../models/user.model.js");
+    const targetUser = await User.findById(userId).select("fullname avatar");
+    
+    if (!targetUser) throw new ApiError(404, "User not found");
+    
+    return res.status(200).json(new ApiResponse(200, {
+      userId: targetUser._id,
+      user: {
+        _id: targetUser._id,
+        fullname: targetUser.fullname,
+        avatar: targetUser.avatar,
+      },
+      exists: false,
+    }, "New chat thread ready"));
+    
+  } catch (e) {
+    throw new ApiError(500, "Failed to get or create chat thread", e.message);
+  }
+});

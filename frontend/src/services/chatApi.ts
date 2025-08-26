@@ -45,3 +45,8 @@ export async function uploadChatFile(file: File) {
   return data?.data as { url: string; type: 'image'|'video' };
 }
 
+export async function getOrCreateChatThread(userId: string) {
+  const { data } = await axios.get(`${apiBase}/api/v1/chat/private/${userId}/thread`, { withCredentials: true });
+  return data?.data as { userId: string; user: { _id: string; fullname: string; avatar?: string }; exists: boolean };
+}
+

@@ -6,9 +6,9 @@ import {
   Smile, Users, Send, Pin, Trash2
 } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
-import { listContacts, getPrivateMessages, uploadChatFile, type Message as ChatMsg, type Contact } from '../services/chatApi';
+import { listContacts, getPrivateMessages, uploadChatFile, getOrCreateChatThread, type Message as ChatMsg, type Contact } from '../services/chatApi';
 import UserSearchModal from './UserSearchModal';
-import { getUserMin, type UserMin } from '../services/userApi';
+import { type UserMin } from '../services/userApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
 
 // A mock API function for demonstration purposes
@@ -82,21 +82,25 @@ const Messages = () => {
       setSelectedChat(to);
       return;
     }
-    const fetchUser = async () => {
+    const fetchChatThread = async () => {
       try {
-        const u = await getUserMin(to);
+        const chatThread = await getOrCreateChatThread(to);
         const newContact: Contact = {
-          user: { _id: u._id, fullname: u.fullname, avatar: u.avatar },
+          user: { 
+            _id: chatThread.user._id, 
+            fullname: chatThread.user.fullname, 
+            avatar: chatThread.user.avatar 
+          },
           lastMessage: undefined,
-          online: onlineUsers.has(u._id),
+          online: onlineUsers.has(chatThread.user._id),
         } as any;
         setContacts(prev => [newContact, ...prev]);
-        setSelectedChat(u._id);
+        setSelectedChat(chatThread.user._id);
       } catch (e) {
-        console.error('Failed to load user for deep-link', e);
+        console.error('Failed to get or create chat thread for deep-link', e);
       }
     };
-    fetchUser();
+    fetchChatThread();
   }, [searchParams, contacts, onlineUsers, selectedChat]);
 
   useEffect(() => {

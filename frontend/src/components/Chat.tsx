@@ -12,11 +12,12 @@ import {
   getRoomMessages,
   getPrivateMessages,
   uploadChatFile,
+  getOrCreateChatThread,
   type Message as Msg,
   type Room,
   type Contact,
 } from '../services/chatApi';
-import { getCurrentUser, getUserMin, type CurrentUser, type UserMin } from '../services/userApi';
+import { getCurrentUser, type CurrentUser, type UserMin } from '../services/userApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
 import UserSearchModal from './UserSearchModal';
 
@@ -123,7 +124,6 @@ const Chat: React.FC = () => {
     listContacts().then(setContacts).catch(() => { });
     getCurrentUser().then(setCurrentUser).catch(() => { });
   }, []);
-  // deep-link to ?to= (kept from second snippet)
   useEffect(() => {
     const to = searchParams.get('to');
     if (!to) return;
@@ -133,20 +133,24 @@ const Chat: React.FC = () => {
       setShowWelcomeScreen(false);
       return;
     }
-    // try to fetch minimal user and add as contact
     (async () => {
       try {
-        const u = await getUserMin(to);
+        const chatThread = await getOrCreateChatThread(to);
         const newContact: Contact = {
-          user: { _id: u._id, fullname: u.fullname, avatar: u.avatar } as any,
+          user: { 
+            _id: chatThread.user._id, 
+            fullname: chatThread.user.fullname, 
+            avatar: chatThread.user.avatar 
+          } as any,
           lastMessage: undefined,
-          online: onlineUsers.has(u._id),
+          online: onlineUsers.has(chatThread.user._id),
         } as any;
         setContacts(prev => [newContact, ...prev]);
         setScope('dm');
-        setActiveId(u._id);
+        setActiveId(chatThread.user._id);
+        setShowWelcomeScreen(false);
       } catch (e) {
-        console.warn('deep link user load failed', e);
+        console.warn('deep link chat thread creation failed', e);
       }
     })();
   }, [searchParams, contacts, onlineUsers]);
