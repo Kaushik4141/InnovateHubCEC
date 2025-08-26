@@ -27,7 +27,7 @@ const Team = () => {
       avatar: 'https://github.com/Kaushik4141.png?size=120',
     },
     {
-     name:'Chaithra',
+     name:'Chaithra S',
      role:'Frontend Developer',
      bio:'Leads the InnovateHubCEC projects frontend, focusing on product UI/UX, User Experience, and User Interface.',
      github:'Chaithra0206',
