@@ -1,0 +1,37 @@
+# Exclude dev and VCS files from Docker build context
+node_modules
+npm-debug.log*
+yarn-error.log*
+.pnpm-store
+
+# Local env and secrets
+.env
+.env.*
+
+# Editor/OS
+.vscode
+.idea
+.DS_Store
+
+# Tests and coverage
+coverage
+*.spec.*
+*.test.*
+
+# Logs and caches
+logs
+*.log
+.cache
+.tmp
+
+# Monorepo folders not needed for backend image
+../frontend
+/frontend
+
+# Git
+.git
+.gitignore
+
+# Build artifacts
+build
+dist
