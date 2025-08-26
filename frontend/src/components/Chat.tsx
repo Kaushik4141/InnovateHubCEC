@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Header from './Header';
 import {
   Search, Plus, Reply as ReplyIcon, X, Menu, Paperclip, Send, Users,
-  Pin, Trash2, Smile
+  Pin, Trash2, Smile, ChevronUp, ChevronDown
 } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import {
@@ -19,6 +19,7 @@ import {
 import { getCurrentUser, getUserMin, type CurrentUser, type UserMin } from '../services/userApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
 import UserSearchModal from './UserSearchModal';
+
 // --- Mock small server-like API placeholders (replace with your real APIs) ---
 const deleteMessageApi = async (messageId: string, forEveryone: boolean) => {
   // Replace with your real API call
@@ -60,8 +61,8 @@ const Chat: React.FC = () => {
   // Search functionality
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Msg[]>([]);
-  const [searchActive, setSearchActive] = useState(false);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
+  const [isSearchActive, setIsSearchActive] = useState(false);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -112,6 +113,10 @@ const Chat: React.FC = () => {
     const lastSpace = truncated.lastIndexOf(' ');
     return (lastSpace > maxLength * 0.7 ? truncated.substring(0, lastSpace) : truncated) + '...';
   };
+
+  // Escape user input for safe regex usage
+  const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
   // --- Load lists & current user ---
   useEffect(() => {
     listRooms().then(setRooms).catch(() => { });
@@ -408,8 +413,9 @@ const Chat: React.FC = () => {
   // Search functionality
   const handleSearch = () => {
     if (!searchQuery.trim()) {
-      setSearchActive(false);
+      setIsSearchActive(false);
       setSearchResults([]);
+      setCurrentSearchIndex(-1);
       return;
     }
     
@@ -419,9 +425,16 @@ const Chat: React.FC = () => {
     );
     
     setSearchResults(results);
-    setSearchActive(true);
-    setCurrentSearchIndex(-1);
+    setIsSearchActive(true);
+    
+    if (results.length > 0) {
+      setCurrentSearchIndex(0);
+      jumpToMessage((results[0] as any)._id);
+    } else {
+      setCurrentSearchIndex(-1);
+    }
   };
+
   const navigateSearchResults = (direction: 'next' | 'prev') => {
     if (searchResults.length === 0) return;
     
@@ -435,6 +448,14 @@ const Chat: React.FC = () => {
     setCurrentSearchIndex(newIndex);
     jumpToMessage((searchResults[newIndex] as any)._id);
   };
+
+  const closeSearch = () => {
+    setIsSearchActive(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setCurrentSearchIndex(-1);
+  };
+
   // Copy message to clipboard
   const copyMessage = async (content: string) => {
     try {
@@ -444,7 +465,8 @@ const Chat: React.FC = () => {
       console.error('Failed to copy message:', err);
     }
   };
-    return (
+
+  return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       <div className="h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] bg-gray-900 text-white flex overflow-hidden">
@@ -459,10 +481,11 @@ const Chat: React.FC = () => {
                   <X className="h-5 w-5" />
                 </button>
               </div>
+              {/* Search conversations input */}
               <div className="mb-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-1 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="Search conversations..." />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="Search conversations..." />
                 </div>
               </div>
               <div>
@@ -531,6 +554,12 @@ const Chat: React.FC = () => {
         )}
         {/* Sidebar - Desktop */}
         <aside className="hidden md:block w-72 border-r border-gray-800 pt-16 px-4 pb-4 space-y-6 h-full overflow-y-auto">
+          {/* Search conversations input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="Search conversations..." />
+          </div>
+          
           <div className="flex items-center justify-between">
             <h2 className="text-sm uppercase text-gray-400">Rooms</h2>
             <button title="New conversation" onClick={() => setOpenNewModal(true)} className="text-gray-400 hover:text-white p-1 rounded-md">
@@ -569,318 +598,465 @@ const Chat: React.FC = () => {
         </aside>
         {/* Main Chat Area */}
         <main className="flex-1 flex flex-col h-full overflow-hidden bg-gray-900">
-          <header className="h-14 flex items-center px-4 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm">
-            <div className="flex flex-col w-full">
-              {/* Top row with menu button and conversation name */}
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <button className="md:hidden mr-2 text-gray-300 hover:text-white p-1 rounded-md hover:bg-gray-800 flex-shrink-0" onClick={() => setMobileSidebarOpen(true)} aria-label="Open chats">
-                    <Menu className="h-5 w-5" />
-                  </button>
-                  <h1 className="text-lg font-semibold truncate min-w-0">
-                    {showWelcomeScreen ? 'Chat' : (selectedConversation?.name || 'Select a chat')}
-                  </h1>
-                  {selectedConversation?.online && <span className="text-xs text-green-400 ml-2 flex-shrink-0">Active now</span>}
-                </div>
-                {!showWelcomeScreen && (
-                  <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
-                    <Users className="h-5 w-5" />
+          <header className="h-14 flex items-center px-4 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm sticky top-0 z-10">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <button className="md:hidden mr-2 text-gray-300 hover:text-white p-1 rounded-md hover:bg-gray-800 flex-shrink-0" onClick={() => setMobileSidebarOpen(true)} aria-label="Open chats">
+                <Menu className="h-5 w-5" />
+              </button>
+              <h1 className="text-lg font-semibold truncate min-w-0">
+                {showWelcomeScreen ? 'Chat' : (selectedConversation?.name || 'Select a chat')}
+              </h1>
+              {selectedConversation?.online && <span className="text-xs text-green-400 ml-2 flex-shrink-0">Active now</span>}
+            </div>
+            
+            {/* Search Navigation in Header */}
+            {!showWelcomeScreen && (
+              <div className="flex items-center gap-2">
+                {isSearchActive ? (
+                  <div className="flex items-center bg-gray-800 rounded-lg px-2 py-1">
+                    <button 
+                      onClick={() => navigateSearchResults('prev')} 
+                      disabled={searchResults.length === 0}
+                      className="p-1 text-gray-400 hover:text-white disabled:opacity-30"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                    
+                    <div className="mx-1 text-xs text-gray-300 min-w-[60px] text-center">
+                      {searchResults.length > 0 
+                        ? `${currentSearchIndex + 1}/${searchResults.length}`
+                        : '0 results'}
+                    </div>
+                    
+                    <button 
+                      onClick={() => navigateSearchResults('next')} 
+                      disabled={searchResults.length === 0}
+                      className="p-1 text-gray-400 hover:text-white disabled:opacity-30"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                    
+                    <button 
+                      onClick={closeSearch}
+                      className="p-1 text-gray-400 hover:text-white ml-2"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button 
+                    onClick={() => setIsSearchActive(true)}
+                    className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800"
+                    aria-label="Search messages"
+                  >
+                    <Search className="h-5 w-5" />
                   </button>
                 )}
-              </div>
-              
-              {/* Bottom row with search input - only shown when not in welcome screen */}
-              {!showWelcomeScreen && (
-                <div className="flex items-center mt-2 w-full">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      placeholder="Search messages..."
-                      className="w-full px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
-                    />
-                    <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  </div>
-                  
-                  {searchActive && (
-                    <div className="flex items-center text-sm text-gray-400 ml-2">
-                      <button 
-                        onClick={() => navigateSearchResults('prev')} 
-                        className="p-1 hover:text-white disabled:opacity-50"
-                        disabled={searchResults.length === 0}
-                      >
-                        &uarr;
-                      </button>
-                      <span className="mx-1">
-                        {searchResults.length > 0 ? `${currentSearchIndex + 1}/${searchResults.length}` : '0/0'}
-                      </span>
-                      <button 
-                        onClick={() => navigateSearchResults('next')} 
-                        className="p-1 hover:text-white disabled:opacity-50"
-                        disabled={searchResults.length === 0}
-                      >
-                        &darr;
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setSearchQuery('');
-                          setSearchActive(false);
-                          setSearchResults([]);
-                        }} 
-                        className="ml-2 p-1 hover:text-white"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </header>
-          
-          {/* Messages Area */}
-          <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 pb-28 space-y-3 bg-gray-900">
-            {showWelcomeScreen && (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <div className="bg-gray-800 p-6 rounded-xl text-center max-w-md mx-4">
-                  <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="text-xl font-semibold mb-3 text-white">Welcome to Chat</h3>
-                  <p className="text-sm text-gray-400 mb-4">Connect with your team and friends through rooms and direct messages.</p>
-                  <div className="space-y-2 text-xs text-gray-500">
-                    <p className="flex items-center justify-center">
-                      <span className="w-2 h-2 bg-purple-400 rounded-full mr-2"></span>
-                      Select a room to join group conversations
-                    </p>
-                    <p className="flex items-center justify-center">
-                      <span className="w-2 h-2 bg-blue-400 rounded-full mr-2"></span>
-                      Start direct messages with contacts
-                    </p>
-                    <p className="flex items-center justify-center">
-                      <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                      Share files, images, and videos
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => setMobileSidebarOpen(true)}
-                    className="md:hidden mt-6 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg transition-colors"
-                  >
-                    Browse Chats
-                  </button>
-                </div>
-              </div>
-            )}
-            {loadingMessages && (
-              <div className="flex justify-center items-center py-8">
-                <div className="flex space-x-2">
-                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce"></div>
-                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                </div>
-              </div>
-            )}
-            {/* Pinned message banner */}
-            {pinnedMessage && (
-              <div className="p-3 bg-gray-800 border border-gray-700 rounded-lg flex items-center justify-between text-sm text-gray-300 mx-2">
-                <div className="flex items-center gap-2 cursor-pointer min-w-0 flex-1" onClick={() => jumpToMessage((pinnedMessage as any)._id)}>
-                  <Pin className="h-4 w-4 text-purple-400 flex-shrink-0" />
-                  <div className="truncate min-w-0">{pinnedMessage.type === 'text' ? pinnedMessage.content : `Media: ${pinnedMessage.type}`}</div>
-                </div>
-                <button onClick={() => { setPinnedMessage(null); setMessages(prev => prev.map(m => ((m as any)._id === (pinnedMessage as any)._id ? ({ ...m, pinned: false } as Msg) : m))); }} className="text-gray-400 hover:text-white flex-shrink-0 ml-2">
-                  <X className="h-4 w-4" />
+                
+                <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
+                  <Users className="h-5 w-5" />
                 </button>
               </div>
             )}
-            {/* Render messages */}
-            {messages.length > 0 && messages.map((m, idx) => {
-              const senderId = typeof m.sender === 'string' ? m.sender : (m.sender as any)?._id;
-              // treat 'me' as own message or match currentUser._id
-              const isOwn = currentUser ? (senderId === currentUser._id || senderId === 'me') : (senderId === 'me');
-              const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-              const avatar = isOwn ? 'ME' : (scope === 'dm' ? (contacts.find(c => c.user._id === activeId)?.user.fullname || 'U') : (typeof m.sender === 'object' && (m.sender as any)?.fullname ? (m.sender as any).fullname[0]?.toUpperCase() : 'U'));
-              const other = contacts.find(c => c.user._id === activeId);
-              const avatarUrl = scope === 'dm'
-                ? (isOwn ? null : avatarUrlFrom(other?.user?._id, other?.user?.fullname, other?.user?.avatar))
-                : (typeof m.sender === 'object' ? avatarUrlFrom((m.sender as any)?._id, (m.sender as any)?.fullname, (m.sender as any)?.avatar) : null);
-              const mid = messageDomId(m, idx);
-              const reactions = (m as any).reactions as Record<string, string[]> | undefined;
-              return (
-                <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group px-2`}>
-                  <div className={`flex items-end space-x-2 max-w-[85%] sm:max-w-[75%] md:max-w-[65%] lg:max-w-[55%] ${isOwn ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                    {avatarUrl ? (
+          </header>
+          
+          {/* Search Input (appears below header when active) */}
+          {isSearchActive && (
+            <div className="bg-gray-800 p-3 border-b border-gray-700">
+              <div className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSearch();
+                    if (e.key === 'Escape') closeSearch();
+                  }}
+                  placeholder="Search messages..."
+                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  autoFocus
+                />
+                {searchQuery && (
+                  <button 
+                    onClick={handleSearch}
+                    className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg flex-shrink-0"
+                  >
+                    <Search className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Messages Area */}
+          <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 pb-28 space-y-3 bg-gray-900 relative">
+            {/* Fixed pinned message banner */}
+            {pinnedMessage && (
+  <div className="sticky top-0 z-10 bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 mb-3 backdrop-blur-sm flex items-center justify-between">
+    <div 
+      className="flex-1 min-w-0 cursor-pointer"
+      onClick={() => jumpToMessage((pinnedMessage as any)._id)}
+    >
+      <div className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
+        <Pin className="h-4 w-4 flex-shrink-0" />
+        <span className="font-medium">Pinned Message</span>
+      </div>
+      <div className="text-white text-sm truncate">
+        {pinnedMessage.type === 'text' 
+          ? pinnedMessage.content 
+          : pinnedMessage.type === 'image' 
+            ? '📷 Image' 
+            : pinnedMessage.type === 'video' 
+              ? '🎥 Video' 
+              : pinnedMessage.type === 'file' 
+                ? '📄 File' 
+                : 'Media'}
+      </div>
+    </div>
+    <button 
+      onClick={() => {
+        setPinnedMessage(null);
+        setMessages(prev => prev.map(m => 
+          (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
+        ));
+      }}
+      className="text-yellow-300 hover:text-yellow-200 ml-2 flex-shrink-0"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  </div>
+)}
+
+            {showWelcomeScreen ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center max-w-md p-6">
+                  <div className="bg-purple-900/20 p-6 rounded-full inline-flex mb-4">
+                    <Users className="h-10 w-10 text-purple-400" />
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2">Welcome to Chat</h2>
+                  <p className="text-gray-400">Select a conversation or create a new one to start messaging</p>
+                </div>
+              </div>
+            ) : loadingMessages ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center">
+                <div className="text-center max-w-md p-6">
+                  <div className="bg-gray-800 p-6 rounded-full inline-flex mb-4">
+                    <Send className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h2 className="text-xl font-semibold mb-2">No messages yet</h2>
+                  <p className="text-gray-400">Send a message to start the conversation</p>
+                </div>
+              </div>
+            ) : (
+              messages.map((msg, idx) => {
+                const isMe = typeof msg.sender === 'string' ? msg.sender === 'me' : (msg.sender as UserMin)?._id === currentUser?._id;
+                const senderName = typeof msg.sender === 'string' ? 'Me' : (msg.sender as UserMin)?.fullname || 'Unknown';
+                const senderAvatar = typeof msg.sender === 'string' ? currentUser?.avatar : (msg.sender as UserMin)?.avatar;
+                const messageId = messageDomId(msg, idx);
+                const isHighlighted = highlightId === ((msg as any)._id || (msg as any).clientId);
+                const isSearchResult = searchResults.some(result => 
+                  (result as any)._id === (msg as any)._id || 
+                  (result as any).clientId === (msg as any).clientId
+                );
+                const isCurrentSearchResult = currentSearchIndex !== -1 && 
+                  searchResults[currentSearchIndex] && 
+                  ((searchResults[currentSearchIndex] as any)._id === (msg as any)._id || 
+                   (searchResults[currentSearchIndex] as any).clientId === (msg as any).clientId);
+
+                return (
+                  <div
+                    key={messageId}
+                    data-mid={messageId}
+                    className={`flex gap-3 group ${isMe ? 'justify-end' : 'justify-start'} ${isHighlighted ? 'animate-pulse bg-purple-900/20 rounded-lg' : ''} ${isSearchResult ? 'bg-gray-800/30' : ''} ${isCurrentSearchResult ? 'ring-2 ring-purple-500' : ''}`}
+                  >
+                    {!isMe && (
                       <img
-                        src={avatarUrl}
-                        alt="avatar"
-                        className="w-8 h-8 rounded-full object-cover flex-shrink-0"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                        src={avatarUrlFrom(
+                          typeof msg.sender === 'string' ? undefined : (msg.sender as UserMin)?._id,
+                          senderName,
+                          senderAvatar
+                        )}
+                        alt={senderName}
+                        className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).onerror = null;
+                          (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png');
+                        }}
                       />
-                    ) : (
-                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                        {typeof avatar === 'string' ? avatar.toString().slice(0, 2) : 'U'}
-                      </div>
                     )}
-                    <div className={`px-3 py-2 sm:px-4 sm:py-2 rounded-2xl shadow transition-all duration-150 min-w-0 ${isOwn ? 'bg-purple-600 text-white rounded-br-md' : 'bg-gray-800 text-gray-300 rounded-bl-md'} hover:scale-[1.01] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''}`}>
-                      {m.replyTo && (
-                        <div className={`mb-2 border-l-2 pl-2 sm:pl-3 ${isOwn ? 'border-purple-300' : 'border-purple-500'}`}>
-                          <div className="text-xs font-semibold opacity-90 truncate">{(m.replyTo as any)?.sender?.fullname || 'Replied message'}</div>
-                          <button type="button" onClick={() => jumpToMessage((m.replyTo as any)?._id)} className="text-left w-full min-w-0">
-                            <div className="text-xs opacity-80 truncate hover:underline">
-                              {m.replyTo.type === 'text' ? truncateText(m.replyTo.content, 40) : `Media: ${m.replyTo.type}`}
-                            </div>
+                    <div className={`max-w-[70%] ${isMe ? 'flex flex-col items-end' : ''}`}>
+                      {!isMe && <span className="text-xs text-gray-400 mb-1 px-2">{senderName}</span>}
+                      
+                      {/* Reply context */}
+                      {msg.replyTo && (
+                        <div className={`bg-gray-800/50 border-l-2 border-purple-500 rounded-tr-lg rounded-br-lg p-2 mb-1 text-sm ${isMe ? 'rounded-tl-lg' : 'rounded-tl-lg'}`}>
+                          <div className="text-purple-400 text-xs">
+                            {typeof msg.replyTo.sender === 'string' 
+                              ? 'Me' 
+                              : (msg.replyTo.sender as UserMin)?.fullname || 'Unknown'}
+                          </div>
+                          <div className="text-gray-300 truncate">
+                            {msg.replyTo.type === 'text' 
+                              ? msg.replyTo.content 
+                              : msg.replyTo.type === 'image' 
+                                ? '📷 Image' 
+                                : msg.replyTo.type === 'video' 
+                                  ? '🎥 Video' 
+                                  : msg.replyTo.type === 'file' 
+                                    ? '📄 File' 
+                                    : 'Media'}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className={`relative group/message ${isMe ? 'bg-purple-600' : 'bg-gray-800'} rounded-2xl px-4 py-2`}>
+                        {/* Message content */}
+                        {msg.type === 'text' ? (
+                          <div className="text-white break-words">
+                            {msg.content.split(' ').map((word, i) => {
+                              // Highlight search matches in message text
+                              if (isSearchActive && searchQuery) {
+                                const regex = new RegExp(`(${escapeRegExp(searchQuery)})`, 'gi');
+                                const parts = word.split(regex);
+                                
+                                return (
+                                  <span key={i}>
+                                    {parts.map((part, j) => 
+                                      part.toLowerCase() === searchQuery.toLowerCase() 
+                                        ? <span key={j} className="bg-yellow-500/30 text-yellow-200">{part}</span>
+                                        : part
+                                    )}{' '}
+                                  </span>
+                                );
+                              }
+                              return <span key={i}>{word} </span>;
+                            })}
+                          </div>
+                        ) : msg.type === 'image' ? (
+                          <img
+                            src={normalizeMediaUrl(msg.content)}
+                            alt="Shared image"
+                            className="max-w-full max-h-64 rounded-lg cursor-pointer"
+                            onClick={() => {
+                              setLightboxMedia({ type: 'image', url: normalizeMediaUrl(msg.content) });
+                              setLightboxOpen(true);
+                            }}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).onerror = null;
+                              (e.currentTarget as HTMLImageElement).src = '/image-placeholder.png';
+                            }}
+                          />
+                        ) : msg.type === 'video' ? (
+                          <video
+                            src={normalizeMediaUrl(msg.content)}
+                            className="max-w-full max-h-64 rounded-lg"
+                            controls
+                          />
+                        ) : (
+                          <a
+                            href={normalizeMediaUrl(msg.content)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-blue-300 hover:text-blue-200"
+                          >
+                            <Paperclip className="h-4 w-4" />
+                            <span>Download file</span>
+                          </a>
+                        )}
+                        
+                        {/* Message time and status */}
+                        <div className={`text-xs mt-1 ${isMe ? 'text-purple-200' : 'text-gray-400'} flex items-center justify-end gap-1`}>
+                          {msg.createdAt && new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {isMe && (msg as any).status === 'sending' && (
+                            <span className="h-2 w-2 rounded-full bg-gray-400 animate-pulse"></span>
+                          )}
+                          {isMe && (msg as any).status === 'sent' && (
+                            <span className="h-2 w-2 rounded-full bg-green-400"></span>
+                          )}
+                        </div>
+                        
+                        {/* Message actions hover menu */}
+                        <div className="absolute -top-8 right-2 opacity-0 group-hover/message:opacity-100 transition-opacity bg-gray-800 rounded-lg shadow-lg border border-gray-700 flex">
+                          <button
+                            onClick={() => setReplyTo(msg)}
+                            className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-l-lg"
+                            title="Reply"
+                          >
+                            <ReplyIcon className="h-4 w-4" />
                           </button>
+                          
+                          <button
+                            onClick={() => setReactionPicker(reactionPicker === messageId ? null : messageId)}
+                            className="p-2 text-gray-300 hover:text-white hover:bg-gray-700"
+                            title="React"
+                          >
+                            <Smile className="h-4 w-4" />
+                          </button>
+                          
+                          <div className="relative">
+                            <button
+                              onClick={() => setActiveDeleteMenu(activeDeleteMenu === messageId ? null : messageId)}
+                              className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-r-lg"
+                              title="More options"
+                            >
+                              <Menu className="h-4 w-4" />
+                            </button>
+                            
+                            {activeDeleteMenu === messageId && (
+                              <div className="absolute right-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 w-40">
+                                <button
+                                  onClick={() => copyMessage(msg.type === 'text' ? msg.content : msg.content)}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-t-lg"
+                                >
+                                  Copy
+                                </button>
+                                <button
+                                  onClick={() => handlePinMessage(msg)}
+                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700"
+                                >
+                                  {(msg as any).pinned ? 'Unpin' : 'Pin'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
+                                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-b-lg"
+                                >
+                                  Delete
+                                </button>
+                                {isMe && (
+                                  <button
+                                    onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, true)}
+                                    className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-b-lg"
+                                  >
+                                    Delete for everyone
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      {m.type === 'image' ? (
-                        <img
-                          src={normalizeMediaUrl(m.content)}
-                          alt="image"
-                          className="max-w-full rounded-lg cursor-zoom-in hover:opacity-90 transition max-h-64 object-cover"
-                          onClick={() => { setLightboxMedia({ type: 'image', url: normalizeMediaUrl(m.content) }); setLightboxOpen(true); }}
-                        />
-                      ) : m.type === 'video' ? (
-                        <video
-                          src={normalizeMediaUrl(m.content)}
-                          controls
-                          className="max-w-full rounded-lg cursor-zoom-in hover:opacity-90 transition max-h-64"
-                          onClick={() => { setLightboxMedia({ type: 'video', url: normalizeMediaUrl(m.content) }); setLightboxOpen(true); }}
-                        />
-                      ) : (
-                        <p className="text-sm whitespace-pre-wrap break-words hyphens-auto min-w-0" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>{m.content}</p>
-                      )}
-                      {/* Reactions */}
-                      {reactions && Object.values(reactions).some(arr => (arr?.length || 0) > 0) && (
-                        <div className="flex items-center space-x-1 mt-2 flex-wrap">
-                          {Object.entries(reactions).map(([emoji, users]) => (users && users.length > 0) ? (
-                            <span key={emoji} className={`text-xs rounded-full px-2 py-0.5 mb-1 ${isOwn ? 'bg-purple-700 text-white' : 'bg-gray-600 text-gray-300'}`}>
-                              {emoji} {users.length}
-                            </span>
-                          ) : null)}
-                        </div>
-                      )}
-                      <p className={`text-xs mt-1 ${isOwn ? 'text-purple-200' : 'text-gray-500'} text-right`}>{time}</p>
-                    </div>
-                    {/* action buttons (visible on hover) */}
-                    <div className="opacity-0 group-hover:opacity-100 transition text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700 flex items-center space-x-1 flex-shrink-0">
-                      {/* Reaction picker */}
-                      <div className="relative">
-                        <button title="React" onClick={() => setReactionPicker(mid)} className="p-1">
-                          <Smile className="h-4 w-4" />
-                        </button>
-                        {reactionPicker === mid && (
-                          <div className="absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 -translate-y-2 flex space-x-1 p-2 rounded-full bg-gray-900 shadow-lg border border-gray-700">
+                        
+                        {/* Reaction picker */}
+                        {reactionPicker === messageId && (
+                          <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-1 flex gap-1 z-10">
                             {emojis.map(emoji => (
-                              <button key={emoji} onClick={() => handleReact((m as any)._id || (m as any).clientId || mid, emoji)} className="hover:bg-gray-700 rounded-full p-1 transition-colors">
+                              <button
+                                key={emoji}
+                                onClick={() => handleReact(messageId, emoji)}
+                                className="p-1 hover:bg-gray-700 rounded transition-transform hover:scale-125"
+                              >
                                 {emoji}
                               </button>
                             ))}
                           </div>
                         )}
-                      </div>
-                      <button title="Reply" onClick={() => setReplyTo(m)} className="p-1">
-                        <ReplyIcon className="h-4 w-4" />
-                      </button>
-                      <button title="Pin message" onClick={() => handlePinMessage(m)} className="p-1">
-                        <Pin className="h-4 w-4" />
-                      </button>
-                      <div className="relative">
-                        <button title="Delete message" onClick={() => setActiveDeleteMenu(mid)} className="p-1">
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        {activeDeleteMenu === mid && (
-                          <div className="absolute z-10 bottom-full left-0 transform -translate-y-2 flex flex-col p-2 rounded-lg bg-gray-900 shadow-lg border border-gray-700 min-w-[180px]">
-                            <h4 className="text-xs text-gray-400 px-3 py-1 border-b border-gray-700 mb-1">Delete message</h4>
-                            {isOwn ? (
-                              <>
-                                <button onClick={() => handleDeleteMessage((m as any)._id || (m as any).clientId, false)} className="text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md">Delete for me</button>
-                                <button onClick={() => handleDeleteMessage((m as any)._id || (m as any).clientId, true)} className="text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md">Delete for everyone</button>
-                              </>
-                            ) : (
-                              <button onClick={() => handleDeleteMessage((m as any)._id || (m as any).clientId, false)} className="text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md">Delete for me</button>
-                            )}
-                            <button onClick={() => setActiveDeleteMenu(null)} className="text-left px-3 py-2 mt-1 text-sm text-gray-400 hover:bg-gray-700 rounded-md border-t border-gray-700">Cancel</button>
+                        
+                        {/* Reactions display */}
+                        {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                          <div className="absolute bottom-0 translate-y-full mt-1 flex gap-1">
+                            {Object.entries(msg.reactions).map(([emoji, users]) => (
+                              <div key={emoji} className="bg-gray-800/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
+                                <span>{emoji}</span>
+                                <span>{users.length}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
             <div ref={bottomRef} />
           </section>
           
-          {/* Input Area */}
-          <footer className="p-2 sm:p-4 border-t border-gray-800 bg-gray-900/95 backdrop-blur-sm">
-            {replyTo && (
-              <div className="mb-3 bg-gray-800/70 border border-gray-700 rounded-lg p-3 flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-400 truncate">Replying to {(replyTo as any)?.sender?.fullname || 'message'}</div>
-                  <div className="text-sm truncate mt-1">
-                    {replyTo.type === 'text' ? truncateText(replyTo.content, 60) : `Media: ${replyTo.type}`}
-                  </div>
+          {/* Reply preview */}
+          {replyTo && (
+            <div className="sticky bottom-20 bg-gray-800 border-t border-gray-700 p-3 flex justify-between items-center">
+              <div className="flex-1">
+                <div className="text-xs text-purple-400">Replying to {typeof replyTo.sender === 'string' ? 'yourself' : (replyTo.sender as UserMin)?.fullname}</div>
+                <div className="text-sm text-gray-300 truncate">
+                  {replyTo.type === 'text' 
+                    ? replyTo.content 
+                    : replyTo.type === 'image' 
+                      ? '📷 Image' 
+                      : replyTo.type === 'video' 
+                        ? '🎥 Video' 
+                        : replyTo.type === 'file' 
+                          ? '📄 File' 
+                          : 'Media'}
                 </div>
-                <button className="ml-3 text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-700 flex-shrink-0" onClick={() => setReplyTo(null)}>
-                  <X className="h-4 w-4" />
-                </button>
               </div>
-            )}
-            <div className="flex items-end gap-2">
-              <label className="text-gray-400 hover:text-white transition-colors cursor-pointer flex-shrink-0">
-                <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={(e) => handleFile(e)} className="hidden" disabled={uploadingFile || !activeId} />
-                <span className={`p-2 bg-gray-800 rounded-lg border border-gray-700 flex items-center gap-1 ${uploadingFile || !activeId ? 'opacity-50' : 'hover:bg-gray-700'}`}>
-                  {uploadingFile ? (
-                    <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
-                  ) : (
-                    <Paperclip className="h-4 w-4" />
-                  )}
-                </span>
-              </label>
-              <textarea
-                ref={inputRef as any}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { 
-                  if (e.key === 'Enter' && !e.shiftKey) { 
-                    e.preventDefault(); 
-                    handleSend(); 
-                  }
-                }}
-                placeholder={activeId ? 'Type a message...' : 'Select a chat to start messaging'}
-                disabled={!activeId}
-                rows={1}
-                className="flex-1 bg-gray-800 rounded-lg px-4 py-3 outline-none border border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 resize-none max-h-32 min-h-[44px]"
-                style={{ 
-                  height: 'auto',
-                  minHeight: '44px',
-                  maxHeight: '128px'
-                }}
-                onInput={(e) => {
-                  const target = e.target as HTMLTextAreaElement;
-                  target.style.height = 'auto';
-                  target.style.height = Math.min(target.scrollHeight, 128) + 'px';
-                }}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!activeId || !input.trim() || sendingMessage}
-                className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 p-2 rounded-lg transition-colors flex items-center justify-center flex-shrink-0 self-end"
-              >
-                {sendingMessage ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}
+              <button onClick={() => setReplyTo(null)} className="text-gray-400 hover:text-white ml-2">
+                <X className="h-4 w-4" />
               </button>
             </div>
-          </footer>
+          )}
+          
+          {/* Message input */}
+          {!showWelcomeScreen && (
+            <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-4">
+              <div className="flex items-end gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleFile}
+                  accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
+                  className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800 flex-shrink-0"
+                  title="Attach file"
+                >
+                  {uploadingFile ? (
+                    <div className="h-5 w-5 border-t-2 border-purple-500 rounded-full animate-spin"></div>
+                  ) : (
+                    <Paperclip className="h-5 w-5" />
+                  )}
+                </button>
+                
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  placeholder="Type a message..."
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white resize-none max-h-32 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  rows={1}
+                />
+                
+                <button
+                  onClick={handleSend}
+                  disabled={sendingMessage || !input.trim()}
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-400 text-white p-3 rounded-full flex-shrink-0 transition-colors"
+                  title="Send message"
+                >
+                  {sendingMessage ? (
+                    <div className="h-5 w-5 border-t-2 border-white rounded-full animate-spin"></div>
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
         </main>
         
         {/* Online Users Sidebar - Desktop */}
-        <aside className="hidden lg:block w-56 border-l border-gray-800 p-4 h-full overflow-y-auto bg-gray-900">
-          <h2 className="text-sm uppercase text-gray-400 mb-3">Online Users ({onlineUsers.size})</h2>
+        <aside className="hidden lg:block w-64 border-l border-gray-800 pt-16 px-4 pb-4 h-full overflow-y-auto">
+          <h2 className="text-sm uppercase text-gray-400 mb-4">Online Users</h2>
           <ul className="space-y-2">
             {Array.from(onlineUsers).map(id => {
               const contact = contacts.find(c => c.user._id === id);
@@ -889,7 +1065,7 @@ const Chat: React.FC = () => {
                   <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0"></span>
                   {contact ? (
                     <>
-                      <img src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} alt={contact.user.fullname} className="h-6 w-6 rounded-full object-cover flex-shrink-0" />
+                      <img src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} alt={contact.user.fullname} className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
                       <span className="text-sm text-gray-300 truncate min-w-0">{contact.user.fullname}</span>
                     </>
                   ) : (
@@ -900,39 +1076,67 @@ const Chat: React.FC = () => {
             })}
           </ul>
         </aside>
-        
-        {/* Floating Action Button for Mobile */}
-        {!mobileSidebarOpen && !onlineUsersOpen && (
-          <button
-            onClick={() => setOpenNewModal(true)}
-            className="md:hidden fixed right-4 bottom-24 z-20 bg-purple-600 text-white w-12 h-12 rounded-full shadow-lg hover:bg-purple-700 transition-all transform hover:scale-105 flex items-center justify-center"
-            aria-label="New conversation"
-          >
-            <Plus className="h-6 w-6" />
-          </button>
-        )}
-        
-        <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
       </div>
+      
+      {/* Media Lightbox */}
+      <MediaLightbox
+        open={lightboxOpen}
+        media={lightboxMedia}
+        onClose={() => setLightboxOpen(false)}
+      />
+      {pinnedMessage && (
+  <div className="p-3 bg-gray-700 border-b border-gray-600 flex items-center justify-between text-sm text-gray-300">
+    <div 
+      className="flex items-center flex-1 min-w-0 cursor-pointer"
+      onClick={() => jumpToMessage((pinnedMessage as any)._id)}
+    >
+      <Pin className="h-4 w-4 mr-2 flex-shrink-0 text-purple-400" />
+      <p className="truncate">
+        {pinnedMessage.type === 'text' 
+          ? pinnedMessage.content 
+          : `Media: ${pinnedMessage.type}`
+        }
+      </p>
+    </div>
+    <button 
+      onClick={() => {
+        setPinnedMessage(null);
+        setMessages(prev => prev.map(m => 
+          (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
+        ));
+      }} 
+      className="text-gray-400 hover:text-white ml-2 flex-shrink-0"
+      title="Unpin message"
+    >
+      <X className="h-4 w-4" />
+    </button>
+  </div>
+)}
+
+      {/* User Search Modal */}
       <UserSearchModal
         open={openNewModal}
         onClose={() => setOpenNewModal(false)}
-        onSelect={(u: UserMin) => {
-          const exists = contacts.some(c => c.user._id === u._id);
-          if (!exists) {
+        onSelect={(user) => {
+          const existing = contacts.find(c => c.user._id === user._id);
+          if (existing) {
+            openDM(user._id);
+          } else {
             const newContact: Contact = {
-              user: { _id: u._id, fullname: u.fullname, avatar: u.avatar } as any,
+              user: { _id: user._id, fullname: user.fullname, avatar: user.avatar } as any,
               lastMessage: undefined,
-              online: onlineUsers.has(u._id),
+              online: onlineUsers.has(user._id),
             } as any;
             setContacts(prev => [newContact, ...prev]);
+            setScope('dm');
+            setActiveId(user._id);
+            setShowWelcomeScreen(false);
           }
-          setScope('dm');
-          setActiveId(u._id);
           setOpenNewModal(false);
         }}
       />
     </div>
   );
 };
+
 export default Chat;
