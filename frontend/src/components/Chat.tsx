@@ -1084,35 +1084,7 @@ const Chat: React.FC = () => {
         media={lightboxMedia}
         onClose={() => setLightboxOpen(false)}
       />
-      {pinnedMessage && (
-  <div className="p-3 bg-gray-700 border-b border-gray-600 flex items-center justify-between text-sm text-gray-300">
-    <div 
-      className="flex items-center flex-1 min-w-0 cursor-pointer"
-      onClick={() => jumpToMessage((pinnedMessage as any)._id)}
-    >
-      <Pin className="h-4 w-4 mr-2 flex-shrink-0 text-purple-400" />
-      <p className="truncate">
-        {pinnedMessage.type === 'text' 
-          ? pinnedMessage.content 
-          : `Media: ${pinnedMessage.type}`
-        }
-      </p>
-    </div>
-    <button 
-      onClick={() => {
-        setPinnedMessage(null);
-        setMessages(prev => prev.map(m => 
-          (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
-        ));
-      }} 
-      className="text-gray-400 hover:text-white ml-2 flex-shrink-0"
-      title="Unpin message"
-    >
-      <X className="h-4 w-4" />
-    </button>
-  </div>
-)}
-
+      
       {/* User Search Modal */}
       <UserSearchModal
         open={openNewModal}
