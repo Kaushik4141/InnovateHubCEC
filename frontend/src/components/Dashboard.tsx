@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Feed from './Feed';
 import Projects from './Projects';
 import Competitions from './Competitions';
 import MentorsList from './MentorsList';
-
- 
+import { networkApi, type ConnectionSuggestion } from '../services/networkApi';
+import { useNavigate } from 'react-router-dom';
+import { UserPlus } from 'lucide-react';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('feed');
@@ -25,7 +26,40 @@ const Dashboard = () => {
     }
   };
 
+  const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const apiBase = import.meta.env.VITE_API_URL as string | undefined;
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoadingSuggestions(true);
+        const data = await networkApi.getConnectionSuggestions(undefined, 5);
+        setSuggestions(data || []);
+      } catch (e) {
+        setSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+    load();
+  }, []);
+
+  const avatarUrl = (u: { _id?: string; fullname?: string; avatar?: string }) => (
+    !u?.avatar || (u.avatar && u.avatar.includes('default_avatar'))
+      ? `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(u._id || u.fullname || 'user')}&size=48`
+      : (u.avatar as string)
+  );
+
+  const handleConnect = async (userId: string) => {
+    try {
+      await networkApi.sendConnectionRequest(userId);
+      setSuggestions(prev => prev.filter(s => s._id !== userId));
+    } catch (e) {
+      // ignore for now
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -113,32 +147,48 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Suggested Connections */}
+              {/* People You May Know (live) */}
               <div className="bg-gray-800 rounded-xl p-6">
-                <h3 className="font-semibold mb-4 text-purple-400">People You May Know</h3>
-                <div className="space-y-4">
-                  {[
-                    { name: "Arjun Mehta", role: "AI Researcher", mutual: 5 },
-                    { name: "Kavya Singh", role: "Full Stack Developer", mutual: 3 },
-                    { name: "Rohit Kumar", role: "Data Scientist", mutual: 7 }
-                  ].map((person) => (
-                    <div key={person.name} className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
-                          {person.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{person.name}</p>
-                          <p className="text-xs text-gray-400">{person.role}</p>
-                          <p className="text-xs text-gray-500">{person.mutual} mutual connections</p>
-                        </div>
-                      </div>
-                      <button className="bg-purple-600 text-white px-3 py-1 rounded text-xs hover:bg-purple-700 transition-colors">
-                        Connect
-                      </button>
-                    </div>
-                  ))}
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-purple-400">People You May Know</h3>
+                  <button className="text-xs text-gray-400 hover:text-white" onClick={() => navigate('/network')}>
+                    See all
+                  </button>
                 </div>
+                {loadingSuggestions ? (
+                  <div className="text-sm text-gray-400">Loading...</div>
+                ) : suggestions.length === 0 ? (
+                  <div className="text-sm text-gray-400">No suggestions right now</div>
+                ) : (
+                  <ul className="space-y-4">
+                    {suggestions.map((s) => (
+                      <li key={s._id} className="flex items-center justify-between">
+                        <div className="flex items-center min-w-0">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 mr-3 flex-shrink-0">
+                            <img
+                              src={avatarUrl(s)}
+                              alt={s.fullname}
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(s.fullname)}`)}>{s.fullname}</p>
+                            <p className="text-xs text-gray-400 truncate">{s.bio || 'Student'}</p>
+                            <p className="text-xs text-gray-500">{s.mutualConnections} mutual connections</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleConnect(s._id)}
+                          className="ml-3 flex items-center bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-purple-700 whitespace-nowrap"
+                        >
+                          <UserPlus className="h-4 w-4 mr-1" />
+                          Connect
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
           </div>

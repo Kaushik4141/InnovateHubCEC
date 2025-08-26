@@ -1,8 +1,7 @@
 import React,{useState,useEffect} from 'react';
 import { useNavigate, } from 'react-router-dom';
-import { Home, Users, Trophy, Code, MessageCircle, Bookmark, Menu, X, UserPlus, ShieldCheck } from 'lucide-react';
+import { Home, Users, Trophy, Code, MessageCircle, Bookmark, Menu, X, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
-import { networkApi, type ConnectionSuggestion } from '../services/networkApi';
 
 interface SidebarProps {
   activeTab: string;
@@ -65,8 +64,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const navigate = useNavigate();
   const apiBase = import.meta.env.VITE_API_URL;
   const [user, setUser] = useState<User | null>(null);
-  const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   useEffect(() => {
     axios
       .get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true })
@@ -78,22 +75,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
       });
   }, []);
 
-  useEffect(() => {
-    const loadSuggestions = async () => {
-      try {
-        setLoadingSuggestions(true);
-        const data = await networkApi.getConnectionSuggestions(undefined, 5);
-        setSuggestions(data || []);
-      } catch (e) {
-        console.error('Failed to load suggestions', e);
-        setSuggestions([]);
-      } finally {
-        setLoadingSuggestions(false);
-      }
-    };
-    loadSuggestions();
-  }, []);
-
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const avatarUrl = (u: { _id?: string; fullname?: string; avatar?: string }) => (
@@ -101,15 +82,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
       ? `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(u._id || u.fullname || 'user')}&size=48`
       : u.avatar as string
   );
-
-  const handleConnect = async (userId: string) => {
-    try {
-      await networkApi.sendConnectionRequest(userId);
-      setSuggestions(prev => prev.filter(s => s._id !== userId));
-    } catch (e) {
-      console.error('Failed to send connection request', e);
-    }
-  };
 
   return (
     <div className="lg:col-span-1">
@@ -249,53 +221,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
             Join Competition
           </button>
         </div>
-      </div>
-
-      {/* People You May Know */}
-      <div className="bg-gray-800 rounded-xl p-4 mt-6">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold text-purple-400">People You May Know</h3>
-          <button
-            className="text-xs text-gray-400 hover:text-white"
-            onClick={() => navigate('/network')}
-          >
-            See all
-          </button>
-        </div>
-        {loadingSuggestions ? (
-          <div className="text-sm text-gray-400">Loading...</div>
-        ) : suggestions.length === 0 ? (
-          <div className="text-sm text-gray-400">No suggestions right now</div>
-        ) : (
-          <ul className="space-y-3">
-            {suggestions.map((s) => (
-              <li key={s._id} className="flex items-center justify-between">
-                <div className="flex items-center min-w-0">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 mr-3 flex-shrink-0">
-                    <img
-                      src={avatarUrl(s)}
-                      alt={s.fullname}
-                      className="w-full h-full object-cover"
-                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
-                    />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(s.fullname)}`)}>{s.fullname}</p>
-                    <p className="text-xs text-gray-400 truncate">{s.bio || 'Student'}</p>
-                    <p className="text-xs text-gray-500">{s.mutualConnections} mutual connections</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleConnect(s._id)}
-                  className="ml-3 flex items-center bg-purple-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-purple-700 whitespace-nowrap"
-                >
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  Connect
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
       </div>
     </div>
