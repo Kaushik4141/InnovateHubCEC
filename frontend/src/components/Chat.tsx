@@ -881,7 +881,7 @@ const Chat: React.FC = () => {
                         </div>
                         
                         {/* Message actions hover menu */}
-                        <div className="absolute -top-8 right-2 opacity-0 group-hover/message:opacity-100 transition-opacity bg-gray-800 rounded-lg shadow-lg border border-gray-700 flex">
+                        <div className="absolute -top-8 right-2 z-20 opacity-0 group-hover/message:opacity-100 transition-opacity bg-gray-800 rounded-lg shadow-lg border border-gray-700 flex">
                           <button
                             onClick={() => setReplyTo(msg)}
                             className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-l-lg"
@@ -908,7 +908,7 @@ const Chat: React.FC = () => {
                             </button>
                             
                             {activeDeleteMenu === messageId && (
-                              <div className="absolute right-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 w-40">
+                              <div className="absolute left-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 w-40">
                                 <button
                                   onClick={() => copyMessage(msg.type === 'text' ? msg.content : msg.content)}
                                   className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-t-lg"
