@@ -28,7 +28,8 @@ axios.interceptors.response.use(
       !originalRequest.url.includes('/register') &&
       !originalRequest.url.includes('/auth/google') &&
       !originalRequest.url.includes('/auth/complete-onboarding') &&
-      !originalRequest.url.includes('/refresh-token')
+      !originalRequest.url.includes('/refresh-token') &&
+      !originalRequest.url.includes('/current-user')
     ) {
       if (isRefreshing) {
         return new Promise(function (resolve, reject) {
@@ -56,7 +57,9 @@ axios.interceptors.response.use(
         const errorResponse = (refreshError as any).response;
         if (errorResponse?.status === 401) {
           processQueue(refreshError, null);
-          window.location.href = `/login`;
+          if (window.location.pathname !== '/login') {
+            window.location.href = `/login`;
+          }
         } else if (errorResponse?.status >= 500 || !errorResponse) {
           console.warn('Server error during token refresh, retrying later');
           processQueue(refreshError, null);
