@@ -3,6 +3,7 @@ import {
   Trophy, Calendar, Award, Clock, Target, Search, Plus,
   ExternalLink, Zap, Code, Brain, Palette
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 type Competition = {
   id: number;
@@ -33,6 +34,7 @@ const Competitions = () => {
   const [visibleCount, setVisibleCount] = useState(4);
   const [expandedReqs, setExpandedReqs] = useState<Set<number>>(new Set());
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
+  const navigate = useNavigate();
 
   const competitions: Competition[] = [
     {
@@ -223,6 +225,24 @@ const Competitions = () => {
 
   return (
     <div className="space-y-6">
+      {/* Coming Soon Overlay */}
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div className="relative bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 text-center shadow-xl">
+          <div className="text-5xl mb-2">🚧</div>
+          <h3 className="text-xl font-semibold text-white mb-1">We’re building this!</h3>
+          <p className="text-gray-400 mb-5">Competitions will be available shortly. Thanks for your patience 💜</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600"
+            >
+              Go back
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>

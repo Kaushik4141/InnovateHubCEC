@@ -5,8 +5,10 @@ import {
   BookOpen, Star, ExternalLink, Bookmark, Calendar, Building,
   TrendingUp, Award, Plus
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Jobs = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('jobs');
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
@@ -171,6 +173,23 @@ const Jobs = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
+      {/* Coming Soon Overlay */}
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div className="relative bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 text-center shadow-xl">
+          <div className="text-5xl mb-2">🚧</div>
+          <h3 className="text-xl font-semibold text-white mb-1">We’re building this!</h3>
+          <p className="text-gray-400 mb-5">Jobs & Internships will be available shortly. Thanks for your patience 💜</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600"
+            >
+              Go back
+            </button>
+          </div>
+        </div>
+      </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
