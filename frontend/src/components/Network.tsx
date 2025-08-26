@@ -298,7 +298,7 @@ const Network = () => {
                           <p className="text-sm text-gray-400">
                             Year {person.year}
                           </p>
-                          <p className="text-sm text-purple-400">
+                          <p className="text-sm text-purple-400 line-clamp-2">
                             {person.bio || "Student"}
                           </p>
                         </div>
@@ -379,7 +379,7 @@ const Network = () => {
                           <p className="text-sm text-gray-400">
                             Year {person.year}
                           </p>
-                          <p className="text-sm text-purple-400">
+                          <p className="text-sm text-purple-400 line-clamp-2">
                             {person.bio || "Student"}
                           </p>
                         </div>
@@ -453,7 +453,7 @@ const Network = () => {
                             <p className="text-sm text-gray-400">
                               Year {invitation.from.year}
                             </p>
-                            <p className="text-sm text-purple-400">
+                            <p className="text-sm text-purple-400 line-clamp-2">
                               {invitation.from.bio || "Student"}
                             </p>
                           </div>

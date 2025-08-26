@@ -6,21 +6,13 @@ import {
   Smile, Users, Send, Pin, Trash2
 } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
-import { listContacts, getPrivateMessages, uploadChatFile, getOrCreateChatThread, type Message as ChatMsg, type Contact } from '../services/chatApi';
+import { listContacts, getPrivateMessages, uploadChatFile, getOrCreateChatThread, reactToMessage as reactToMessageApi, pinMessage as pinMessageApi, unpinMessage as unpinMessageApi, type Message as ChatMsg, type Contact } from '../services/chatApi';
 import UserSearchModal from './UserSearchModal';
 import { type UserMin } from '../services/userApi';
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
 
-// A mock API function for demonstration purposes
 const deleteMessageApi = async (messageId: string, forEveryone: boolean) => {
   console.log(`Deleting message ${messageId}. For everyone: ${forEveryone}`);
-  // In a real application, this would be an API call to your backend
-  return new Promise(resolve => setTimeout(resolve, 500));
-};
-
-// Mock API for pinning messages
-const pinMessageApi = async (messageId: string) => {
-  console.log(`Pinning message ${messageId}`);
   return new Promise(resolve => setTimeout(resolve, 500));
 };
 
@@ -148,6 +140,32 @@ const Messages = () => {
     };
   }, [socket, selectedChat]);
 
+  // Listen for message updates (reactions, pin/unpin) and apply to current thread
+  useEffect(() => {
+    if (!socket) return;
+    const onUpdated = (payload: Partial<ChatMsg> & { _id?: string }) => {
+      if (!payload || !(payload as any)._id) return;
+      setThread(prev => {
+        const idx = prev.findIndex(m => (m as any)._id === (payload as any)._id);
+        if (idx === -1) return prev;
+        const next = prev.slice();
+        next[idx] = { ...next[idx], ...(payload as any) } as any;
+        if (Object.prototype.hasOwnProperty.call(payload, 'pinned')) {
+          if ((payload as any).pinned) {
+            setPinnedMessage(next[idx] as any);
+          } else if ((pinnedMessage as any)?._id === (payload as any)._id) {
+            setPinnedMessage(null);
+          }
+        }
+        return next;
+      });
+    };
+    socket.on('messageUpdated', onUpdated);
+    return () => {
+      socket.off('messageUpdated', onUpdated);
+    };
+  }, [socket, pinnedMessage]);
+
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
@@ -238,17 +256,12 @@ useEffect(() => {
   const handleDeleteMessage = async (messageId: string, forEveryone: boolean) => {
     if (!messageId) return;
     try {
-      // Optimistic UI update
       setThread(prev => prev.filter(m => (m as any)._id !== messageId));
       
-      // Call the API to delete the message
       await deleteMessageApi(messageId, forEveryone);
 
-      // Optionally, you could handle a failure state here by reverting the UI change
     } catch (error) {
       console.error('Failed to delete message', error);
-      // Revert the optimistic update if the API call fails
-      // You would need to store the message temporarily to put it back
     } finally {
       setActiveDeleteMenu(null);
     }
@@ -256,21 +269,18 @@ useEffect(() => {
 
   const handlePinMessage = async (message: ChatMsg) => {
     try {
-      // Unpin the current pinned message if exists
       if (pinnedMessage) {
         setThread(prev => prev.map(m => 
           (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
         ));
       }
       
-      // Pin the new message
       setThread(prev => prev.map(m => 
         (m as any)._id === (message as any)._id ? {...m, pinned: true} : m
       ));
       
       setPinnedMessage({...message, pinned: true} as any);
       
-      // Call API to pin message
       await pinMessageApi((message as any)._id);
     } catch (error) {
       console.error('Failed to pin message', error);
@@ -298,7 +308,7 @@ useEffect(() => {
     return contacts.filter(c => c.user.fullname.toLowerCase().includes(q));
   }, [contacts, search]);
 
-  // Filter messages based on search
+      //Filter messages based on search
   const filteredMessages = useMemo(() => {
     const q = messageSearch.trim().toLowerCase();
     if (!q) return thread;
@@ -306,7 +316,7 @@ useEffect(() => {
       if (m.type === 'text') {
         return m.content.toLowerCase().includes(q);
       }
-      return false; // For media messages, you might want to search in metadata
+      return false; //For media messages, you might want to search in metadata
     });
   }, [thread, messageSearch]);
 
@@ -323,7 +333,7 @@ useEffect(() => {
   };
 const jumpToCurrentMatch = (index: number) => {
   if (!searchMatches.length) return;
-  const validIndex = (index + searchMatches.length) % searchMatches.length; // wrap around
+  const validIndex = (index + searchMatches.length) % searchMatches.length; 
   setCurrentMatchIndex(validIndex);
   jumpToMessage(searchMatches[validIndex]);
 };
@@ -347,6 +357,10 @@ const jumpToCurrentMatch = (index: number) => {
     });
     setThread(newThread as any);
     setReactionPicker(null);
+    const real = thread.find(m => (m as any)._id === messageId) as any;
+    if (real && real._id) {
+      reactToMessageApi(real._id, emoji).catch(() => {});
+    }
   };
   
   const emojis = ['👍', '❤', '😂', '😮', '😢', '🔥', '👏'];
@@ -608,11 +622,15 @@ const jumpToCurrentMatch = (index: number) => {
       </p>
     </div>
     <button 
-      onClick={() => {
+      onClick={async () => {
+        const id = (pinnedMessage as any)?._id as string | undefined;
         setPinnedMessage(null);
         setThread(prev => prev.map(m => 
-          (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
+          (m as any)._id === (pinnedMessage as any)._id ? { ...m, pinned: false } : m
         ));
+        if (id) {
+          try { await unpinMessageApi(id); } catch {}
+        }
       }} 
       className="text-gray-400 hover:text-white ml-2 flex-shrink-0"
       title="Unpin message"

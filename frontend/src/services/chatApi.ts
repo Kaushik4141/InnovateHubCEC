@@ -50,3 +50,18 @@ export async function getOrCreateChatThread(userId: string) {
   return data?.data as { userId: string; user: { _id: string; fullname: string; avatar?: string }; exists: boolean };
 }
 
+export async function reactToMessage(messageId: string, emoji: string) {
+  const { data } = await axios.post(`${apiBase}/api/v1/chat/messages/${messageId}/react`, { emoji }, { withCredentials: true });
+  return data?.data as { _id: string; reactions: Record<string, string[]> };
+}
+
+export async function pinMessage(messageId: string) {
+  const { data } = await axios.post(`${apiBase}/api/v1/chat/messages/${messageId}/pin`, {}, { withCredentials: true });
+  return data?.data as { updates: Array<{ _id: string; pinned: boolean }> };
+}
+
+export async function unpinMessage(messageId: string) {
+  const { data } = await axios.post(`${apiBase}/api/v1/chat/messages/${messageId}/unpin`, {}, { withCredentials: true });
+  return data?.data as { _id: string; pinned: boolean };
+}
+

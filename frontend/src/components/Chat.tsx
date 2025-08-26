@@ -13,6 +13,9 @@ import {
   getPrivateMessages,
   uploadChatFile,
   getOrCreateChatThread,
+  reactToMessage as reactToMessageApi,
+  pinMessage as pinMessageApi,
+  unpinMessage as unpinMessageApi,
   type Message as Msg,
   type Room,
   type Contact,
@@ -25,11 +28,6 @@ import UserSearchModal from './UserSearchModal';
 const deleteMessageApi = async (messageId: string, forEveryone: boolean) => {
   // Replace with your real API call
   console.log('deleteMessageApi', messageId, forEveryone);
-  return new Promise((r) => setTimeout(r, 400));
-};
-const pinMessageApi = async (messageId: string | undefined) => {
-  // Replace with real API call
-  console.log('pinMessageApi', messageId);
   return new Promise((r) => setTimeout(r, 400));
 };
 // -------------------------------------------------------------------------
@@ -208,7 +206,34 @@ const Chat: React.FC = () => {
       socket.off('privateMessage', onDM);
     };
   }, [socket, scope, activeId]);
-  // open room / dm and load history (keeps pinned message logic)
+
+  useEffect(() => {
+    if (!socket) return;
+    const onUpdated = (payload: Partial<Msg> & { _id?: string }) => {
+      if (!payload || !(payload as any)._id) return;
+      setMessages(prev => {
+        const idx = prev.findIndex(m => (m as any)._id === (payload as any)._id);
+        if (idx === -1) return prev; // ignore updates not in current view
+        const next = prev.slice();
+        next[idx] = { ...next[idx], ...(payload as any) } as any;
+        if (Object.prototype.hasOwnProperty.call(payload, 'pinned')) {
+          if ((payload as any).pinned) {
+            const pinned = next[idx] as Msg;
+            setPinnedMessage(pinned);
+          } else if ((pinnedMessage as any)?._id === (payload as any)._id) {
+            setPinnedMessage(null);
+          }
+        }
+        return next;
+      });
+    };
+    socket.on('messageUpdated', onUpdated);
+    return () => {
+      socket.off('messageUpdated', onUpdated);
+    };
+  }, [socket, pinnedMessage]);
+
+
   async function openRoom(id: string) {
     if (activeId && scope === 'room') leaveRoom(activeId);
     setScope('room');
@@ -389,6 +414,10 @@ const Chat: React.FC = () => {
       return { ...msg, reactions } as Msg;
     }));
     setReactionPicker(null);
+    const real = messages.find(m => (m as any)._id && (m as any)._id === messageId) as any;
+    if (real && real._id) {
+      reactToMessageApi(real._id, emoji).catch(() => {});
+    }
   };
   // filtered contacts search
   const filteredContacts = useMemo(() => {
@@ -719,11 +748,15 @@ const Chat: React.FC = () => {
       </div>
     </div>
     <button 
-      onClick={() => {
+      onClick={async () => {
+        const id = (pinnedMessage as any)?._id as string | undefined;
         setPinnedMessage(null);
         setMessages(prev => prev.map(m => 
-          (m as any)._id === (pinnedMessage as any)._id ? {...m, pinned: false} : m
+          (m as any)._id === (pinnedMessage as any)._id ? { ...m, pinned: false } : m
         ));
+        if (id) {
+          try { await unpinMessageApi(id); } catch {}
+        }
       }}
       className="text-yellow-300 hover:text-yellow-200 ml-2 flex-shrink-0"
     >

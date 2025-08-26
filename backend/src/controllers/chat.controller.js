@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/apiresponsehandler.js";
 import { ChatRoom } from "../models/chatroom.model.js";
 import { Message } from "../models/message.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
-import { presenceStore } from "../socket.js";
+import { presenceStore, getIO, emitToUser } from "../socket.js";
 
 export const ensureDefaultRooms = async () => {
   try {
@@ -17,9 +17,113 @@ export const ensureDefaultRooms = async () => {
       ]);
     }
   } catch (e) {
-    throw new ApiError("Failed to ensure default rooms", 500, e.message);
+    throw new ApiError(500, "Failed to ensure default rooms", e.message);
   }
 };
+
+export const reactToMessage = asyncHandler(async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji } = req.body || {};
+    const userId = req.user._id.toString();
+    if (!messageId) throw new ApiError(400, "messageId required");
+    if (!emoji) throw new ApiError(400, "emoji required");
+
+    const msg = await Message.findById(messageId);
+    if (!msg) throw new ApiError(404, "Message not found");
+
+    if (!msg.reactions) msg.reactions = new Map();
+    const current = Array.isArray(msg.reactions.get(emoji)) ? msg.reactions.get(emoji) : [];
+    const exists = current.map(String).includes(userId);
+    const updated = exists ? current.filter((u) => String(u) !== userId) : [...current, userId];
+    msg.reactions.set(emoji, updated);
+    await msg.save();
+
+    const payload = { _id: msg._id.toString(), reactions: Object.fromEntries(msg.reactions) };
+
+    const io = getIO();
+    if (msg.roomId) {
+      io?.to(msg.roomId.toString()).emit("messageUpdated", payload);
+    } else if (msg.receiverUser) {
+      emitToUser(String(msg.receiverUser), "messageUpdated", payload);
+      emitToUser(String(msg.sender), "messageUpdated", payload);
+    }
+
+    return res.status(200).json(new ApiResponse(200, payload, "Reaction updated"));
+  } catch (e) {
+    throw new ApiError(500, "Failed to react to message", e.message);
+  }
+});
+
+export const pinMessage = asyncHandler(async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    if (!messageId) throw new ApiError(400, "messageId required");
+    const msg = await Message.findById(messageId);
+    if (!msg) throw new ApiError(404, "Message not found");
+
+    let prevPinned = null;
+    if (msg.roomId) {
+      prevPinned = await Message.findOneAndUpdate({ roomId: msg.roomId, pinned: true, _id: { $ne: msg._id } }, { $set: { pinned: false } }, { new: true });
+    } else if (msg.receiverUser) {
+      const a = msg.sender;
+      const b = msg.receiverUser;
+      prevPinned = await Message.findOneAndUpdate({ pinned: true, $or: [ { sender: a, receiverUser: b }, { sender: b, receiverUser: a } ], _id: { $ne: msg._id } }, { $set: { pinned: false } }, { new: true });
+    }
+
+    if (!msg.pinned) {
+      msg.pinned = true;
+      await msg.save();
+    }
+
+    const io = getIO();
+    const updates = [];
+    updates.push({ _id: msg._id.toString(), pinned: true });
+    if (prevPinned) updates.push({ _id: prevPinned._id.toString(), pinned: false });
+
+    if (msg.roomId) {
+      updates.forEach((u) => io?.to(msg.roomId.toString()).emit("messageUpdated", u));
+    } else if (msg.receiverUser) {
+      updates.forEach((u) => {
+        emitToUser(String(msg.receiverUser), "messageUpdated", u);
+        emitToUser(String(msg.sender), "messageUpdated", u);
+      });
+    }
+
+    return res.status(200).json(new ApiResponse(200, { updates }, "Message pinned"));
+  } catch (e) {
+    throw new ApiError(500, "Failed to pin message", e.message);
+  }
+});
+
+export const unpinMessage = asyncHandler(async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    if (!messageId) throw new ApiError(400, "messageId required");
+    const msg = await Message.findById(messageId);
+    if (!msg) throw new ApiError(404, "Message not found");
+
+    if (msg.pinned) {
+      msg.pinned = false;
+      await msg.save();
+    }
+
+    const payload = { _id: msg._id.toString(), pinned: false };
+    const io = getIO();
+    if (msg.roomId) {
+      io?.to(msg.roomId.toString()).emit("messageUpdated", payload);
+    } else if (msg.receiverUser) {
+      emitToUser(String(msg.receiverUser), "messageUpdated", payload);
+      emitToUser(String(msg.sender), "messageUpdated", payload);
+    }
+
+    return res.status(200).json(new ApiResponse(200, payload, "Message unpinned"));
+  } catch (e) {
+    throw new ApiError(500, "Failed to unpin message", e.message);
+  }
+});
+
+
 
 export const listRooms = asyncHandler(async (req, res) => {
   await ensureDefaultRooms();
