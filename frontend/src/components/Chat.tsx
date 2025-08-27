@@ -119,7 +119,48 @@ const Chat: React.FC = () => {
   // --- Load lists & current user ---
   useEffect(() => {
     listRooms().then(setRooms).catch(() => { });
-    listContacts().then(setContacts).catch(() => { });
+    listContacts()
+      .then((fetched) => {
+        setContacts((prev) => {
+          const merged = new Map<string, Contact>();
+          prev.forEach((c) => merged.set(c.user._id, c));
+          (fetched || []).forEach((c) => {
+            merged.set(c.user._id, { ...(merged.get(c.user._id) || {} as any), ...c } as Contact);
+          });
+          const ordered: Contact[] = [];
+          const pushed = new Set<string>();
+          (fetched || []).forEach((c) => {
+            const id = c.user._id;
+            if (pushed.has(id)) return;
+            const m = merged.get(id);
+            if (m) {
+              ordered.push(m);
+              pushed.add(id);
+            }
+          });
+          
+          prev.forEach((c) => {
+            const id = c.user._id;
+            if (!pushed.has(id)) {
+              const m = merged.get(id);
+              if (m) {
+                ordered.push(m);
+                pushed.add(id);
+              }
+            }
+          });
+          const uniq: Contact[] = [];
+          const seen = new Set<string>();
+          for (const c of ordered) {
+            const id = c.user._id;
+            if (seen.has(id)) continue;
+            uniq.push(c);
+            seen.add(id);
+          }
+          return uniq;
+        });
+      })
+      .catch(() => { });
     getCurrentUser().then(setCurrentUser).catch(() => { });
   }, []);
   useEffect(() => {
@@ -143,7 +184,11 @@ const Chat: React.FC = () => {
           lastMessage: undefined,
           online: onlineUsers.has(chatThread.user._id),
         } as any;
-        setContacts(prev => [newContact, ...prev]);
+        setContacts(prev => (
+          prev.some(p => p.user._id === newContact.user._id)
+            ? prev
+            : [newContact, ...prev]
+        ));
         setScope('dm');
         setActiveId(chatThread.user._id);
         setShowWelcomeScreen(false);
