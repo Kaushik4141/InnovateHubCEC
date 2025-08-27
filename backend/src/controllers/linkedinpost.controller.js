@@ -90,15 +90,20 @@ const getlinkedinPosts = asyncHandler(async (req, res) => {
     let { page = 1, limit = 10 } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
-    const skip = (page - 1) * limit;
-
     const total = await LinkedinPost.countDocuments();
-    const linkedinPosts = await LinkedinPost.find({})
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate("owner", "fullname avatar");
-
+    const pipeline = [
+      { $sample: { size: limit } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner"
+        }
+      },
+      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } }
+    ];
+    const linkedinPosts = await LinkedinPost.aggregate(pipeline);
     return res.status(200).json(
       new ApiResponse(200, {
         linkedinPosts,

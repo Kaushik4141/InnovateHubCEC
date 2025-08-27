@@ -10,6 +10,7 @@ import {
   postUpload,
   getCombinedPosts,
   getPostByUserId,
+  getSuggestedPosts,
 } from "../controllers/post.controller.js";
 import {
    linkpostUpload,
@@ -36,6 +37,7 @@ router.route("/combinedPosts").get(verifyJWT, getCombinedPosts);
 router.route("/linkedinPosts").get(verifyJWT, getlinkedinPosts);
 router.route("/user/:userId").get(verifyJWT, getPostByUserId);
 router.route("/linkedinPosts/:userId").get(verifyJWT, getlinkedinPostsByUser);
+router.route("/suggested").get(verifyJWT, getSuggestedPosts);
 
 
 export default router;

@@ -3,6 +3,7 @@ import { ApiError } from "../utils/apierrorhandler.js";
 import { ApiResponse } from "../utils/apiresponsehandler.js";
 import { deleteFile, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { asyncHandler } from "../utils/asynchandler.js";
+import { User } from "../models/user.model.js";
 
 const postUpload = asyncHandler(async (req, res) => {
   try {
@@ -35,11 +36,7 @@ const postUpload = asyncHandler(async (req, res) => {
 });
 
 const getAllPost = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query;
-  const sortOptions = {};
-  if (sortBy) {
-    sortOptions[sortBy] = sortType == "desc" ? -1 : 1;
-  }
+  const { page = 1, limit = 10, query, userId } = req.query;
   try {
     const match = {};
     if (query) {
@@ -52,24 +49,21 @@ const getAllPost = asyncHandler(async (req, res) => {
     if (Object.keys(match).length) {
       pipeline.push({ $match: match });
     }
-    if (sortBy) {
-      pipeline.push({ $sort: sortOptions });
-    }
+    // Use $sample to randomize posts
+    pipeline.push({ $sample: { size: parseInt(limit) } });
     pipeline.push(
-  { $skip: (parseInt(page) - 1) * parseInt(limit) },
-  { $limit: parseInt(limit) },
-  {
-    $lookup: {
-      from: "users",
-      localField: "owner",
-      foreignField: "_id",
-      as: "owner"
-    }
-  },
-  { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } }
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner"
+        }
+      },
+      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } }
     );
     const result = await Post.aggregate(pipeline);
-    const total = await Post.countDocuments();
+    const total = await Post.countDocuments(match);
     return res.status(200).json(new ApiResponse(200, { result, total }, "Success"));
   } catch (e) {
     throw new ApiError(500, e.message);
@@ -196,6 +190,32 @@ const getCombinedPosts = asyncHandler(async (req, res) => {
   }
 });
 
+const getSuggestedPosts = asyncHandler(async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId);
+    if (!user) throw new ApiError(404, "User not found");
+    const userSkills = user.skills || [];
+
+    const match = {
+      owner: { $ne: userId },
+      ispublished: true,
+      ...(userSkills.length > 0 ? { tags: { $in: userSkills } } : {})
+    };
+
+    const posts = await Post.find(match)
+      .sort({ likes: -1, views: -1, createdAt: -1 })
+      .limit(10)
+      .populate('owner', 'fullname avatar skills');
+
+    return res.status(200).json(
+      new ApiResponse(200, posts, "Suggested posts fetched successfully")
+    );
+  } catch (e) {
+    throw new ApiError(500, e.message);
+  }
+});
+
 export {
   postUpload,
   getPostById,
@@ -204,5 +224,6 @@ export {
   togglePublishStatus,
   getAllPost,
   getCombinedPosts,
-  getPostByUserId
+  getPostByUserId,
+  getSuggestedPosts
 };

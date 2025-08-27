@@ -178,6 +178,7 @@ const Feed: React.FC = () => {
   const [tab, setTab] = useState<'project' | 'post'>('project');
   const apiBase = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
+ 
 
   const query = useInfiniteQuery({
     queryKey: ['feed', 'project'],
@@ -257,6 +258,11 @@ const Feed: React.FC = () => {
           Post
         </button>
       </div>
+      {tab === 'project' && (
+        <div className="mb-8">
+          
+        </div>
+      )}
       <div className="space-y-8">
         {tab === 'project' ? (
           <>
