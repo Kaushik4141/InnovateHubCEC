@@ -70,6 +70,7 @@ const Chat: React.FC = () => {
   const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
   const apiBase = import.meta.env.VITE_API_URL;
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  
   // helpers
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
     const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
@@ -80,6 +81,7 @@ const Chat: React.FC = () => {
     }
     return (avatar as string) || '';
   };
+  
   const normalizeMediaUrl = (url: string) => {
     if (!url) return url;
     try {
@@ -93,13 +95,16 @@ const Chat: React.FC = () => {
       return url.startsWith('http://res.cloudinary.com') ? url.replace(/^http:/, 'https:') : url;
     }
   };
+  
   const initials = (name?: string) => {
     if (!name) return '?';
     const parts = name.trim().split(' ');
     return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
   };
+  
   // message unique DOM id: prefer _id (DB id), fallback to clientId, fallback to index
   const messageDomId = (m: Msg, idx: number) => String((m as any)?._id || (m as any)?.clientId || `idx-${idx}`);
+  
   // Smart text truncation that handles long words
   const truncateText = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text;
@@ -122,6 +127,7 @@ const Chat: React.FC = () => {
     listContacts().then(setContacts).catch(() => { });
     getCurrentUser().then(setCurrentUser).catch(() => { });
   }, []);
+  
   useEffect(() => {
     const to = searchParams.get('to');
     if (!to) return;
@@ -152,16 +158,19 @@ const Chat: React.FC = () => {
       }
     })();
   }, [searchParams, contacts, onlineUsers]);
+  
   // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+  
   // focus input when chat opens
   useEffect(() => {
     if (activeId && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [activeId]);
+  
   // socket listeners for real-time messages (merge of both snippets)
   useEffect(() => {
     if (!socket) return;
@@ -233,7 +242,6 @@ const Chat: React.FC = () => {
     };
   }, [socket, pinnedMessage]);
 
-
   async function openRoom(id: string) {
     if (activeId && scope === 'room') leaveRoom(activeId);
     setScope('room');
@@ -250,6 +258,7 @@ const Chat: React.FC = () => {
       setLoadingMessages(false);
     }
   }
+  
   async function openDM(id: string) {
     if (activeId && scope === 'room') leaveRoom(activeId);
     setScope('dm');
@@ -265,6 +274,7 @@ const Chat: React.FC = () => {
       setLoadingMessages(false);
     }
   }
+  
   // send message (room or dm) with optimistic UI
   async function handleSend() {
     if (!input.trim() || !activeId || sendingMessage) return;
@@ -312,6 +322,7 @@ const Chat: React.FC = () => {
       setSendingMessage(false);
     }
   }
+  
   // handle file upload and optimistic send
   async function handleFile(e: React.ChangeEvent<HTMLInputElement> | File | undefined) {
     const file = (e && (e as React.ChangeEvent<HTMLInputElement>).target) ? (e as React.ChangeEvent<HTMLInputElement>).target.files?.[0] : (e as File | undefined);
@@ -356,6 +367,7 @@ const Chat: React.FC = () => {
       setUploadingFile(false);
     }
   }
+  
   // delete message (optimistic)
   const handleDeleteMessage = async (messageId: string | undefined, forEveryone: boolean) => {
     if (!messageId) return;
@@ -370,6 +382,7 @@ const Chat: React.FC = () => {
       setActiveDeleteMenu(null);
     }
   };
+  
   // Pin message for current conversation
   const handlePinMessage = async (message: Msg) => {
     try {
@@ -385,6 +398,7 @@ const Chat: React.FC = () => {
       console.error('pin failed', err);
     }
   };
+  
   // jump to message in DOM, highlight momentarily
   const jumpToMessage = (id?: string) => {
     if (!id) return;
@@ -397,6 +411,7 @@ const Chat: React.FC = () => {
       setTimeout(() => setHighlightId(null), 1200);
     }
   };
+  
   // reaction handling (local only)
   const emojis = ['👍', '❤', '😂', '😮', '😢', '🔥', '👏'];
   const handleReact = (messageId: string, emoji: string) => {
@@ -419,12 +434,14 @@ const Chat: React.FC = () => {
       reactToMessageApi(real._id, emoji).catch(() => {});
     }
   };
+  
   // filtered contacts search
   const filteredContacts = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return contacts;
     return contacts.filter(c => c.user.fullname.toLowerCase().includes(q));
   }, [contacts, search]);
+  
   // selectedConversation meta (for header)
   const selectedConversation = useMemo(() => {
     if (!activeId) return null;
@@ -436,13 +453,14 @@ const Chat: React.FC = () => {
       return { id: activeId, name: c?.user?.fullname || 'User', role: 'Direct Message', avatar: initials(c?.user?.fullname) || 'U', online: onlineUsers.has(activeId) };
     }
   }, [activeId, scope, rooms, contacts, onlineUsers]);
+  
   // when messages loaded we optionally scroll to bottom (some places also set pinned message earlier)
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, [messages]);
-  // Attempt to set a default selection when contacts available (like second snippet)
+  
   // Search functionality
   const handleSearch = () => {
     if (!searchQuery.trim()) {
@@ -499,110 +517,180 @@ const Chat: React.FC = () => {
     }
   };
 
+  // Close any open overlays when touching outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setReactionPicker(null);
+      setActiveDeleteMenu(null);
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="min-h-screen bg-gray-900 text-white overflow-hidden">
       <Header />
       <div className="h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] bg-gray-900 text-white flex overflow-hidden">
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer Overlay */}
         {mobileSidebarOpen && (
-          <div className="fixed inset-0 z-40 md:hidden">
+          <div className="fixed inset-0 z-50 md:hidden">
             <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
-            <div className="absolute left-0 top-0 h-full w-72 bg-gray-900 border-r border-gray-800 pt-16 px-4 pb-4 overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm uppercase text-gray-400">Chats</h2>
-                <button onClick={() => setMobileSidebarOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-full bg-gray-800">
+            <div className="absolute left-0 top-0 h-full w-full max-w-[280px] xs:max-w-[320px] bg-gray-900 border-r border-gray-800 safe-area-inset overflow-y-auto">
+              {/* Mobile sidebar header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
+                <h2 className="text-lg font-semibold">Chats</h2>
+                <button 
+                  onClick={() => setMobileSidebarOpen(false)} 
+                  className="touch-target text-gray-400 hover:text-white p-2 rounded-full bg-gray-800/50"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              {/* Search conversations input */}
-              <div className="mb-4">
+              
+              <div className="p-4 space-y-4">
+                {/* Search conversations input */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="Search conversations..." />
+                  <input 
+                    value={search} 
+                    onChange={(e) => setSearch(e.target.value)} 
+                    className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base" 
+                    placeholder="Search conversations..." 
+                  />
                 </div>
-              </div>
-              <div>
-                <h2 className="text-sm uppercase text-gray-400 mb-2">Rooms</h2>
-                <ul className="space-y-1">
-                  {rooms.map(r => (
-                    <li key={r._id}>
-                      <button onClick={() => { openRoom(r._id); setMobileSidebarOpen(false); }} className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
-                        <span className="text-purple-400 mr-2">#</span>
-                        <span className="truncate">{r.name}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-6">
-                <h2 className="text-sm uppercase text-gray-400 mb-2">Direct Messages</h2>
-                <ul className="space-y-1">
-                  {filteredContacts.map(c => (
-                    <li key={c.user._id}>
-                      <button onClick={() => { openDM(c.user._id); setMobileSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
-                        <div className="relative flex-shrink-0">
-                          <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
-                          <img src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)} alt={c.user.fullname} className="h-8 w-8 rounded-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }} />
-                        </div>
-                        <span className="truncate min-w-0">{c.user.fullname}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                
+                {/* Rooms section */}
+                <div>
+                  <h3 className="text-sm uppercase text-gray-400 mb-3 font-medium">Rooms</h3>
+                  <ul className="space-y-1">
+                    {rooms.map(r => (
+                      <li key={r._id}>
+                        <button 
+                          onClick={() => { 
+                            openRoom(r._id); 
+                            setMobileSidebarOpen(false); 
+                          }} 
+                          className={`w-full text-left px-3 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center touch-target ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}
+                        >
+                          <span className="text-purple-400 mr-3 flex-shrink-0">#</span>
+                          <span className="truncate text-base">{r.name}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                
+                {/* Direct Messages section */}
+                <div>
+                  <h3 className="text-sm uppercase text-gray-400 mb-3 font-medium">Direct Messages</h3>
+                  <ul className="space-y-1">
+                    {filteredContacts.map(c => (
+                      <li key={c.user._id}>
+                        <button 
+                          onClick={() => { 
+                            openDM(c.user._id); 
+                            setMobileSidebarOpen(false); 
+                          }} 
+                          className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-800 transition-colors touch-target ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}
+                        >
+                          <div className="relative flex-shrink-0">
+                            <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
+                            <img 
+                              src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)} 
+                              alt={c.user.fullname} 
+                              className="h-10 w-10 rounded-full object-cover" 
+                              onError={(e) => { 
+                                (e.currentTarget as HTMLImageElement).onerror = null; 
+                                (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); 
+                              }} 
+                            />
+                          </div>
+                          <span className="truncate min-w-0 text-base">{c.user.fullname}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
         )}
+
         {/* Online Users Mobile Drawer */}
         {onlineUsersOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-black/50" onClick={() => setOnlineUsersOpen(false)} />
-            <div className="absolute right-0 top-0 h-full w-64 bg-gray-900 border-l border-gray-800 p-4 overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm uppercase text-gray-400">Online Users</h2>
-                <button onClick={() => setOnlineUsersOpen(false)} className="text-gray-400 hover:text-white p-1 rounded-full bg-gray-800">
+            <div className="absolute right-0 top-0 h-full w-full max-w-[280px] bg-gray-900 border-l border-gray-800 safe-area-inset overflow-y-auto">
+              {/* Mobile online users header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
+                <h2 className="text-lg font-semibold">Online Users</h2>
+                <button 
+                  onClick={() => setOnlineUsersOpen(false)} 
+                  className="touch-target text-gray-400 hover:text-white p-2 rounded-full bg-gray-800/50"
+                >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <ul className="space-y-2">
-                {Array.from(onlineUsers).map(id => {
-                  const contact = contacts.find(c => c.user._id === id);
-                  return (
-                    <li key={id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-800/50">
-                      <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0"></span>
-                      {contact ? (
-                        <>
-                          <img src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} alt={contact.user.fullname} className="h-6 w-6 rounded-full object-cover flex-shrink-0" />
-                          <span className="text-sm text-gray-300 truncate min-w-0">{contact.user.fullname}</span>
-                        </>
-                      ) : (
-                        <span className="text-sm text-gray-300 truncate min-w-0">{id}</span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
+              
+              <div className="p-4">
+                <ul className="space-y-3">
+                  {Array.from(onlineUsers).map(id => {
+                    const contact = contacts.find(c => c.user._id === id);
+                    return (
+                      <li key={id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/50">
+                        <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0"></span>
+                        {contact ? (
+                          <>
+                            <img 
+                              src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} 
+                              alt={contact.user.fullname} 
+                              className="h-8 w-8 rounded-full object-cover flex-shrink-0" 
+                            />
+                            <span className="text-gray-300 truncate min-w-0">{contact.user.fullname}</span>
+                          </>
+                        ) : (
+                          <span className="text-gray-300 truncate min-w-0">{id}</span>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
             </div>
           </div>
         )}
+
         {/* Sidebar - Desktop */}
         <aside className="hidden md:block w-72 border-r border-gray-800 pt-16 px-4 pb-4 space-y-6 h-full overflow-y-auto">
           {/* Search conversations input */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="Search conversations..." />
+            <input 
+              value={search} 
+              onChange={(e) => setSearch(e.target.value)} 
+              className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" 
+              placeholder="Search conversations..." 
+            />
           </div>
           
           <div className="flex items-center justify-between">
             <h2 className="text-sm uppercase text-gray-400">Rooms</h2>
-            <button title="New conversation" onClick={() => setOpenNewModal(true)} className="text-gray-400 hover:text-white p-1 rounded-md">
+            <button 
+              title="New conversation" 
+              onClick={() => setOpenNewModal(true)} 
+              className="text-gray-400 hover:text-white p-1 rounded-md"
+            >
               <Plus className="h-5 w-5" />
             </button>
           </div>
           <ul className="space-y-1">
             {rooms.map(r => (
               <li key={r._id}>
-                <button onClick={() => openRoom(r._id)} className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
+                <button 
+                  onClick={() => openRoom(r._id)} 
+                  className={`w-full text-left px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors flex items-center ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}
+                >
                   <span className="text-purple-400 mr-2 flex-shrink-0">#</span>
                   <span className="truncate min-w-0">{r.name}</span>
                 </button>
@@ -612,15 +700,32 @@ const Chat: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm uppercase text-gray-400">Direct Messages</h2>
-              <button title="New" className="text-gray-400 hover:text-white p-1 rounded-md" onClick={() => setOpenNewModal(true)}><Plus className="h-4 w-4" /></button>
+              <button 
+                title="New" 
+                className="text-gray-400 hover:text-white p-1 rounded-md" 
+                onClick={() => setOpenNewModal(true)}
+              >
+                <Plus className="h-4 w-4" />
+              </button>
             </div>
             <ul className="space-y-1">
               {filteredContacts.map(c => (
                 <li key={c.user._id}>
-                  <button onClick={() => openDM(c.user._id)} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}>
+                  <button 
+                    onClick={() => openDM(c.user._id)} 
+                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}
+                  >
                     <div className="relative flex-shrink-0">
                       <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
-                      <img src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)} alt={c.user.fullname} className="h-8 w-8 rounded-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).onerror = null; (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }} />
+                      <img 
+                        src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)} 
+                        alt={c.user.fullname} 
+                        className="h-8 w-8 rounded-full object-cover" 
+                        onError={(e) => { 
+                          (e.currentTarget as HTMLImageElement).onerror = null; 
+                          (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); 
+                        }} 
+                      />
                     </div>
                     <span className="truncate min-w-0">{c.user.fullname}</span>
                   </button>
@@ -629,17 +734,30 @@ const Chat: React.FC = () => {
             </ul>
           </div>
         </aside>
+
         {/* Main Chat Area */}
         <main className="flex-1 flex flex-col h-full overflow-hidden bg-gray-900">
-          <header className="h-14 flex items-center px-4 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm sticky top-0 z-10">
+          {/* Chat Header */}
+          <header className="min-h-[56px] flex items-center justify-between px-3 sm:px-4 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm sticky top-0 z-20">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <button className="md:hidden mr-2 text-gray-300 hover:text-white p-1 rounded-md hover:bg-gray-800 flex-shrink-0" onClick={() => setMobileSidebarOpen(true)} aria-label="Open chats">
+              <button 
+                className="md:hidden touch-target text-gray-300 hover:text-white p-2 rounded-md hover:bg-gray-800 flex-shrink-0" 
+                onClick={() => setMobileSidebarOpen(true)} 
+                aria-label="Open chats"
+              >
                 <Menu className="h-5 w-5" />
               </button>
-              <h1 className="text-lg font-semibold truncate min-w-0">
-                {showWelcomeScreen ? 'Chat' : (selectedConversation?.name || 'Select a chat')}
-              </h1>
-              {selectedConversation?.online && <span className="text-xs text-green-400 ml-2 flex-shrink-0">Active now</span>}
+              <div className="min-w-0 flex-1">
+                <h1 className="text-base sm:text-lg font-semibold truncate">
+                  {showWelcomeScreen ? 'Chat' : (selectedConversation?.name || 'Select a chat')}
+                </h1>
+                {selectedConversation?.online && (
+                  <span className="text-xs text-green-400 block sm:hidden">Active now</span>
+                )}
+              </div>
+              {selectedConversation?.online && (
+                <span className="text-xs text-green-400 hidden sm:block">Active now</span>
+              )}
             </div>
             
             {/* Search Navigation in Header */}
@@ -650,7 +768,7 @@ const Chat: React.FC = () => {
                     <button 
                       onClick={() => navigateSearchResults('prev')} 
                       disabled={searchResults.length === 0}
-                      className="p-1 text-gray-400 hover:text-white disabled:opacity-30"
+                      className="touch-target p-1 text-gray-400 hover:text-white disabled:opacity-30"
                     >
                       <ChevronUp className="h-4 w-4" />
                     </button>
@@ -664,14 +782,14 @@ const Chat: React.FC = () => {
                     <button 
                       onClick={() => navigateSearchResults('next')} 
                       disabled={searchResults.length === 0}
-                      className="p-1 text-gray-400 hover:text-white disabled:opacity-30"
+                      className="touch-target p-1 text-gray-400 hover:text-white disabled:opacity-30"
                     >
                       <ChevronDown className="h-4 w-4" />
                     </button>
                     
                     <button 
                       onClick={closeSearch}
-                      className="p-1 text-gray-400 hover:text-white ml-2"
+                      className="touch-target p-1 text-gray-400 hover:text-white ml-2"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -679,14 +797,18 @@ const Chat: React.FC = () => {
                 ) : (
                   <button 
                     onClick={() => setIsSearchActive(true)}
-                    className="text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800"
+                    className="touch-target text-gray-400 hover:text-white p-2 rounded-md hover:bg-gray-800"
                     aria-label="Search messages"
                   >
                     <Search className="h-5 w-5" />
                   </button>
                 )}
                 
-                <button className="lg:hidden text-gray-400 hover:text-white p-1 rounded-md hover:bg-gray-800" onClick={() => setOnlineUsersOpen(true)} aria-label="Online users">
+                <button 
+                  className="lg:hidden touch-target text-gray-400 hover:text-white p-2 rounded-md hover:bg-gray-800" 
+                  onClick={() => setOnlineUsersOpen(true)} 
+                  aria-label="Online users"
+                >
                   <Users className="h-5 w-5" />
                 </button>
               </div>
@@ -707,13 +829,13 @@ const Chat: React.FC = () => {
                     if (e.key === 'Escape') closeSearch();
                   }}
                   placeholder="Search messages..."
-                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-base focus:outline-none focus:ring-1 focus:ring-purple-500"
                   autoFocus
                 />
                 {searchQuery && (
                   <button 
                     onClick={handleSearch}
-                    className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg flex-shrink-0"
+                    className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg flex-shrink-0 touch-target"
                   >
                     <Search className="h-4 w-4" />
                   </button>
@@ -723,51 +845,51 @@ const Chat: React.FC = () => {
           )}
           
           {/* Messages Area */}
-          <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 pb-28 space-y-3 bg-gray-900 relative">
+          <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 safe-area-bottom space-y-3 bg-gray-900 relative">
             {/* Fixed pinned message banner */}
             {pinnedMessage && (
-  <div className="sticky top-0 z-10 bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 mb-3 backdrop-blur-sm flex items-center justify-between">
-    <div 
-      className="flex-1 min-w-0 cursor-pointer"
-      onClick={() => jumpToMessage((pinnedMessage as any)._id)}
-    >
-      <div className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
-        <Pin className="h-4 w-4 flex-shrink-0" />
-        <span className="font-medium">Pinned Message</span>
-      </div>
-      <div className="text-white text-sm truncate">
-        {pinnedMessage.type === 'text' 
-          ? pinnedMessage.content 
-          : pinnedMessage.type === 'image' 
-            ? '📷 Image' 
-            : pinnedMessage.type === 'video' 
-              ? '🎥 Video' 
-              : pinnedMessage.type === 'file' 
-                ? '📄 File' 
-                : 'Media'}
-      </div>
-    </div>
-    <button 
-      onClick={async () => {
-        const id = (pinnedMessage as any)?._id as string | undefined;
-        setPinnedMessage(null);
-        setMessages(prev => prev.map(m => 
-          (m as any)._id === (pinnedMessage as any)._id ? { ...m, pinned: false } : m
-        ));
-        if (id) {
-          try { await unpinMessageApi(id); } catch {}
-        }
-      }}
-      className="text-yellow-300 hover:text-yellow-200 ml-2 flex-shrink-0"
-    >
-      <X className="h-4 w-4" />
-    </button>
-  </div>
-)}
+              <div className="sticky top-0 z-10 bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 mb-3 backdrop-blur-sm flex items-center justify-between">
+                <div 
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => jumpToMessage((pinnedMessage as any)._id)}
+                >
+                  <div className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
+                    <Pin className="h-4 w-4 flex-shrink-0" />
+                    <span className="font-medium">Pinned Message</span>
+                  </div>
+                  <div className="text-white text-sm truncate">
+                    {pinnedMessage.type === 'text' 
+                      ? pinnedMessage.content 
+                      : pinnedMessage.type === 'image' 
+                        ? '📷 Image' 
+                        : pinnedMessage.type === 'video' 
+                          ? '🎥 Video' 
+                          : pinnedMessage.type === 'file' 
+                            ? '📄 File' 
+                            : 'Media'}
+                  </div>
+                </div>
+                <button 
+                  onClick={async () => {
+                    const id = (pinnedMessage as any)?._id as string | undefined;
+                    setPinnedMessage(null);
+                    setMessages(prev => prev.map(m => 
+                      (m as any)._id === (pinnedMessage as any)._id ? { ...m, pinned: false } : m
+                    ));
+                    if (id) {
+                      try { await unpinMessageApi(id); } catch {}
+                    }
+                  }}
+                  className="text-yellow-300 hover:text-yellow-200 ml-2 flex-shrink-0 touch-target p-1"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
             {showWelcomeScreen ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center max-w-md p-6">
+              <div className="h-full flex items-center justify-center p-4">
+                <div className="text-center max-w-sm">
                   <div className="bg-purple-900/20 p-6 rounded-full inline-flex mb-4">
                     <Users className="h-10 w-10 text-purple-400" />
                   </div>
@@ -780,8 +902,8 @@ const Chat: React.FC = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
               </div>
             ) : messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="text-center max-w-md p-6">
+              <div className="h-full flex items-center justify-center p-4">
+                <div className="text-center max-w-sm">
                   <div className="bg-gray-800 p-6 rounded-full inline-flex mb-4">
                     <Send className="h-10 w-10 text-gray-400" />
                   </div>
@@ -809,7 +931,7 @@ const Chat: React.FC = () => {
                   <div
                     key={messageId}
                     data-mid={messageId}
-                    className={`flex gap-3 group ${isMe ? 'justify-end' : 'justify-start'} ${isHighlighted ? 'animate-pulse bg-purple-900/20 rounded-lg' : ''} ${isSearchResult ? 'bg-gray-800/30' : ''} ${isCurrentSearchResult ? 'ring-2 ring-purple-500' : ''}`}
+                    className={`flex gap-2 sm:gap-3 group px-1 py-2 ${isMe ? 'justify-end' : 'justify-start'} ${isHighlighted ? 'animate-pulse bg-purple-900/20 rounded-lg' : ''} ${isSearchResult ? 'bg-gray-800/30' : ''} ${isCurrentSearchResult ? 'ring-2 ring-purple-500' : ''}`}
                   >
                     {!isMe && (
                       <img
@@ -826,12 +948,12 @@ const Chat: React.FC = () => {
                         }}
                       />
                     )}
-                    <div className={`max-w-[70%] ${isMe ? 'flex flex-col items-end' : ''}`}>
+                    <div className={`max-w-[85%] sm:max-w-[70%] ${isMe ? 'flex flex-col items-end' : ''}`}>
                       {!isMe && <span className="text-xs text-gray-400 mb-1 px-2">{senderName}</span>}
                       
                       {/* Reply context */}
                       {msg.replyTo && (
-                        <div className={`bg-gray-800/50 border-l-2 border-purple-500 rounded-tr-lg rounded-br-lg p-2 mb-1 text-sm ${isMe ? 'rounded-tl-lg' : 'rounded-tl-lg'}`}>
+                        <div className={`bg-gray-800/50 border-l-2 border-purple-500 rounded-tr-lg rounded-br-lg p-2 mb-1 text-sm max-w-full ${isMe ? 'rounded-tl-lg' : 'rounded-tl-lg'}`}>
                           <div className="text-purple-400 text-xs">
                             {typeof msg.replyTo.sender === 'string' 
                               ? 'Me' 
@@ -851,10 +973,10 @@ const Chat: React.FC = () => {
                         </div>
                       )}
                       
-                      <div className={`relative group/message ${isMe ? 'bg-purple-600' : 'bg-gray-800'} rounded-2xl px-4 py-2`}>
+                      <div className={`relative group/message ${isMe ? 'bg-purple-600' : 'bg-gray-800'} rounded-2xl px-3 sm:px-4 py-2`}>
                         {/* Message content */}
                         {msg.type === 'text' ? (
-                          <div className="text-white break-words">
+                          <div className="text-white break-words text-sm sm:text-base leading-relaxed">
                             {msg.content.split(' ').map((word, i) => {
                               // Highlight search matches in message text
                               if (isSearchActive && searchQuery) {
@@ -878,7 +1000,7 @@ const Chat: React.FC = () => {
                           <img
                             src={normalizeMediaUrl(msg.content)}
                             alt="Shared image"
-                            className="max-w-full max-h-64 rounded-lg cursor-pointer"
+                            className="max-w-full max-h-48 sm:max-h-64 rounded-lg cursor-pointer"
                             onClick={() => {
                               setLightboxMedia({ type: 'image', url: normalizeMediaUrl(msg.content) });
                               setLightboxOpen(true);
@@ -891,18 +1013,19 @@ const Chat: React.FC = () => {
                         ) : msg.type === 'video' ? (
                           <video
                             src={normalizeMediaUrl(msg.content)}
-                            className="max-w-full max-h-64 rounded-lg"
+                            className="max-w-full max-h-48 sm:max-h-64 rounded-lg"
                             controls
+                            preload="metadata"
                           />
                         ) : (
                           <a
                             href={normalizeMediaUrl(msg.content)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-blue-300 hover:text-blue-200"
+                            className="flex items-center gap-2 text-blue-300 hover:text-blue-200 touch-target"
                           >
                             <Paperclip className="h-4 w-4" />
-                            <span>Download file</span>
+                            <span className="text-sm">Download file</span>
                           </a>
                         )}
                         
@@ -917,10 +1040,13 @@ const Chat: React.FC = () => {
                           )}
                         </div>
                         
-                        {/* Message actions hover menu */}
-                        <div className="absolute -top-8 right-2 z-20 opacity-0 group-hover/message:opacity-100 transition-opacity bg-gray-800 rounded-lg shadow-lg border border-gray-700 flex">
+                        {/* Message actions hover menu - Desktop */}
+                        <div className="absolute -top-10 right-2 z-20 opacity-0 group-hover/message:opacity-100 transition-opacity bg-gray-800 rounded-lg shadow-lg border border-gray-700 hidden md:flex">
                           <button
-                            onClick={() => setReplyTo(msg)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReplyTo(msg);
+                            }}
                             className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-l-lg"
                             title="Reply"
                           >
@@ -928,7 +1054,10 @@ const Chat: React.FC = () => {
                           </button>
                           
                           <button
-                            onClick={() => setReactionPicker(reactionPicker === messageId ? null : messageId)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReactionPicker(reactionPicker === messageId ? null : messageId);
+                            }}
                             className="p-2 text-gray-300 hover:text-white hover:bg-gray-700"
                             title="React"
                           >
@@ -937,7 +1066,10 @@ const Chat: React.FC = () => {
                           
                           <div className="relative">
                             <button
-                              onClick={() => setActiveDeleteMenu(activeDeleteMenu === messageId ? null : messageId)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveDeleteMenu(activeDeleteMenu === messageId ? null : messageId);
+                              }}
                               className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-r-lg"
                               title="More options"
                             >
@@ -945,7 +1077,7 @@ const Chat: React.FC = () => {
                             </button>
                             
                             {activeDeleteMenu === messageId && (
-                              <div className="absolute left-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 w-40">
+                              <div className="absolute left-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 w-40">
                                 <button
                                   onClick={() => copyMessage(msg.type === 'text' ? msg.content : msg.content)}
                                   className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-t-lg"
@@ -960,7 +1092,7 @@ const Chat: React.FC = () => {
                                 </button>
                                 <button
                                   onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
-                                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-b-lg"
+                                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700"
                                 >
                                   Delete
                                 </button>
@@ -977,16 +1109,107 @@ const Chat: React.FC = () => {
                           </div>
                         </div>
                         
+                        {/* Mobile message actions - Long press or tap menu */}
+                        <div className="md:hidden absolute inset-0 group/mobile">
+                          <button
+                            className="absolute top-1 right-1 opacity-0 group-hover/mobile:opacity-100 bg-gray-700/80 rounded-full p-1"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveDeleteMenu(activeDeleteMenu === messageId ? null : messageId);
+                            }}
+                          >
+                            <Menu className="h-4 w-4 text-gray-300" />
+                          </button>
+                        </div>
+                        
+                        {/* Mobile action menu overlay */}
+                        {activeDeleteMenu === messageId && (
+                          <div className="md:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                            <div className="bg-gray-800 rounded-lg border border-gray-700 mx-4 w-full max-w-xs">
+                              <div className="p-4 border-b border-gray-700">
+                                <h3 className="font-semibold">Message Options</h3>
+                              </div>
+                              <div className="p-2 space-y-1">
+                                <button
+                                  onClick={() => {
+                                    setReplyTo(msg);
+                                    setActiveDeleteMenu(null);
+                                  }}
+                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                                >
+                                  <ReplyIcon className="h-4 w-4" />
+                                  Reply
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setReactionPicker(messageId);
+                                    setActiveDeleteMenu(null);
+                                  }}
+                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                                >
+                                  <Smile className="h-4 w-4" />
+                                  React
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    copyMessage(msg.type === 'text' ? msg.content : msg.content);
+                                    setActiveDeleteMenu(null);
+                                  }}
+                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg"
+                                >
+                                  Copy
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    handlePinMessage(msg);
+                                    setActiveDeleteMenu(null);
+                                  }}
+                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                                >
+                                  <Pin className="h-4 w-4" />
+                                  {(msg as any).pinned ? 'Unpin' : 'Pin'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
+                                  className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
+                                </button>
+                                {isMe && (
+                                  <button
+                                    onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, true)}
+                                    className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg"
+                                  >
+                                    Delete for everyone
+                                  </button>
+                                )}
+                              </div>
+                              <div className="p-2 border-t border-gray-700">
+                                <button
+                                  onClick={() => setActiveDeleteMenu(null)}
+                                  className="w-full px-3 py-2 text-center hover:bg-gray-700 rounded-lg"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Reaction picker */}
                         {reactionPicker === messageId && (
-                          <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-1 flex gap-1 z-10">
+                          <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 flex gap-2 z-30">
                             {emojis.map(emoji => (
                               <button
                                 key={emoji}
-                                onClick={() => handleReact(messageId, emoji)}
-                                className="p-1 hover:bg-gray-700 rounded transition-transform hover:scale-125"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReact(messageId, emoji);
+                                }}
+                                className="p-2 hover:bg-gray-700 rounded transition-transform hover:scale-125 touch-target"
                               >
-                                {emoji}
+                                <span className="text-lg">{emoji}</span>
                               </button>
                             ))}
                           </div>
@@ -994,12 +1217,14 @@ const Chat: React.FC = () => {
                         
                         {/* Reactions display */}
                         {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                          <div className="absolute bottom-0 translate-y-full mt-1 flex gap-1">
+                          <div className="absolute bottom-0 translate-y-full mt-1 flex gap-1 flex-wrap">
                             {Object.entries(msg.reactions).map(([emoji, users]) => (
-                              <div key={emoji} className="bg-gray-800/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
-                                <span>{emoji}</span>
-                                <span>{users.length}</span>
-                              </div>
+                              users.length > 0 && (
+                                <div key={emoji} className="bg-gray-800/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
+                                  <span>{emoji}</span>
+                                  <span className="text-gray-300">{users.length}</span>
+                                </div>
+                              )
                             ))}
                           </div>
                         )}
@@ -1009,14 +1234,16 @@ const Chat: React.FC = () => {
                 );
               })
             )}
-            <div ref={bottomRef} />
+            <div ref={bottomRef} className="pb-4" />
           </section>
           
           {/* Reply preview */}
           {replyTo && (
-            <div className="sticky bottom-20 bg-gray-800 border-t border-gray-700 p-3 flex justify-between items-center">
-              <div className="flex-1">
-                <div className="text-xs text-purple-400">Replying to {typeof replyTo.sender === 'string' ? 'yourself' : (replyTo.sender as UserMin)?.fullname}</div>
+            <div className="sticky bottom-16 sm:bottom-20 bg-gray-800 border-t border-gray-700 p-3 flex justify-between items-center mx-2 sm:mx-4 rounded-t-lg">
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-purple-400">
+                  Replying to {typeof replyTo.sender === 'string' ? 'yourself' : (replyTo.sender as UserMin)?.fullname}
+                </div>
                 <div className="text-sm text-gray-300 truncate">
                   {replyTo.type === 'text' 
                     ? replyTo.content 
@@ -1029,7 +1256,10 @@ const Chat: React.FC = () => {
                           : 'Media'}
                 </div>
               </div>
-              <button onClick={() => setReplyTo(null)} className="text-gray-400 hover:text-white ml-2">
+              <button 
+                onClick={() => setReplyTo(null)} 
+                className="text-gray-400 hover:text-white ml-2 touch-target p-1"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1037,7 +1267,7 @@ const Chat: React.FC = () => {
           
           {/* Message input */}
           {!showWelcomeScreen && (
-            <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-4">
+            <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-3 sm:p-4 safe-area-bottom">
               <div className="flex items-end gap-2">
                 <input
                   type="file"
@@ -1049,7 +1279,7 @@ const Chat: React.FC = () => {
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingFile}
-                  className="text-gray-400 hover:text-white p-2 rounded-full hover:bg-gray-800 flex-shrink-0"
+                  className="text-gray-400 hover:text-white p-2 sm:p-3 rounded-full hover:bg-gray-800 flex-shrink-0 touch-target"
                   title="Attach file"
                 >
                   {uploadingFile ? (
@@ -1070,14 +1300,17 @@ const Chat: React.FC = () => {
                     }
                   }}
                   placeholder="Type a message..."
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white resize-none max-h-32 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white text-base resize-none max-h-32 focus:outline-none focus:ring-1 focus:ring-purple-500"
                   rows={1}
+                  style={{
+                    minHeight: '44px', // Ensure minimum touch target size
+                  }}
                 />
                 
                 <button
                   onClick={handleSend}
                   disabled={sendingMessage || !input.trim()}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-400 text-white p-3 rounded-full flex-shrink-0 transition-colors"
+                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-400 text-white p-2 sm:p-3 rounded-full flex-shrink-0 transition-colors touch-target"
                   title="Send message"
                 >
                   {sendingMessage ? (
@@ -1102,7 +1335,11 @@ const Chat: React.FC = () => {
                   <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0"></span>
                   {contact ? (
                     <>
-                      <img src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} alt={contact.user.fullname} className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
+                      <img 
+                        src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} 
+                        alt={contact.user.fullname} 
+                        className="h-8 w-8 rounded-full object-cover flex-shrink-0" 
+                      />
                       <span className="text-sm text-gray-300 truncate min-w-0">{contact.user.fullname}</span>
                     </>
                   ) : (
