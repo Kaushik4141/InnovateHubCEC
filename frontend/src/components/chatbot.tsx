@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const ChatbotPage: React.FC = () => {
+const ChatBot: React.FC = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<{ sender: string; text: string }[]>([
     { sender: 'bot', text: 'Hello! I am your assistant. How can I help you today?' }
@@ -75,5 +76,4 @@ const ChatbotPage: React.FC = () => {
   );
 };
 
-export default ChatbotPage;
-
+export default ChatBot;
