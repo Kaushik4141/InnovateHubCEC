@@ -27,7 +27,7 @@ const Messages = () => {
   const [search, setSearch] = useState('');
   const [messageSearch, setMessageSearch] = useState('');
   const [openNewModal, setOpenNewModal] = useState(false);
-  const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
@@ -57,6 +57,44 @@ const Messages = () => {
       try {
         const list = await listContacts();
         setContacts(list || []);
+         setContacts((prev) => {
+          const merged = new Map<string, Contact>();
+          prev.forEach((c) => merged.set(c.user._id, c));
+          (list || []).forEach((c) => {
+            const existing = merged.get(c.user._id) || ({} as any);
+            merged.set(c.user._id, { ...existing, ...c } as Contact);
+          });
+          const ordered: Contact[] = [];
+          const pushed = new Set<string>();
+          (list || []).forEach((c) => {
+            const id = c.user._id;
+            if (pushed.has(id)) return;
+            const m = merged.get(id);
+            if (m) {
+              ordered.push(m);
+              pushed.add(id);
+            }
+          });
+          prev.forEach((c) => {
+            const id = c.user._id;
+            if (!pushed.has(id)) {
+              const m = merged.get(id);
+              if (m) {
+                ordered.push(m);
+                pushed.add(id);
+              }
+            }
+          });
+            const uniq: Contact[] = [];
+          const seen = new Set<string>();
+          for (const c of ordered) {
+            const id = c.user._id;
+            if (seen.has(id)) continue;
+            uniq.push(c);
+            seen.add(id);
+          }
+          return uniq;
+        });
       } catch (e) {
         console.error('Failed to load contacts', e);
       }
@@ -85,14 +123,18 @@ const Messages = () => {
           lastMessage: undefined,
           online: onlineUsers.has(chatThread.user._id),
         } as any;
-        setContacts(prev => [newContact, ...prev]);
+ setContacts(prev => (
+          prev.some(p => p.user._id === newContact.user._id)
+            ? prev
+            : [newContact, ...prev]
+        ));
         setSelectedChat(chatThread.user._id);
       } catch (e) {
         console.error('Failed to get or create chat thread for deep-link', e);
       }
     };
     fetchChatThread();
-  }, [searchParams, contacts, onlineUsers, selectedChat]);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedChat) return;
@@ -437,7 +479,8 @@ const Messages = () => {
                     return (
                       <div
                         key={id}
-                        onClick={() => setSelectedChat(id)}
+                        onClick={() => {setSelectedChat(id);setSearchParams({ to: id }); setMobileSidebarOpen(false);}}
+                       
                         className={`mx-2 mb-1 p-3 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors ${
                           selectedChat === id ? 'bg-gray-800 border-l-4 border-l-purple-500' : ''
                         }`}
@@ -523,7 +566,7 @@ const Messages = () => {
                 return (
                   <div
                     key={id}
-                    onClick={() => setSelectedChat(id)}
+                   onClick={() => { setSelectedChat(id); setSearchParams({ to: id }); }}
                     className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors ${
                       selectedChat === id ? 'bg-gray-700 border-l-4 border-l-purple-500' : ''
                     }`}

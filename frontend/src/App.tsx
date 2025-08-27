@@ -21,7 +21,7 @@ import Admin from './components/Admin';
 import MentorApply from './components/MentorApply';
 import FeedbackForm from './components/feedbackform';
 import FeedbackFab from './components/FeedbackFab';
-
+import { Analytics } from '@vercel/analytics/react';
 type Me = {
   _id: string;
   onboardingCompleted?: boolean;
@@ -110,6 +110,7 @@ function App() {
           <Route path="/feedback" element={<FeedbackForm />} />
         </Routes>
         <FeedbackFab />
+        <Analytics />
       </div>
     </Router>
   );
