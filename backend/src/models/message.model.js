@@ -8,6 +8,12 @@ const messageSchema = new mongoose.Schema(
     content: { type: String, required: true },
     type: { type: String, enum: ["text", "image", "video"], default: "text" },
     replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "Message", default: null },
+    reactions: {
+      type: Map,
+      of: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      default: {},
+    },
+    pinned: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
