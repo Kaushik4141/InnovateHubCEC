@@ -19,6 +19,8 @@ import Onboarding from './components/Onboarding';
 import Mentors from './components/Mentors';
 import Admin from './components/Admin';
 import MentorApply from './components/MentorApply';
+import FeedbackForm from './components/feedbackform';
+import FeedbackFab from './components/FeedbackFab';
 
 type Me = {
   _id: string;
@@ -105,7 +107,9 @@ function App() {
           <Route path="/addpost" element={<RequireOnboardingComplete><AddPost /></RequireOnboardingComplete>} />
           <Route path="/profile/c/:fullname" element={<RequireAuth><UserProfileView /></RequireAuth>} />
           <Route path="/onboarding" element={<OnboardingOnly />} />
+          <Route path="/feedback" element={<FeedbackForm />} />
         </Routes>
+        <FeedbackFab />
       </div>
     </Router>
   );
