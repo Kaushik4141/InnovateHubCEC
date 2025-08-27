@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ExternalLink, Code, Cpu, Palette, Brain, Database, Smartphone,
   Search, Plus, Eye, Heart, MessageCircle, Calendar, Award
@@ -7,6 +8,7 @@ import {
 const Projects = () => {
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
 
   const projects = [
     {
@@ -163,6 +165,24 @@ const Projects = () => {
 
   return (
     <div className="space-y-6">
+      {/* Coming Soon Overlay */}
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div className="relative bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 text-center shadow-xl">
+          <div className="text-5xl mb-2">🚧</div>
+          <h3 className="text-xl font-semibold text-white mb-1">We’re building this!</h3>
+          <p className="text-gray-400 mb-5">Projects will be available shortly. Thanks for your patience 💜</p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600"
+            >
+              Go back
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
@@ -268,16 +288,11 @@ const Projects = () => {
             </div>
             
             <div className="p-6">
-              {/* Project Header */}
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-xl font-semibold text-white mb-2 flex-1">{project.title}</h3>
                 <project.icon className="h-5 w-5 text-gray-400 flex-shrink-0 ml-2" />
               </div>
-              
-              {/* Description */}
               <p className="text-gray-300 mb-4 line-clamp-3 leading-relaxed">{project.description}</p>
-              
-              {/* Author Info */}
               <div className="flex items-center mb-4">
                 <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-3">
                   {project.author.split(' ').map(n => n[0]).join('')}
@@ -287,8 +302,6 @@ const Projects = () => {
                   <p className="text-sm text-gray-400">{project.year}</p>
                 </div>
               </div>
-
-              {/* Tags */}
               <div className="flex flex-wrap gap-2 mb-4">
                 {project.tags.slice(0, 4).map((tag) => (
                   <span key={tag} className="px-2 py-1 bg-gray-700 text-gray-300 rounded-md text-xs hover:bg-purple-600 hover:text-white cursor-pointer transition-colors">
@@ -301,8 +314,6 @@ const Projects = () => {
                   </span>
                 )}
               </div>
-
-              {/* Stats */}
               <div className="flex items-center justify-between text-sm text-gray-400 mb-4">
                 <div className="flex items-center space-x-4">
                   <span className="flex items-center">
@@ -323,8 +334,6 @@ const Projects = () => {
                   {new Date(project.createdAt).toLocaleDateString()}
                 </span>
               </div>
-
-              {/* Action Buttons */}
               <div className="flex items-center justify-between">
                 <div className="flex space-x-2">
                   {project.demo && (
@@ -349,7 +358,6 @@ const Projects = () => {
         ))}
       </div>
 
-      {/* Load More */}
       {filteredProjects.length > 0 && (
         <div className="text-center">
           <button className="bg-gray-800 text-gray-300 px-8 py-3 rounded-lg hover:bg-gray-700 transition-colors border border-gray-700">
@@ -358,7 +366,6 @@ const Projects = () => {
         </div>
       )}
 
-      {/* No Results */}
       {filteredProjects.length === 0 && (
         <div className="text-center py-12">
           <Code className="h-16 w-16 text-gray-600 mx-auto mb-4" />
