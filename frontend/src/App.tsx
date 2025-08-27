@@ -21,7 +21,10 @@ import Admin from './components/Admin';
 import MentorApply from './components/MentorApply';
 import FeedbackForm from './components/feedbackform';
 import FeedbackFab from './components/FeedbackFab';
+import ChatbotFab from './components/ChatbotFab';
+import Chatbot from './components/Chatbot';
 import { Analytics } from '@vercel/analytics/react';
+
 type Me = {
   _id: string;
   onboardingCompleted?: boolean;
@@ -85,9 +88,15 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
 };
 
 function App() {
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+
+  const toggleChatbot = () => {
+    setIsChatbotOpen((prev) => !prev);
+  };
+
   return (
     <Router>
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-gray-900 relative">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/team" element={<Team />} />
@@ -109,7 +118,16 @@ function App() {
           <Route path="/onboarding" element={<OnboardingOnly />} />
           <Route path="/feedback" element={<FeedbackForm />} />
         </Routes>
+
+        {/* Floating Feedback Button */}
         <FeedbackFab />
+
+        {/* Floating Chatbot Button */}
+        <ChatbotFab onClick={toggleChatbot} />
+
+        {/* Chatbot Popup */}
+        {isChatbotOpen && <Chatbot onClose={toggleChatbot} />}
+
         <Analytics />
       </div>
     </Router>
