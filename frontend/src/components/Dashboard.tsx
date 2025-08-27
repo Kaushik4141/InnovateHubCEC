@@ -75,24 +75,29 @@ const Dashboard = () => {
           <div className="hidden lg:block lg:order-3 lg:col-span-1">
 
             <div className="space-y-6">
-              {/* Trending Topics */}
+              {/* Developer Roadmaps */}
               <div className="bg-gray-800 rounded-xl p-6">
-                <h3 className="font-semibold mb-4 text-purple-400">Trending Topics</h3>
-                <div className="space-y-3">
-                  {[
-                    { tag: '#AIInnovation', posts: 156 },
-                    { tag: '#WebDev', posts: 89 },
-                    { tag: '#IoTProjects', posts: 67 },
-                    { tag: '#MachineLearning', posts: 45 },
-                    { tag: '#BlockchainTech', posts: 32 }
-                  ].map((topic) => (
-                    <div key={topic.tag} className="flex justify-between items-center hover:bg-gray-700 p-2 rounded cursor-pointer">
-                      <span className="text-sm font-medium">{topic.tag}</span>
-                      <span className="text-xs text-gray-400">{topic.posts} posts</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+  <h3 className="font-semibold mb-4 text-purple-400">Developer Roadmaps</h3>
+  <div className="space-y-3">
+    {[
+      { role: 'Frontend Developer', link: 'https://roadmap.sh/frontend' },
+      { role: 'Backend Developer', link: 'https://roadmap.sh/backend' },
+      { role: 'Fullstack Developer', link: 'https://roadmap.sh/full-stack' },
+      { role: 'Blockchain Developer', link: 'https://roadmap.sh/blockchain' },
+      { role: 'AI/ML Engineer', link: 'https://roadmap.sh/ai' },
+      { role: 'More', link: 'https://roadmap.sh' },
+    ].map((item) => (
+      <div
+        key={item.role}
+        onClick={() => window.open(item.link, '_blank')} // opens in new tab
+        className="flex justify-between items-center hover:bg-gray-700 p-2 rounded cursor-pointer transition"
+      >
+        <span className="text-sm font-medium text-white">{item.role}</span>
+        <span className="text-xs text-gray-400">View</span>
+      </div>
+    ))}
+  </div>
+</div>
 
               {/* Upcoming Events */}
               <div className="bg-gray-800 rounded-xl p-6">
