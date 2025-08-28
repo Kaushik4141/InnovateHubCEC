@@ -17,7 +17,15 @@ app.use(express.urlencoded({
     extended: true,
     limit: '20kb'
 }))
-app.use(express.static('public'));
+app.use(express.static('public', {
+  etag: true,
+  maxAge: '1d',
+  setHeaders: (res, path) => {
+    if (/\.(?:png|jpe?g|gif|webp|svg|ico)$/i.test(path)) {
+      res.setHeader('Cache-Control', 'public, max-age=86400, immutable');
+    }
+  }
+}));
 app.use(cookieParser());
 
 app.use((req, res, next) => {
@@ -33,17 +41,18 @@ import postRouter from './routes/post.router.js';
 import leaderboardRouter from './routes/leaderboard.router.js';
 import chatRouter from './routes/chat.router.js';
 import mentorRouter from './routes/mentor.router.js';
-//import opportunityRouter from './routes/opportunity.router.js';
+import opportunityRouter from './routes/opportunity.router.js';
 import statsRouter from './routes/stats.router.js';
 import { startLeetcodeStatsScheduler } from './utils/leetcodeScheduler.js';
 
 //routes declaration
 app.use('/api/v1/users', userRouter);
+app.use('/api/v1/opportunities', opportunityRouter);
 app.use('/api/v1/posts', postRouter);
 app.use('/api/v1/leaderboard', leaderboardRouter);
 app.use('/api/v1/chat', chatRouter);
 app.use('/api/v1/mentors', mentorRouter);
-//app.use('/api/v1/opportunities', opportunityRouter);
+app.use('/api/v1/opportunities', opportunityRouter);
 app.use('/api/v1/stats', statsRouter);
 
 startLeetcodeStatsScheduler();

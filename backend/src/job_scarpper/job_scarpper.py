@@ -1,19 +1,60 @@
-import requests
+try:
+    import requests  # type: ignore
+except ImportError:
+    print("[JobScraper] Python package 'requests' not found. Skipping job scraper. Install via: pip install requests")
+    raise SystemExit(0)
+
 import re
 import time
 import os
 import json
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv  # type: ignore
+except ImportError:
+    load_dotenv = None
 
-load_dotenv()
+if load_dotenv:
+    try:
+        load_dotenv()
+    except Exception:
+        pass
 
-API_KEY = os.getenv("API_KEY")
+API_KEY = (os.getenv("API_KEY") or "").strip()
+BACKEND_URL = (os.getenv("BACKEND_URL") or "http://localhost:8000").rstrip("/")
+if not API_KEY:
+    print("[JobScraper] Missing API_KEY in environment. Set API_KEY or add it to backend/.env. Skipping job scraper.")
+    raise SystemExit(0)
 RAPIDAPI_HOST = "jsearch.p.rapidapi.com"
 CHECK_INTERVAL = 7200  
 
 SEEN_JOB_IDS = set()
 
 
+def push_to_backend(items):
+    if not items:
+        print("[JobScraper] No items to push.")
+        return
+    if not API_KEY:
+        print("[JobScraper] API_KEY not set. Skipping push.")
+        return
+    url = f"{BACKEND_URL}/api/v1/opportunities/bulk"
+    try:
+        resp = requests.post(
+            url,
+            json={"items": items},
+            headers={"X-Internal-Token": API_KEY, "Content-Type": "application/json"},
+            timeout=30,
+        )
+        try:
+            data = resp.json()
+        except Exception:
+            data = {"raw": resp.text}
+        print(f"[JobScraper] Push result: {resp.status_code} -> {data}")
+    except Exception as e:
+        print(f"[JobScraper] Failed to push opportunities: {e}")
+
+
+# ---------------- API CALL ----------------
 
 def extract_details_from_description(desc):
     details = {
@@ -58,7 +99,7 @@ def extract_details_from_description(desc):
 
 
 # ---------------- API CALL ----------------
-def get_opportunities(query: str, num_pages: int = 1):
+def get_opportunities(query: str, num_pages: int = 1, location: str = "India"):
     url = f"https://{RAPIDAPI_HOST}/search"
     headers = {
         "X-RapidAPI-Key": API_KEY.strip(),
@@ -67,7 +108,8 @@ def get_opportunities(query: str, num_pages: int = 1):
     params = {
         "query": query,
         "page": "1",
-        "num_pages": str(num_pages)
+        "num_pages": str(num_pages),
+        "location": location
     }
     try:
         response = requests.get(url, headers=headers, params=params)
@@ -79,15 +121,17 @@ def get_opportunities(query: str, num_pages: int = 1):
 
 
 
-
 def run_job_checker():
     queries = [
-        "full stack developer",
-        "backend developer",
-        "frontend developer",
-        "software engineer",
-        "internship"
-    ]
+    "full stack developer fresher",
+    # "backend developer fresher",
+    # "frontend developer fresher",
+    "software engineer fresher",
+    "internship",
+    # "graduate trainee",
+    "entry level developer"
+]
+
 
     jobs_data = []
     internships_data = []
@@ -115,6 +159,9 @@ def run_job_checker():
             salary_info = item.get("job_salary") or {}
             salary = salary_info.get("salary", "Not specified")
             description = item.get("job_description", "")
+            # Clean and truncate description
+            description = re.sub(r'\s+', ' ', description).strip()  # Remove extra whitespace
+            description = description[:2000] if len(description) > 2000 else description  # Truncate to 2000 chars
             url = item.get("job_apply_link", item.get("job_google_link", "#"))
 
             extracted = extract_details_from_description(description)
@@ -146,14 +193,17 @@ def run_job_checker():
             print(f"✅ Added: {job_title} @ {company}")
 
    
-    with open("jobs.json", "w") as f:
-        json.dump(jobs_data, f, indent=2)
-
-    with open("internships.json", "w") as f:
-        json.dump(internships_data, f, indent=2)
-
-    print("\n📁 Saved jobs to jobs.json")
-    print("📁 Saved internships to internships.json")
+    # Combine all items
+    items = jobs_data + internships_data
+    
+    # Send data in smaller batches with delay
+    BATCH_SIZE = 5
+    for i in range(0, len(items), BATCH_SIZE):
+        
+        batch = items[i:i + BATCH_SIZE]
+        print(f"[JobScraper] Pushing batch {i//BATCH_SIZE + 1} of {(len(items) + BATCH_SIZE - 1)//BATCH_SIZE}")
+        push_to_backend(batch)
+        time.sleep(2)  # Add delay between batches
 
 
 if __name__ == "__main__":
