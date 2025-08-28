@@ -1,3 +1,4 @@
+
 from flask import Flask, request, jsonify
 from sentence_transformers import SentenceTransformer
 import faiss
@@ -116,19 +117,22 @@ general_replies = {
     "thank you": "Glad I could help! 👍",
     "bye": "Goodbye! 👋 Have a great day!",
     "goodbye": "See you later! 👋",
-    "how are you":"I am fine, hope you are doing well!",
+    "how are you":"i am fine hope ur doing well",
+      # Small-talk extras
+    "how are you": "I'm just a bot 🤖, but I'm doing great! How about you?",
     "how r u": "I'm doing fine 🤖 thanks for asking!",
     "who are you": "I'm your website assistant bot! I can answer questions about using this platform.",
     "what can you do": "I can help you with doubts about the website features, profiles, projects, and more.",
 }
 
 # -------------------------------
-# 2. Load Models & Precompute Embeddings
+# 2. Load Smaller Model
 # -------------------------------
-model=("sentence-transformers/paraphrase-MiniLM-L3-v2")
+model = SentenceTransformer("sentence-transformers/paraphrase-MiniLM-L3-v2")
 spell = SpellChecker()
 
-question_embeddings = model.encode(questions, convert_to_numpy=True)
+# Precompute question embeddings
+question_embeddings = model.encode(questions)  # ✅ removed convert_to_numpy
 dimension = question_embeddings.shape[1]
 
 index = faiss.IndexFlatL2(dimension)
@@ -156,7 +160,7 @@ def chatbot(query):
             return general_replies[key]
 
     # Semantic search with FAISS
-    query_embedding = model.encode([cleaned_query], convert_to_numpy=True)
+    query_embedding = model.encode([cleaned_query])  # ✅ removed convert_to_numpy
     D, I = index.search(query_embedding, k=1)
     best_sim = 1 / (1 + D[0][0])
 
@@ -169,7 +173,7 @@ def chatbot(query):
 # 5. Flask App
 # -------------------------------
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend connection
+CORS(app)
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -179,8 +183,8 @@ def chat():
     return jsonify({"reply": response})
 
 # -------------------------------
-# 6. Run App (Production Ready)
+# 6. Run App
 # -------------------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Render sets PORT
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
