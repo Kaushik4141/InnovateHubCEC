@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, ArrowRight, Users, Trophy, Code, Brain, Palette, Cpu } from 'lucide-react';
 
-
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null); 
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [minLoadingElapsed, setMinLoadingElapsed] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
   const [contributors, setContributors] = useState<any[]>([]);
@@ -19,8 +18,8 @@ const LandingPage = () => {
   } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState<string | null>(null);
-  
 
+  // Check logged-in status
   useEffect(() => {
     fetch(`${apiBase}/api/v1/users/current-user`, { credentials: 'include' })
       .then(res => res.ok ? res.json() : Promise.reject())
@@ -28,14 +27,20 @@ const LandingPage = () => {
       .catch(() => setIsLoggedIn(false));
   }, []);
 
-  
-
+  // Minimum loading time (4.4s)
   useEffect(() => {
-    const timer = setTimeout(() => setMinLoadingElapsed(true), 4400); 
+    const timer = setTimeout(() => setMinLoadingElapsed(true), 4400);
     return () => clearTimeout(timer);
   }, []);
 
-  // Fetch GitHub contributors for the Our Team section
+  // Redirect to dashboard when logged in
+  useEffect(() => {
+    if (isLoggedIn && minLoadingElapsed) {
+      navigate('/dashboard');
+    }
+  }, [isLoggedIn, minLoadingElapsed, navigate]);
+
+  // Fetch GitHub contributors
   useEffect(() => {
     setContributorsLoading(true);
     setContributorsError(null);
@@ -51,7 +56,7 @@ const LandingPage = () => {
       .finally(() => setContributorsLoading(false));
   }, []);
 
-  // Fetch Landing Stats (projects, mentors, competitions, active students)
+  // Fetch Landing Stats
   useEffect(() => {
     setStatsLoading(true);
     setStatsError(null);
@@ -68,6 +73,7 @@ const LandingPage = () => {
       .finally(() => setStatsLoading(false));
   }, []);
 
+  // Show loading animation
   if (isLoggedIn === null || !minLoadingElapsed) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
@@ -79,22 +85,13 @@ const LandingPage = () => {
       </div>
     );
   }
+
+  // When logged in, navigate() will redirect; render nothing
   if (isLoggedIn) {
-    // If logged in, show the main header and maybe redirect or show dashboard
-    return (
-      <div className="min-h-screen bg-gray-900 text-white">
-        <div className="flex flex-col items-center justify-center h-[80vh]">
-          <h1 className="text-4xl font-bold mb-4">Welcome back to InnovateHubCEC!</h1>
-          <button
-            className="mt-4 px-8 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-blue-700 transition-all"
-            onClick={() => navigate('/dashboard')}
-          >
-            Go to Dashboard
-          </button>
-        </div>
-      </div>
-    );
+    return null;
   }
+
+  // Guest Landing Page
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* Header */}
@@ -102,9 +99,9 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-2 py-3">
             <div className="flex items-center">
-             <button onClick={() => navigate('/')} className="flex items-center">
-              <img src="logo1.png" alt="logo" className="h-8 w-8 text-purple-400" />
-              <span className="ml-2 text-base sm:text-xl font-bold text-white">InnovateHubCEC</span>
+              <button onClick={() => navigate('/')} className="flex items-center">
+                <img src="logo1.png" alt="logo" className="h-8 w-8 text-purple-400" />
+                <span className="ml-2 text-base sm:text-xl font-bold text-white">InnovateHubCEC</span>
               </button>
             </div>
             <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
@@ -178,7 +175,7 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-gray-800">
+       <section className="py-20 bg-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-white mb-4">Explore the Possibilities</h2>

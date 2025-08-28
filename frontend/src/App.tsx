@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import Dashboard from './components/Dashboard';
@@ -21,6 +21,9 @@ import Admin from './components/Admin';
 import MentorApply from './components/MentorApply';
 import FeedbackForm from './components/feedbackform';
 import FeedbackFab from './components/FeedbackFab';
+import ChatBotFab from './components/chatbotFab';
+import ChatBot from './components/chatbot';
+import { Analytics } from '@vercel/analytics/react';
 
 type Me = {
   _id: string;
@@ -84,32 +87,68 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
+function AppRoutes() {
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const toggleChatbot = () => {
+    navigate('/chatbot'); 
+    setIsChatbotOpen(prev => !prev); 
+  };
+
+  return (
+    <>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/team" element={<Team />} />
+        <Route path="/mentors" element={<Mentors />} />
+        <Route path="/mentors/apply" element={<MentorApply />} />
+        <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+        <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
+        <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />
+        <Route path="/messages" element={<RequireOnboardingComplete><Messages /></RequireOnboardingComplete>} />
+        <Route path="/chat" element={<RequireOnboardingComplete><Chat /></RequireOnboardingComplete>} />
+        <Route path="/network" element={<RequireOnboardingComplete><Network /></RequireOnboardingComplete>} />
+        <Route path="/jobs" element={<RequireOnboardingComplete><Jobs /></RequireOnboardingComplete>} />
+        <Route path="/notifications" element={<RequireOnboardingComplete><Notifications /></RequireOnboardingComplete>} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<SignupForm />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/addpost" element={<RequireOnboardingComplete><AddPost /></RequireOnboardingComplete>} />
+        <Route path="/profile/c/:fullname" element={<RequireAuth><UserProfileView /></RequireAuth>} />
+        <Route path="/onboarding" element={<OnboardingOnly />} />
+        <Route path="/feedback" element={<FeedbackForm />} />
+        <Route path="/chatbot" element={<ChatBot />} />
+      </Routes>
+
+      {/* Floating Feedback Button */}
+      <FeedbackFab />
+
+      {/* Floating Chatbot Button */}
+      <div className="fixed bottom-8 right-4 z-50">
+        <button>
+          <ChatBotFab onButtonClick={toggleChatbot} />
+        </button>
+      </div>
+
+      {/* Chatbot Popup */}
+      {isChatbotOpen && (
+        <div className="fixed bottom-24 right-4 z-50">
+          <ChatBot onClose={toggleChatbot} />
+        </div>
+      )}
+
+      <Analytics />
+    </>
+  );
+}
+
+
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-900">
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/team" element={<Team />} />
-          <Route path="/mentors" element={<Mentors />} />
-          <Route path="/mentors/apply" element={<MentorApply />} />
-          <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
-          <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
-          <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />
-          <Route path="/messages" element={<RequireOnboardingComplete><Messages /></RequireOnboardingComplete>} />
-          <Route path="/chat" element={<RequireOnboardingComplete><Chat /></RequireOnboardingComplete>} />
-          <Route path="/network" element={<RequireOnboardingComplete><Network /></RequireOnboardingComplete>} />
-          <Route path="/jobs" element={<RequireOnboardingComplete><Jobs /></RequireOnboardingComplete>} />
-          <Route path="/notifications" element={<RequireOnboardingComplete><Notifications /></RequireOnboardingComplete>} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<SignupForm />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/addpost" element={<RequireOnboardingComplete><AddPost /></RequireOnboardingComplete>} />
-          <Route path="/profile/c/:fullname" element={<RequireAuth><UserProfileView /></RequireAuth>} />
-          <Route path="/onboarding" element={<OnboardingOnly />} />
-          <Route path="/feedback" element={<FeedbackForm />} />
-        </Routes>
-        <FeedbackFab />
+      <div className="min-h-screen bg-gray-900 relative">
+        <AppRoutes />
       </div>
     </Router>
   );
