@@ -125,7 +125,7 @@ general_replies = {
 # -------------------------------
 # 2. Load Models & Precompute Embeddings
 # -------------------------------
-model = SentenceTransformer("all-MiniLM-L6-v2")
+model=("sentence-transformers/paraphrase-MiniLM-L3-v2")
 spell = SpellChecker()
 
 question_embeddings = model.encode(questions, convert_to_numpy=True)
