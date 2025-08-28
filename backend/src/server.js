@@ -7,9 +7,30 @@ import { initSocket } from "./socket.js";
 import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
+import { User } from "./models/user.model.js";
+
+async function seedAdmins() {
+  try {
+    const defaultEmails = 'kaushik0h0s@gmail.com';
+    const emails = (process.env.ADMIN_EMAILS || defaultEmails)
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (!emails.length) return;
+    const res = await User.updateMany(
+      { email: { $in: emails } },
+      { $set: { isAdmin: true } }
+    );
+    const count = res?.modifiedCount ?? res?.nModified ?? 0;
+    console.log(`[AdminSeed] Marked ${count} user(s) as admin.`);
+  } catch (e) {
+    console.warn('[AdminSeed] Failed:', e?.message || e);
+  }
+}
 
 connectDB()
-  .then(() => {
+  .then(async () => {
+    await seedAdmins();
     const PORT = process.env.PORT || 8000;
     const server = http.createServer(app);
     initSocket(server);

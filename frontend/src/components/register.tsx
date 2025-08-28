@@ -382,7 +382,7 @@ const SignupForm: React.FC = () => {
             Already have an account?{' '}
             <span
               className="underline text-purple-400 hover:text-white cursor-pointer"
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/Login')}
             >
               Sign in
             </span>

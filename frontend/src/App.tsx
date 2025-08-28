@@ -25,6 +25,7 @@ import ChatBotFab from './components/chatbotFab';
 import ChatBot from './components/chatbot';
 import { Analytics } from '@vercel/analytics/react';
 
+
 type Me = {
   _id: string;
   onboardingCompleted?: boolean;
@@ -119,6 +120,7 @@ function AppRoutes() {
         <Route path="/onboarding" element={<OnboardingOnly />} />
         <Route path="/feedback" element={<FeedbackForm />} />
         <Route path="/chatbot" element={<ChatBot />} />
+        
       </Routes>
 
       {/* Floating Feedback Button */}
