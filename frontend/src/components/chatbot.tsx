@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { ArrowLeft, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -10,18 +9,45 @@ const ChatBot: React.FC = () => {
     { sender: 'bot', text: 'Hello! I am your assistant. How can I help you today?' }
   ]);
   const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
 
-  const sendMessage = () => {
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Scroll to bottom whenever messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Function to send a message
+  const sendMessage = async () => {
     if (!input.trim()) return;
-    const newMessage = { sender: 'user', text: input };
-    setMessages(prev => [...prev, newMessage]);
 
-    // Dummy bot reply (you can connect an API later)
-    setTimeout(() => {
-      setMessages(prev => [...prev, { sender: 'bot', text: "That's interesting! Tell me more." }]);
-    }, 800);
-
+    const userMessage = { sender: 'user', text: input };
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setIsTyping(true);
+
+    try {
+      // Call your Flask backend
+      const response = await fetch('https://innovatehubcec-chatbot-ffqz.onrender.com/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input }),
+      });
+
+      const data = await response.json();
+
+      setMessages(prev => [...prev, { sender: 'bot', text: data.reply }]);
+    } catch (err) {
+      console.error(err);
+      setMessages(prev => [...prev, { sender: 'bot', text: 'Oops! Something went wrong.' }]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   return (
@@ -48,7 +74,7 @@ const ChatBot: React.FC = () => {
             className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`px-4 py-2 rounded-2xl max-w-xs ${
+              className={`px-4 py-2 rounded-2xl max-w-xs break-words ${
                 msg.sender === 'user' ? 'bg-blue-500' : 'bg-gray-700'
               }`}
             >
@@ -56,6 +82,16 @@ const ChatBot: React.FC = () => {
             </div>
           </div>
         ))}
+
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="px-4 py-2 rounded-2xl max-w-xs bg-gray-700 animate-pulse">
+              Typing...
+            </div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Box */}
@@ -68,7 +104,10 @@ const ChatBot: React.FC = () => {
           className="flex-1 px-4 py-2 rounded-full bg-gray-700 text-white outline-none"
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
         />
-        <button onClick={sendMessage} className="ml-3 bg-blue-500 p-2 rounded-full hover:bg-blue-600">
+        <button
+          onClick={sendMessage}
+          className="ml-3 bg-blue-500 p-2 rounded-full hover:bg-blue-600"
+        >
           <Send className="w-5 h-5" />
         </button>
       </div>

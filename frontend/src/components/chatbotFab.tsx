@@ -26,27 +26,33 @@ const ChatBotFab: React.FC = () => {
     }
   }, [messages, isTyping, isOpen]);
 
-  const sendMessage = (msg?: string) => {
+  // ---------------- API Call ----------------
+  const sendMessage = async (msg?: string) => {
     const text = msg || input;
     if (!text.trim()) return;
 
+    // Show user message
     setMessages(prev => [...prev, { sender: 'user', text }]);
     setInput('');
-
     setIsTyping(true);
-    setTimeout(() => {
-      const responses = [
-        "I understand. How else can I assist you?",
-        "That's interesting! Tell me more about it.",
-        "I'm here to help with that. What specific information do you need?",
-        "Thanks for sharing. Is there anything else you'd like to know?",
-        "I see. Let me know if you need further assistance."
-      ];
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-      
-      setMessages(prev => [...prev, { sender: 'bot', text: randomResponse }]);
+
+    try {
+      const response = await fetch('https://innovatehubcec-chatbot-ffqz.onrender.com/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text }),
+      });
+
+      const data = await response.json();
+      const botReply = data.reply || "Sorry, I didn't understand that.";
+
+      setMessages(prev => [...prev, { sender: 'bot', text: botReply }]);
+    } catch (error) {
+      console.error('Error contacting chatbot backend:', error);
+      setMessages(prev => [...prev, { sender: 'bot', text: 'Oops! Something went wrong.' }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   const toggleVoiceInput = () => {
@@ -77,7 +83,7 @@ const ChatBotFab: React.FC = () => {
             loop
             autoplay
             style={{
-              width: window.innerWidth < 640 ? 120 : 150, // smaller on mobile
+              width: window.innerWidth < 640 ? 120 : 150,
               height: window.innerWidth < 640 ? 120 : 150,
               background: 'transparent',
               filter: 'drop-shadow(0 0 25px #9f7aea)',
@@ -86,16 +92,14 @@ const ChatBotFab: React.FC = () => {
         </button>
       )}
 
-      {/* Chatbox with blurred background overlay */}
+      {/* Chatbox overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-40 flex items-end justify-end">
-          {/* Blurred overlay */}
           <div 
             onClick={() => setIsOpen(false)}
             className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
           />
 
-          {/* Chatbox container */}
           <div className={`relative z-50 transition-all duration-300 ${isMinimized ? 'bottom-6' : 'bottom-24'} right-6`}>
             {isMinimized ? (
               <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl shadow-2xl p-3 flex items-center justify-between w-64">
@@ -104,27 +108,20 @@ const ChatBotFab: React.FC = () => {
                   <span className="text-white font-medium">Chat Assistant</span>
                 </div>
                 <div className="flex space-x-2">
-                  <button 
-                    onClick={() => setIsMinimized(false)}
-                    className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition"
-                  >
+                  <button onClick={() => setIsMinimized(false)} className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition">
                     <Minimize2 className="w-4 h-4 text-white rotate-45" />
                   </button>
-                  <button 
-                    onClick={() => setIsOpen(false)}
-                    className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition"
-                  >
+                  <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-full bg-white/20 hover:bg-white/30 transition">
                     <X className="w-4 h-4 text-white" />
                   </button>
                 </div>
               </div>
             ) : (
               <div className="w-96 h-[550px] bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-700/50">
-                
+
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-700 to-indigo-800">
                   <div className="flex items-center">
-                    {/* Lottie animation in header */}
                     <DotLottieReact
                       src="https://lottie.host/1323f360-55d5-43dc-bea5-1a6a74428278/XAtuhx1ec2.lottie"
                       autoplay
@@ -137,16 +134,10 @@ const ChatBotFab: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex space-x-2">
-                    <button 
-                      onClick={() => setIsMinimized(true)}
-                      className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition"
-                    >
+                    <button onClick={() => setIsMinimized(true)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition">
                       <Minimize2 className="w-4 h-4 text-white" />
                     </button>
-                    <button 
-                      onClick={() => setIsOpen(false)}
-                      className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition"
-                    >
+                    <button onClick={() => setIsOpen(false)} className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition">
                       <X className="w-4 h-4 text-white" />
                     </button>
                   </div>

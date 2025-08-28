@@ -4,8 +4,12 @@ import faiss
 import numpy as np
 from spellchecker import SpellChecker
 import re
+from flask_cors import CORS
+import os
 
-
+# -------------------------------
+# 1. Questions & Answers
+# -------------------------------
 questions = [
     # 🔹 Project Showcase
     "How can I upload a project?",
@@ -112,47 +116,46 @@ general_replies = {
     "thank you": "Glad I could help! 👍",
     "bye": "Goodbye! 👋 Have a great day!",
     "goodbye": "See you later! 👋",
-    "how are you":"i am fine hope ur doing well",
-      # Small-talk extras
-    "how are you": "I'm just a bot 🤖, but I'm doing great! How about you?",
+    "how are you":"I am fine, hope you are doing well!",
     "how r u": "I'm doing fine 🤖 thanks for asking!",
     "who are you": "I'm your website assistant bot! I can answer questions about using this platform.",
     "what can you do": "I can help you with doubts about the website features, profiles, projects, and more.",
 }
 
-
+# -------------------------------
+# 2. Load Models & Precompute Embeddings
+# -------------------------------
 model = SentenceTransformer("all-MiniLM-L6-v2")
 spell = SpellChecker()
 
-# Precompute embeddings
 question_embeddings = model.encode(questions, convert_to_numpy=True)
 dimension = question_embeddings.shape[1]
 
 index = faiss.IndexFlatL2(dimension)
 index.add(question_embeddings)
 
-
+# -------------------------------
+# 3. Preprocessing Function
+# -------------------------------
 def preprocess(text):
     text = text.lower()
     text = re.sub(r'[^a-z0-9\s]', '', text)
     text = re.sub(r'\s+', ' ', text).strip()
-    corrected_words = []
-    for word in text.split():
-        correction = spell.correction(word)
-        if correction is None:
-            corrected_words.append(word)
-        else:
-            corrected_words.append(correction)
+    corrected_words = [spell.correction(word) or word for word in text.split()]
     return " ".join(corrected_words)
 
-
+# -------------------------------
+# 4. Chatbot Function
+# -------------------------------
 def chatbot(query):
     cleaned_query = preprocess(query)
 
+    # Check for general replies
     for key in general_replies:
         if cleaned_query.startswith(key) or cleaned_query == key:
             return general_replies[key]
 
+    # Semantic search with FAISS
     query_embedding = model.encode([cleaned_query], convert_to_numpy=True)
     D, I = index.search(query_embedding, k=1)
     best_sim = 1 / (1 + D[0][0])
@@ -162,7 +165,11 @@ def chatbot(query):
 
     return documents[I[0][0]]
 
+# -------------------------------
+# 5. Flask App
+# -------------------------------
 app = Flask(__name__)
+CORS(app)  # Enable CORS for frontend connection
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -171,5 +178,9 @@ def chat():
     response = chatbot(user_message)
     return jsonify({"reply": response})
 
+# -------------------------------
+# 6. Run App (Production Ready)
+# -------------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))  # Render sets PORT
+    app.run(host="0.0.0.0", port=port, debug=False)
