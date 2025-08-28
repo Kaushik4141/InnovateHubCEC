@@ -73,7 +73,7 @@ const ChatBotFab: React.FC = () => {
           className="fixed left-4 bottom-36 z-50 transition-transform hover:scale-110 animate-pulse"
         >
           <DotLottieReact
-            src="https://lottie.host/b9372abe-014b-4928-a5a2-740a8c323a18/NiyISE6UlT.lottie"
+            src="https://lottie.host/83918992-7e51-48d7-bb5a-4a7086c57027/Lr0QJJj1Zi.lottie"
             loop
             autoplay
             style={{
