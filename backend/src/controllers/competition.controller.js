@@ -11,7 +11,6 @@ export const createCompetition = async (req, res, next) => {
   
   } else {
     try {
-        console.log(req.body);
       const { title, description, startDate, endDate, link } = req.body;
 
       if (!title || !description || !startDate || !endDate || !link) {
@@ -51,7 +50,6 @@ export const createCompetition = async (req, res, next) => {
           new ApiResponse(200, competition, "Competition created successfully")
         );
     } catch (err) {
-        console.log(err);
       throw new ApiError(500, err.message, "bhai err");
     }
   }
