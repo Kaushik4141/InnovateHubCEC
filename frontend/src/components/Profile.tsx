@@ -5,8 +5,7 @@ import Header from './Header';
 import {
   Edit, Calendar, Mail, Github, Linkedin, Globe,
   Plus, Settings, Share2, ExternalLink,
-  Code,
-
+  Code, Loader as LoaderIcon, Check, X
 } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 import Loader from './loading';
@@ -138,6 +137,97 @@ const LinkedInImageGrid: React.FC<{ images: { value: string }[]; onOpen: (m: Lig
   );
 };
 
+// Multi-step loader component (Aceternity style)
+interface MultiStepLoaderProps {
+  loading: boolean;
+  steps: string[];
+  currentStep: number;
+  success?: boolean;
+  progress?: number;
+}
+
+const MultiStepLoader: React.FC<MultiStepLoaderProps> = ({
+  loading,
+  steps,
+  currentStep,
+  success,
+  progress = 0
+}) => {
+  if (!loading) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md">
+        <h3 className="text-xl font-semibold text-white mb-4 text-center">
+          Syncing LinkedIn Posts
+        </h3>
+        
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-700 rounded-full h-2.5 mb-6">
+          <div 
+            className="bg-purple-600 h-2.5 rounded-full transition-all duration-300" 
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+        
+        {/* Steps List */}
+        <div className="space-y-3 mb-4">
+          {steps.map((step, index) => {
+            const isCompleted = index < currentStep;
+            const isCurrent = index === currentStep;
+            
+            return (
+              <div 
+                key={index} 
+                className={`flex items-center p-2 rounded-lg ${
+                  isCurrent ? 'bg-gray-700' : ''
+                }`}
+              >
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${
+                  isCompleted 
+                    ? 'bg-green-500' 
+                    : isCurrent
+                    ? 'bg-purple-500'
+                    : 'bg-gray-600'
+                }`}>
+                  {isCompleted ? (
+                    <Check className="h-4 w-4 text-white" />
+                  ) : isCurrent ? (
+                    <LoaderIcon className="h-4 w-4 text-white animate-spin" />
+                  ) : (
+                    <span className="text-xs text-white">{index + 1}</span>
+                  )}
+                </div>
+                <span className={`text-sm ${
+                  isCompleted 
+                    ? 'text-green-300' 
+                    : isCurrent
+                    ? 'text-white font-medium'
+                    : 'text-gray-400'
+                }`}>
+                  {step}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Progress Percentage */}
+        <p className="text-center text-gray-400 text-sm">
+          {Math.round(progress)}% Complete
+        </p>
+        
+        {/* Success Message */}
+        {success && (
+          <div className="mt-4 p-3 bg-green-900 text-green-300 rounded-lg text-sm">
+            Sync completed successfully! Page will refresh shortly...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // ----- Type Definitions -----
 interface Certification {
   title: string;
@@ -228,13 +318,18 @@ const Profile: FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-
   const [avatarUploading, setAvatarUploading] = useState(false);
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
 
+  // LinkedIn sync state
+  const [syncing, setSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [syncSteps, setSyncSteps] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [syncSuccess, setSyncSuccess] = useState(false);
 
- const avatarUrl = (
+  const avatarUrl = (
     id: string,
     name: string,
     avatar?: string
@@ -332,16 +427,86 @@ const Profile: FC = () => {
     }
   };
 
+  // Add this function to update the current step
+  useEffect(() => {
+    if (syncing && syncSteps.length > 0) {
+      const stepInterval = setInterval(() => {
+        setCurrentStep(prev => {
+          if (prev >= syncSteps.length - 1) {
+            clearInterval(stepInterval);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      
+      return () => clearInterval(stepInterval);
+    }
+  }, [syncing, syncSteps]);
+
   const Linkedinsyncpost = async () => {
     if (!user) {
       setError('User not loaded.');
       return;
     }
+    
+    setSyncing(true);
+    setSyncProgress(0);
+    setCurrentStep(0);
+    setSyncSuccess(false);
+    
+    // Define the sync steps
+    const steps = [
+      "Connecting to LinkedIn API...",
+      "Authenticating credentials...",
+      "Fetching posts data...",
+      "Processing content...",
+      "Storing in database...",
+      "Finalizing sync...",
+      "Refresh page..."
+    ];
+    
+    setSyncSteps(steps);
+    
+    // Make the actual API call
     try {
-      const res = await axios.post(`${apiBase}/api/v1/posts/linkedinpost`, { Linkedin: user.linkedin }, { withCredentials: true });
-      alert(res.data.message);
+      // Simulate progress with intervals
+      const totalSteps = steps.length;
+      const progressInterval = setInterval(() => {
+        setSyncProgress(prev => {
+          const newProgress = prev + 100 / (totalSteps * 2);
+          if (newProgress >= 100) {
+            clearInterval(progressInterval);
+            return 100;
+          }
+          return newProgress;
+        });
+      }, 500);
+      
+      const res = await axios.post(
+        `${apiBase}/api/v1/posts/linkedinpost`, 
+        { Linkedin: user.linkedin }, 
+        { withCredentials: true, timeout: 10000 }
+      );
+      
+      // Clear the interval and set final progress
+      clearInterval(progressInterval);
+      setSyncProgress(100);
+      setCurrentStep(totalSteps - 1);
+      setSyncSuccess(true);
+      
+      // Wait a moment to show success, then reload the page
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
     } catch (err: any) {
-      alert('post had synced');
+      // Don't show error in the loader, just silently fail
+      setSyncProgress(100);
+      
+      // Close the loader after a delay
+      setTimeout(() => {
+        setSyncing(false);
+      }, 1500);
     }
   };
 
@@ -531,10 +696,29 @@ const Profile: FC = () => {
                   <div className="space-y-6">
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-xl font-semibold text-white">My Posts</h3>
-                      <button className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center" onClick={Linkedinsyncpost}>
-                        <Plus className="h-4 w-4 mr-2" /> Sync LinkedIn Posts
+                      <button 
+                        className="bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center disabled:opacity-50"
+                        onClick={Linkedinsyncpost}
+                        disabled={syncing || !user.linkedin}
+                      >
+                        {syncing ? (
+                          <LoaderIcon className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4 mr-2" />
+                        )}
+                        Sync LinkedIn Posts
                       </button>
                     </div>
+                    
+                    {/* Multi-step loader */}
+                    <MultiStepLoader
+                      loading={syncing}
+                      steps={syncSteps}
+                      currentStep={currentStep}
+                      success={syncSuccess}
+                      progress={syncProgress}
+                    />
+                    
                     {postsLoading ? (
                       <div>Loading posts...</div>
                     ) : postsError ? (
