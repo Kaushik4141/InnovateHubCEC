@@ -138,7 +138,7 @@ const Competitions = () => {
       
 
       const data = await competitionApi.listCompetitions();
-      const competitionsArray = apiResponse?.data || [];
+      const competitionsArray = Array.isArray(data?.data) ? data.data : [];
       // Transform the data again
       const transformedData = competitionsArray.map((comp: CompetitionType) => ({
         ...comp,
@@ -248,7 +248,7 @@ const Competitions = () => {
       {!loading && !error && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredCompetitions.slice(0, visibleCount).map((competition) => (
-            <div key={competition.id} className="bg-gray-800 rounded-xl border border-gray-700 hover:border-purple-500 transition-all duration-300 overflow-hidden">
+            <div key={competition.id ||competition._id} className="bg-gray-800 rounded-xl border border-gray-700 hover:border-purple-500 transition-all duration-300 overflow-hidden">
               {/* Competition Image */}
               <div className="relative h-40 sm:h-48 overflow-hidden">
                 <img 
