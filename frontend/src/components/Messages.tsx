@@ -518,7 +518,7 @@ const Messages = () => {
           )}
 
           {/* Floating Action Buttons */}
-          <div className="lg:hidden fixed right-4 bottom-4 z-40 flex flex-col space-y-3">
+          {/* <div className="lg:hidden fixed right-4 bottom-4 z-40 flex flex-col space-y-3">
             <button 
               className="w-12 h-12 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-colors flex items-center justify-center"
               onClick={() => setOpenNewModal(true)}
@@ -526,7 +526,7 @@ const Messages = () => {
             >
               <Plus className="h-6 w-6" />
             </button>
-          </div>
+          </div> */}
 
           {/* Desktop Sidebar */}
           <div className="hidden lg:flex lg:w-80 xl:w-96 border-r border-gray-700 flex-col overflow-hidden">

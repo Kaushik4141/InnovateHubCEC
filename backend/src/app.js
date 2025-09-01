@@ -43,6 +43,9 @@ import chatRouter from './routes/chat.router.js';
 import mentorRouter from './routes/mentor.router.js';
 import opportunityRouter from './routes/opportunity.router.js';
 import statsRouter from './routes/stats.router.js';
+import  CompetitionRouter  from './routes/competition.router.js';
+
+
 import { startLeetcodeStatsScheduler } from './utils/leetcodeScheduler.js';
 
 //routes declaration
@@ -54,6 +57,7 @@ app.use('/api/v1/chat', chatRouter);
 app.use('/api/v1/mentors', mentorRouter);
 app.use('/api/v1/opportunities', opportunityRouter);
 app.use('/api/v1/stats', statsRouter);
+app.use('/api/v1/competitions', CompetitionRouter);
 
 startLeetcodeStatsScheduler();
 

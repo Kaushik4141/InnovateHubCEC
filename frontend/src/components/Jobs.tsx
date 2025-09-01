@@ -1,105 +1,52 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from './Header';
 import { 
   Briefcase, MapPin, Clock, DollarSign, Users, Search, Filter,
   BookOpen, Star, ExternalLink, Bookmark, Calendar, Building,
   TrendingUp, Award, Plus
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { opportunityApi, Opportunity } from '../services/opportunityApi';
 
 const Jobs = () => {
-  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('jobs');
   const [searchTerm, setSearchTerm] = useState('');
   const [locationFilter, setLocationFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'job' | 'internship'>('all');
 
-  const jobs = [
-    {
-      id: 1,
-      title: "Frontend Developer Intern",
-      company: "TechCorp Solutions",
-      location: "Bangalore",
-      type: "Internship",
-      duration: "6 months",
-      stipend: "₹25,000/month",
-      postedAt: "2 days ago",
-      applicants: 45,
-      description: "Join our dynamic team to work on cutting-edge web applications using React and TypeScript.",
-      requirements: ["React", "JavaScript", "CSS", "Git"],
-      logo: "TC",
-      featured: true,
-      remote: false,
-      experience: "0-1 years"
-    },
-    {
-      id: 2,
-      title: "Machine Learning Research Intern",
-      company: "AI Innovations Lab",
-      location: "Remote",
-      type: "Internship",
-      duration: "4 months",
-      stipend: "₹30,000/month",
-      postedAt: "1 day ago",
-      applicants: 67,
-      description: "Work on cutting-edge ML research projects in computer vision and natural language processing.",
-      requirements: ["Python", "TensorFlow", "PyTorch", "Research"],
-      logo: "AI",
-      featured: true,
-      remote: true,
-      experience: "0-2 years"
-    },
-    {
-      id: 3,
-      title: "UI/UX Design Intern",
-      company: "Creative Studio",
-      location: "Mumbai",
-      type: "Internship",
-      duration: "3 months",
-      stipend: "₹20,000/month",
-      postedAt: "3 days ago",
-      applicants: 32,
-      description: "Design intuitive user interfaces and experiences for mobile and web applications.",
-      requirements: ["Figma", "Adobe XD", "Prototyping", "User Research"],
-      logo: "CS",
-      featured: false,
-      remote: false,
-      experience: "0-1 years"
-    },
-    {
-      id: 4,
-      title: "Backend Developer",
-      company: "StartupXYZ",
-      location: "Hyderabad",
-      type: "Full-time",
-      duration: "Permanent",
-      stipend: "₹8-12 LPA",
-      postedAt: "1 week ago",
-      applicants: 89,
-      description: "Build scalable backend systems and APIs for our growing platform.",
-      requirements: ["Node.js", "MongoDB", "AWS", "Docker"],
-      logo: "SX",
-      featured: false,
-      remote: true,
-      experience: "1-3 years"
-    },
-    {
-      id: 5,
-      title: "Data Science Intern",
-      company: "Analytics Pro",
-      location: "Pune",
-      type: "Internship",
-      duration: "6 months",
-      stipend: "₹28,000/month",
-      postedAt: "4 days ago",
-      applicants: 56,
-      description: "Analyze large datasets and build predictive models for business insights.",
-      requirements: ["Python", "SQL", "Pandas", "Machine Learning"],
-      logo: "AP",
-      featured: true,
-      remote: false,
-      experience: "0-1 years"
-    }
-  ];
+  const [jobs, setJobs] = useState<Opportunity[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [total, setTotal] = useState<number>(0);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await opportunityApi.listOpportunities({
+          type: typeFilter,
+          q: searchTerm || undefined,
+          page,
+          limit: 20,
+        });
+        const data = (res as any)?.data || res;
+        const items: Opportunity[] = data?.items || [];
+        if (!mounted) return;
+        setJobs(items);
+        setTotal(data?.total ?? items.length ?? 0);
+      } catch (e: any) {
+        if (!mounted) return;
+        setError(e?.message || 'Failed to load opportunities');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [searchTerm, page, typeFilter]);
 
   const competitions = [
     {
@@ -147,21 +94,29 @@ const Jobs = () => {
     }
   ];
 
-  const filteredJobs = jobs.filter(job => {
-    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         job.requirements.some(req => req.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesLocation = locationFilter === 'all' || 
-                           job.location.toLowerCase() === locationFilter.toLowerCase() ||
-                           (locationFilter === 'remote' && job.remote);
+  const filteredJobs = jobs.filter((job) => {
+    const term = searchTerm.toLowerCase();
+    const matchesSearch =
+      (job.title || '').toLowerCase().includes(term) ||
+      (job.company || '').toLowerCase().includes(term) ||
+      (job.skills || []).some((req) => (req || '').toLowerCase().includes(term));
+    const remoteStr = (job.remote || '').toLowerCase();
+    const isRemote = remoteStr.includes('remote') || remoteStr.includes('yes') || remoteStr.includes('true');
+    const matchesLocation =
+      locationFilter === 'all' ||
+      (job.location || '').toLowerCase() === locationFilter.toLowerCase() ||
+      (locationFilter === 'remote' && (isRemote || (job.location || '').toLowerCase() === 'remote'));
     return matchesSearch && matchesLocation;
   });
 
   const getJobTypeColor = (type: string) => {
     switch (type) {
       case 'Internship':
+      case 'internship':
         return 'bg-blue-600 bg-opacity-20 text-blue-300';
       case 'Full-time':
+      case 'Job':
+      case 'job':
         return 'bg-green-600 bg-opacity-20 text-green-300';
       case 'Part-time':
         return 'bg-yellow-600 bg-opacity-20 text-yellow-300';
@@ -169,27 +124,17 @@ const Jobs = () => {
         return 'bg-gray-600 bg-opacity-20 text-gray-300';
     }
   };
+  const getCompanyInitials = (name?: string) => {
+    const n = (name || '').trim();
+    if (!n) return '•';
+    const parts = n.split(/\s+/).slice(0, 2);
+    return parts.map(p => p[0]?.toUpperCase() || '').join('') || n[0]?.toUpperCase() || '•';
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
-      {/* Coming Soon Overlay */}
-      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
-        <div className="relative bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 text-center shadow-xl">
-          <div className="text-5xl mb-2">🚧</div>
-          <h3 className="text-xl font-semibold text-white mb-1">We’re building this!</h3>
-          <p className="text-gray-400 mb-5">Jobs & Internships will be available shortly. Thanks for your patience 💜</p>
-          <div className="flex items-center justify-center gap-3">
-            <button
-              onClick={() => navigate(-1)}
-              className="px-4 py-2 rounded-lg bg-gray-700 text-gray-200 hover:bg-gray-600 border border-gray-600"
-            >
-              Go back
-            </button>
-          </div>
-        </div>
-      </div>
+      
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
@@ -204,7 +149,7 @@ const Jobs = () => {
             <div className="flex items-center">
               <Briefcase className="h-8 w-8 text-blue-400 mr-3" />
               <div>
-                <p className="text-2xl font-bold text-white">{jobs.length}</p>
+                <p className="text-2xl font-bold text-white">{total}</p>
                 <p className="text-sm text-gray-400">Open Positions</p>
               </div>
             </div>
@@ -256,6 +201,15 @@ const Jobs = () => {
             </div>
             <div className="flex flex-wrap gap-3">
               <select
+                value={typeFilter}
+                onChange={(e) => { setTypeFilter(e.target.value as 'all' | 'job' | 'internship'); setPage(1); }}
+                className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="all">All Types</option>
+                <option value="job">Jobs</option>
+                <option value="internship">Internships</option>
+              </select>
+              <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-purple-500"
@@ -302,6 +256,14 @@ const Jobs = () => {
           <div className="p-6">
             {activeTab === 'jobs' && (
               <div className="space-y-6">
+                {error && (
+                  <div className="bg-red-900/30 border border-red-800 text-red-200 px-4 py-3 rounded-lg">
+                    {error}
+                  </div>
+                )}
+                {loading && (
+                  <div className="text-gray-400">Loading opportunities...</div>
+                )}
                 {/* Featured Jobs */}
                 <div className="mb-8">
                   <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
@@ -309,12 +271,12 @@ const Jobs = () => {
                     Featured Opportunities
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {jobs.filter(job => job.featured).slice(0, 2).map((job) => (
-                      <div key={job.id} className="bg-gray-700 rounded-xl p-6 border border-yellow-500 border-opacity-30">
+                    {jobs.slice(0, 2).map((job) => (
+                      <div key={(job as any)._id || (job as any).job_id} className="bg-gray-700 rounded-xl p-6 border border-yellow-500 border-opacity-30">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center">
                             <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold mr-4">
-                              {job.logo}
+                              {getCompanyInitials(job.company)}
                             </div>
                             <div>
                               <h4 className="font-semibold text-white">{job.title}</h4>
@@ -332,7 +294,7 @@ const Jobs = () => {
                           </span>
                           <span className="flex items-center">
                             <DollarSign className="h-4 w-4 mr-1" />
-                            {job.stipend}
+                            {job.salary || '—'}
                           </span>
                         </div>
                       </div>
@@ -343,11 +305,11 @@ const Jobs = () => {
                 {/* All Jobs */}
                 <div className="space-y-6">
                   {filteredJobs.map((job) => (
-                    <div key={job.id} className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300">
+                    <div key={(job as any)._id || (job as any).job_id} className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300">
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center">
                           <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-lg mr-4">
-                            {job.logo}
+                            {getCompanyInitials(job.company)}
                           </div>
                           <div>
                             <h3 className="text-xl font-semibold text-white mb-1">{job.title}</h3>
@@ -356,26 +318,23 @@ const Jobs = () => {
                               <span className="flex items-center">
                                 <MapPin className="h-4 w-4 mr-1" />
                                 {job.location}
-                                {job.remote && <span className="ml-1 text-green-400">(Remote)</span>}
+                                {(((job.remote || '').toLowerCase().includes('remote')) || ((job.remote || '').toLowerCase().includes('yes')) || ((job.remote || '').toLowerCase().includes('true')) || ((job.location || '').toLowerCase() === 'remote')) && <span className="ml-1 text-green-400">(Remote)</span>}
                               </span>
                               <span className="flex items-center">
                                 <Clock className="h-4 w-4 mr-1" />
-                                {job.duration}
+                                {job.employment_type || '—'}
                               </span>
                               <span className="flex items-center">
                                 <DollarSign className="h-4 w-4 mr-1" />
-                                {job.stipend}
+                                {job.salary || '—'}
                               </span>
                             </div>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className={`px-3 py-1 rounded-full text-sm font-medium ${getJobTypeColor(job.type)}`}>
-                            {job.type}
+                            {job.type === 'internship' ? 'Internship' : 'Job'}
                           </span>
-                          {job.featured && (
-                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                          )}
                         </div>
                       </div>
 
@@ -384,7 +343,7 @@ const Jobs = () => {
                       <div className="mb-4">
                         <h4 className="text-sm font-medium text-gray-400 mb-2">Required Skills:</h4>
                         <div className="flex flex-wrap gap-2">
-                          {job.requirements.map((req) => (
+                          {(job.skills || []).map((req) => (
                             <span key={req} className="px-3 py-1 bg-purple-600 bg-opacity-20 text-purple-300 rounded-full text-sm">
                               {req}
                             </span>
@@ -395,32 +354,50 @@ const Jobs = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                           <span className="flex items-center">
-                            <Users className="h-4 w-4 mr-1" />
-                            {job.applicants} applicants
-                          </span>
-                          <span className="flex items-center">
                             <Calendar className="h-4 w-4 mr-1" />
-                            Posted {job.postedAt}
+                            {job.posted_on ? `Posted ${job.posted_on}` : 'Posted —'}
                           </span>
                           <span className="flex items-center">
                             <Building className="h-4 w-4 mr-1" />
-                            {job.experience}
+                            {job.employment_type || '—'}
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-3 justify-end sm:justify-start">
                           <button className="text-gray-400 hover:text-yellow-400 transition-colors min-w-[44px]">
                             <Bookmark className="h-5 w-5" />
                           </button>
-                          <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex-1 sm:flex-none min-w-[140px]">
+                          <a href={job.apply_link} target="_blank" rel="noopener noreferrer" className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex-1 sm:flex-none min-w-[140px] text-center">
                             Apply Now
-                          </button>
-                          <button className="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors min-w-[44px]">
+                          </a>
+                          <a href={job.apply_link} target="_blank" rel="noopener noreferrer" className="bg-gray-600 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors min-w-[44px] flex items-center justify-center">
                             <ExternalLink className="h-4 w-4" />
-                          </button>
+                          </a>
                         </div>
                       </div>
                     </div>
                   ))}
+                  {!loading && !error && filteredJobs.length === 0 && (
+                    <div className="text-gray-400">No opportunities found.</div>
+                  )}
+                  <div className="flex items-center justify-between pt-2">
+                    <span className="text-sm text-gray-400">Page {page} • Total {total}</span>
+                    <div className="space-x-2">
+                      <button
+                        disabled={page <= 1}
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        className="px-3 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200 disabled:opacity-50"
+                      >
+                        Prev
+                      </button>
+                      <button
+                        disabled={jobs.length === 0 || (page * 20) >= total}
+                        onClick={() => setPage((p) => p + 1)}
+                        className="px-3 py-1 rounded bg-gray-700 border border-gray-600 text-gray-200 disabled:opacity-50"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
