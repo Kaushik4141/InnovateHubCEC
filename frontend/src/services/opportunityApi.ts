@@ -34,7 +34,7 @@ export const opportunityApi = {
     if (params?.page) searchParams.append('page', params.page.toString());
     if (params?.limit) searchParams.append('limit', params.limit.toString());
 
-    const response = await api.get(`/opportunities?${searchParams}`);
+    const response = await api.get(`/api/v1/opportunities?${searchParams}`);
     return response.data;
   }
 };
