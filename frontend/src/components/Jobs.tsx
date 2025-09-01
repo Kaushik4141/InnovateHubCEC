@@ -18,6 +18,8 @@ const Jobs = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
   const [total, setTotal] = useState<number>(0);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const DESCRIPTION_PREVIEW = 280;
 
   useEffect(() => {
     let mounted = true;
@@ -338,7 +340,32 @@ const Jobs = () => {
                         </div>
                       </div>
 
-                      <p className="text-gray-300 mb-4 leading-relaxed">{job.description}</p>
+                      <div className="text-gray-300 mb-4 leading-relaxed">
+                        {(() => {
+                          const id = (job as any)._id || (job as any).job_id;
+                          const text = job.description || '';
+                          const isExpanded = !!expanded[id];
+                          const showToggle = text.length > DESCRIPTION_PREVIEW;
+                          const display = isExpanded
+                            ? text
+                            : (showToggle ? text.slice(0, DESCRIPTION_PREVIEW) + '...' : text);
+                          return (
+                            <>
+                              <span>{display}</span>
+                              {showToggle && (
+                                <button
+                                  type="button"
+                                  aria-expanded={isExpanded}
+                                  onClick={() => setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))}
+                                  className="ml-2 text-purple-400 hover:text-purple-300 font-medium"
+                                >
+                                  {isExpanded ? 'Show less' : 'Read more'}
+                                </button>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
 
                       <div className="mb-4">
                         <h4 className="text-sm font-medium text-gray-400 mb-2">Required Skills:</h4>
