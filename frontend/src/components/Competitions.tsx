@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+
 import { 
   Trophy, Calendar, Award, Clock, Target, Search, Plus,
   ExternalLink, Zap, Code, Brain, Palette, Loader
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { competitionApi, Competition as CompetitionType } from '../services/competitionApi';
+import { getCurrentUser, type CurrentUser } from '../services/userApi';
 
 type Competition = CompetitionType & {
   organizer?: string;
@@ -24,7 +26,6 @@ type Competition = CompetitionType & {
   image?: string;
   description?: string;
   id?: string;
-  
 };
 
 const Competitions = () => {
@@ -36,49 +37,65 @@ const Competitions = () => {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [me, setMe] = useState<CurrentUser | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ title: '', description: '', startDate: '', endDate: '', link: '' });
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const navigate = useNavigate();
 
- useEffect(() => {
-  const fetchCompetitions = async () => {
-    try {
-      setLoading(true);
-      const apiResponse = await competitionApi.listCompetitions();
-      
-     
+  useEffect(() => {
+    const fetchCompetitions = async () => {
+      try {
+        setLoading(true);
+        const apiResponse = await competitionApi.listCompetitions();
+        
         const competitionsArray = apiResponse?.data || [];
-      
-      const transformedData = competitionsArray.map((comp: CompetitionType) => ({
-        ...comp,
-        organizer: 'CampusConnect',
-        deadline: comp.endDate, 
-        participants: comp.applicationCount || 0,
-        maxParticipants: 100, 
-        prize: '₹25,000',   
-        difficulty: 'Intermediate', 
-        category: 'Web Development', 
-        tags: ['Web', 'Development', 'Hackathon'], 
-        status: new Date(comp.endDate) > new Date() ? 'Open' : 'Closed',
-        featured: false,
-        location: 'Online',
-        teamSize: '1-4 members',
-        requirements: ['Web development skills', 'Team registration'],
-        image: comp.coverImage || 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=600',
-        icon: Code,
-        description: comp.description,
-        id: comp._id,
-      }));
-      
-      setCompetitions(transformedData);
-    } catch (err) {
-      console.error('Error fetching competitions:', err);
-      setError('Failed to load competitions. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
+        const transformedData = competitionsArray.map((comp: CompetitionType) => ({
+          ...comp,
+          organizer: 'CampusConnect',
+          deadline: comp.endDate, 
+          participants: comp.applicationCount || 0,
+          maxParticipants: 100, 
+          prize: '₹25,000',   
+          difficulty: 'Intermediate', 
+          category: 'Web Development', 
+          tags: ['Web', 'Development', 'Hackathon'], 
+          status: new Date(comp.endDate) > new Date() ? 'Open' : 'Closed',
+          featured: false,
+          location: 'Online',
+          teamSize: '1-4 members',
+          requirements: ['Web development skills', 'Team registration'],
+          image: comp.coverImage || 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=600',
+          icon: Code,
+          description: comp.description,
+          id: comp._id,
+        }));
+        setCompetitions(transformedData);
+      } catch (err) {
+        console.error('Error fetching competitions:', err);
+        setError('Failed to load competitions. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchCompetitions();
-}, []);
+    fetchCompetitions();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const u = await getCurrentUser();
+        if (mounted) setMe(u);
+      } catch (_) {
+        if (mounted) setMe(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   const categories = [
     { name: "All", value: "all", count: competitions.length },
     { name: "AI/ML", value: "AI/ML", count: competitions.filter(c => c.category === "AI/ML").length },
@@ -131,15 +148,12 @@ const Competitions = () => {
     return diffDays;
   };
 
-  // Function to handle applying to a competition
   const handleApplyToCompetition = async (competitionId: string) => {
     try {
-     const apiResponse = await competitionApi.applyToCompetition(competitionId);
-      
+      const apiResponse = await competitionApi.applyToCompetition(competitionId);
 
       const data = await competitionApi.listCompetitions();
       const competitionsArray = Array.isArray(data?.data) ? data.data : [];
-      // Transform the data again
       const transformedData = competitionsArray.map((comp: CompetitionType) => ({
         ...comp,
         organizer: 'CampusConnect',
@@ -158,12 +172,66 @@ const Competitions = () => {
         image: comp.coverImage || 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=600',
         icon: Code
       }));
-      
       setCompetitions(transformedData);
       alert('Successfully applied to competition!');
     } catch (err) {
       console.error('Error applying to competition:', err);
       alert('Failed to apply to competition. Please try again.');
+    }
+  };
+
+  const reloadCompetitions = async () => {
+    try {
+      const data = await competitionApi.listCompetitions();
+      const competitionsArray = Array.isArray(data?.data) ? data.data : (data?.data || []);
+      const transformedData = competitionsArray.map((comp: CompetitionType) => ({
+        ...comp,
+        organizer: 'CampusConnect',
+        deadline: comp.endDate,
+        participants: comp.applicationCount || 0,
+        maxParticipants: 100,
+        prize: '₹25,000',
+        difficulty: 'Intermediate',
+        category: 'Web Development',
+        tags: ['Web', 'Development', 'Hackathon'],
+        status: new Date(comp.endDate) > new Date() ? 'Open' : 'Closed',
+        featured: false,
+        location: 'Online',
+        teamSize: '1-4 members',
+        requirements: ['Web development skills', 'Team registration'],
+        image: comp.coverImage || 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=600',
+        icon: Code,
+        description: comp.description,
+        id: comp._id,
+      }));
+      setCompetitions(transformedData);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCreateCompetition = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!me?.isAdmin) return;
+    try {
+      setCreating(true);
+      const fd = new FormData();
+      fd.append('title', form.title);
+      fd.append('description', form.description);
+      fd.append('startDate', form.startDate);
+      fd.append('endDate', form.endDate);
+      fd.append('link', form.link);
+      if (coverFile) fd.append('coverImage', coverFile);
+      await competitionApi.createCompetition(fd);
+      setShowCreate(false);
+      setForm({ title: '', description: '', startDate: '', endDate: '', link: '' });
+      setCoverFile(null);
+      await reloadCompetitions();
+    } catch (err) {
+      console.error('Create competition failed', err);
+      alert('Failed to create competition');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -175,10 +243,12 @@ const Competitions = () => {
           <h2 className="text-2xl font-bold text-white">Competitions</h2>
           <p className="text-gray-400">Challenge yourself and showcase your skills</p>
         </div>
-        <button className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Competition
-        </button>
+        {me?.isAdmin && (
+          <button onClick={() => setShowCreate(true)} className="bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Competition
+          </button>
+        )}
       </div>
 
       {/* Search and Filters */}
@@ -222,6 +292,50 @@ const Competitions = () => {
         <div className="text-center py-12">
           <Loader className="h-12 w-12 text-purple-500 mx-auto mb-4 animate-spin" />
           <h3 className="text-xl font-semibold text-gray-400 mb-2">Loading competitions...</h3>
+        </div>
+      )}
+
+      {showCreate && me?.isAdmin && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black bg-opacity-60" onClick={() => setShowCreate(false)}></div>
+          <div className="relative bg-gray-900 border border-gray-700 rounded-xl w-11/12 max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-gray-700">
+              <h3 className="text-xl font-semibold text-white">Create Competition</h3>
+              <button className="text-gray-400 hover:text-white" onClick={() => setShowCreate(false)}>✕</button>
+            </div>
+            <form onSubmit={handleCreateCompetition} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Title</label>
+                <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Description</label>
+                <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white h-28" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Start Date</label>
+                  <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} required className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">End Date</label>
+                  <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} required className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Registration Link</label>
+                <input type="url" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Cover Image</label>
+                <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] || null)} className="w-full text-gray-300" />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button type="button" onClick={() => setShowCreate(false)} className="bg-gray-700 text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-600">Cancel</button>
+                <button disabled={creating} type="submit" className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:opacity-50">{creating ? 'Creating...' : 'Create'}</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
