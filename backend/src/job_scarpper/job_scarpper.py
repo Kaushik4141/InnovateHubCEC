@@ -1,61 +1,20 @@
-try:
-    import requests  # type: ignore
-except ImportError:
-    print("[JobScraper] Python package 'requests' not found. Skipping job scraper. Install via: pip install requests")
-    raise SystemExit(0)
-
+import requests
 import re
-import time
 import os
 import json
-try:
-    from dotenv import load_dotenv  # type: ignore
-except ImportError:
-    load_dotenv = None
+from dotenv import load_dotenv
 
-if load_dotenv:
-    try:
-        load_dotenv()
-    except Exception:
-        pass
-
+# ----------------- Load API Key -----------------
+load_dotenv()
 API_KEY = (os.getenv("API_KEY") or "").strip()
-BACKEND_URL = (os.getenv("BACKEND_URL") or "http://localhost:8000").rstrip("/")
 if not API_KEY:
-    print("[JobScraper] Missing API_KEY in environment. Set API_KEY or add it to backend/.env. Skipping job scraper.")
+    print("❌ Missing API_KEY in .env file")
     raise SystemExit(0)
-RAPIDAPI_HOST = "jsearch.p.rapidapi.com"
-CHECK_INTERVAL = 7200  
 
+RAPIDAPI_HOST = "jsearch.p.rapidapi.com"
 SEEN_JOB_IDS = set()
 
-
-def push_to_backend(items):
-    if not items:
-        print("[JobScraper] No items to push.")
-        return
-    if not API_KEY:
-        print("[JobScraper] API_KEY not set. Skipping push.")
-        return
-    url = f"{BACKEND_URL}/api/v1/opportunities/bulk"
-    try:
-        resp = requests.post(
-            url,
-            json={"items": items},
-            headers={"X-Internal-Token": API_KEY, "Content-Type": "application/json"},
-            timeout=30,
-        )
-        try:
-            data = resp.json()
-        except Exception:
-            data = {"raw": resp.text}
-        print(f"[JobScraper] Push result: {resp.status_code} -> {data}")
-    except Exception as e:
-        print(f"[JobScraper] Failed to push opportunities: {e}")
-
-
-# ---------------- API CALL ----------------
-
+# ----------------- Extract ATS Details -----------------
 def extract_details_from_description(desc):
     details = {
         "expected_skills": [],
@@ -97,48 +56,36 @@ def extract_details_from_description(desc):
 
     return details
 
-
-# ---------------- API CALL ----------------
+# ----------------- Fetch Jobs -----------------
 def get_opportunities(query: str, num_pages: int = 1, location: str = "India"):
     url = f"https://{RAPIDAPI_HOST}/search"
     headers = {
-        "X-RapidAPI-Key": API_KEY.strip(),
+        "X-RapidAPI-Key": API_KEY,
         "X-RapidAPI-Host": RAPIDAPI_HOST
     }
     params = {
         "query": query,
         "page": "1",
         "num_pages": str(num_pages),
-        "location": location
+        "location": "IN"
     }
     try:
         response = requests.get(url, headers=headers, params=params)
         response.raise_for_status()
         return response.json().get("data", [])
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"❌ Error fetching jobs: {e}")
         return []
 
-
-
+# ----------------- Main Job Checker -----------------
 def run_job_checker():
-    queries = [
-    "full stack developer fresher",
-    # "backend developer fresher",
-    # "frontend developer fresher",
-    "software engineer fresher",
-    "internship",
-    # "graduate trainee",
-    "entry level developer"
-]
+    queries = ["full stack developer "]
 
-
-    jobs_data = []
-    internships_data = []
+    results = []
 
     for query in queries:
-        print(f"\n🔍 Checking for new jobs with query: {query}\n")
-        jobs = get_opportunities(query)
+        print(f"\n🔍 Searching jobs for: {query}\n")
+        jobs = get_opportunities(query, num_pages=1, location="India")
 
         if not jobs:
             print("No results found.")
@@ -156,14 +103,18 @@ def run_job_checker():
             employment_type = item.get("job_employment_type", "N/A")
             remote = "Yes" if item.get("job_is_remote", False) else "No"
             date_posted = (item.get("job_posted_at_datetime_utc") or "N/A")[:10]
+
+            # Salary info
             salary_info = item.get("job_salary") or {}
             salary = salary_info.get("salary", "Not specified")
+
+            # Description cleanup
             description = item.get("job_description", "")
-            # Clean and truncate description
-            description = re.sub(r'\s+', ' ', description).strip()  # Remove extra whitespace
-            description = description[:2000] if len(description) > 2000 else description  # Truncate to 2000 chars
+            description = re.sub(r'\s+', ' ', description).strip()
+            description = description[:2000] if len(description) > 2000 else description
             url = item.get("job_apply_link", item.get("job_google_link", "#"))
 
+            # Extract ATS info
             extracted = extract_details_from_description(description)
 
             record = {
@@ -185,26 +136,14 @@ def run_job_checker():
                 "description": description
             }
 
-            if employment_type.lower() == "internship":
-                internships_data.append(record)
-            else:
-                jobs_data.append(record)
+            results.append(record)
+            print(f"✅ Found: {job_title} @ {company}")
 
-            print(f"✅ Added: {job_title} @ {company}")
-
-   
-    # Combine all items
-    items = jobs_data + internships_data
-    
-    # Send data in smaller batches with delay
-    BATCH_SIZE = 5
-    for i in range(0, len(items), BATCH_SIZE):
-        
-        batch = items[i:i + BATCH_SIZE]
-        print(f"[JobScraper] Pushing batch {i//BATCH_SIZE + 1} of {(len(items) + BATCH_SIZE - 1)//BATCH_SIZE}")
-        push_to_backend(batch)
-        time.sleep(2)  # Add delay between batches
-
+    # Save results
+    if results:
+        with open("jobs_output.json", "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2)
+        print(f"\n📂 Saved {len(results)} jobs into jobs_output.json")
 
 if __name__ == "__main__":
     run_job_checker()
