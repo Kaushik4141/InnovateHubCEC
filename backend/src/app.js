@@ -44,6 +44,7 @@ import mentorRouter from './routes/mentor.router.js';
 import opportunityRouter from './routes/opportunity.router.js';
 import statsRouter from './routes/stats.router.js';
 import  CompetitionRouter  from './routes/competition.router.js';
+import contestRouter from './routes/contest.router.js';
 
 
 import { startLeetcodeStatsScheduler } from './utils/leetcodeScheduler.js';
@@ -58,6 +59,7 @@ app.use('/api/v1/mentors', mentorRouter);
 app.use('/api/v1/opportunities', opportunityRouter);
 app.use('/api/v1/stats', statsRouter);
 app.use('/api/v1/competitions', CompetitionRouter);
+app.use('/api/v1/contests', contestRouter);
 
 startLeetcodeStatsScheduler();
 

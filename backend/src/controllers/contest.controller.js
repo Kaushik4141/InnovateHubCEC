@@ -1,0 +1,190 @@
+import { ApiError } from "../utils/apierrorhandler.js";
+import { ApiResponse } from "../utils/apiresponsehandler.js";
+import { asyncHandler } from "../utils/asynchandler.js";
+import { Contest } from "../models/contest.model.js";
+import { Problem } from "../models/problem.model.js";
+import { Submission } from "../models/submission.model.js";
+import { runSingleTest } from "../services/judge0.service.js";
+
+function ensureWindow(contest) {
+  const now = new Date();
+  if (now < new Date(contest.startAt)) throw new ApiError(403, "Contest has not started yet");
+  if (now > new Date(contest.endAt)) throw new ApiError(403, "Contest has ended");
+}
+
+export const createContest = asyncHandler(async (req, res) => {
+  const { title, description, startAt, endAt, visibility = "public" } = req.body;
+  if (!title || !description || !startAt || !endAt) {
+    throw new ApiError(400, "title, description, startAt, endAt are required");
+  }
+  const contest = await Contest.create({
+    title,
+    description,
+    startAt: new Date(startAt),
+    endAt: new Date(endAt),
+    createdBy: req.user._id,
+    visibility
+  });
+  return res.status(201).json(new ApiResponse(201, contest, "Contest created"));
+});
+
+export const listContests = asyncHandler(async (_req, res) => {
+  const contests = await Contest.find({}).select("title description startAt endAt visibility").sort({ startAt: -1 });
+  return res.status(200).json(new ApiResponse(200, contests));
+});
+
+export const getContest = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const contest = await Contest.findById(id).populate({ path: "problems", select: "title allowedLangs timeLimit memoryLimit" });
+  if (!contest) throw new ApiError(404, "Contest not found");
+  return res.status(200).json(new ApiResponse(200, contest));
+});
+
+export const addProblem = asyncHandler(async (req, res) => {
+  const { contestId } = req.params;
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, "Contest not found");
+  const {
+    title,
+    statement,
+    inputFormat,
+    outputFormat,
+    constraints,
+    samples = [],
+    testCases = [],
+    allowedLangs = [54, 63, 71, 62],
+    timeLimit = 2.0,
+    memoryLimit = 128000
+  } = req.body;
+  if (!title || !statement) throw new ApiError(400, "title and statement required");
+  const problem = await Problem.create({
+    title,
+    statement,
+    inputFormat,
+    outputFormat,
+    constraints,
+    samples,
+    testCases,
+    allowedLangs,
+    timeLimit,
+    memoryLimit
+  });
+  contest.problems.push(problem._id);
+  await contest.save();
+  return res.status(201).json(new ApiResponse(201, problem, "Problem added"));
+});
+
+export const getProblem = asyncHandler(async (req, res) => {
+  const { contestId, problemId } = req.params;
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, "Contest not found");
+  if (!contest.problems.some((p) => String(p) === String(problemId))) {
+    throw new ApiError(404, "Problem not part of this contest");
+  }
+  const problem = await Problem.findById(problemId).select("title statement inputFormat outputFormat constraints samples allowedLangs timeLimit memoryLimit");
+  if (!problem) throw new ApiError(404, "Problem not found");
+  return res.status(200).json(new ApiResponse(200, problem));
+});
+
+function mapJudge0Status(statusId) {
+  switch (statusId) {
+    case 3:
+      return "AC";
+    case 4:
+      return "WA";
+    case 5:
+      return "TLE";
+    case 6:
+      return "CE";
+    case 7:
+      return "RE";
+    default:
+      return "IE";
+  }
+}
+
+export const submitSolution = asyncHandler(async (req, res) => {
+  const { contestId, problemId } = req.params;
+  const { languageId, sourceCode } = req.body;
+  if (!languageId || !sourceCode) throw new ApiError(400, "languageId and sourceCode required");
+
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, "Contest not found");
+  ensureWindow(contest);
+
+  const problem = await Problem.findById(problemId);
+  if (!problem) throw new ApiError(404, "Problem not found");
+  if (!contest.problems.some((p) => String(p) === String(problemId))) {
+    throw new ApiError(404, "Problem not part of this contest");
+  }
+  if (problem.allowedLangs?.length && !problem.allowedLangs.includes(Number(languageId))) {
+    throw new ApiError(400, "Language not allowed for this problem");
+  }
+
+  let passed = 0;
+  const total = problem.testCases.length;
+  let maxTimeMs = 0;
+  let finalVerdict = "AC";
+  let combinedStdout = "";
+  let combinedStderr = "";
+
+  for (const tc of problem.testCases) {
+    const result = await runSingleTest({
+      sourceCode,
+      languageId: Number(languageId),
+      stdin: tc.input,
+      expectedOutput: tc.output,
+      cpuTimeLimit: problem.timeLimit,
+      memoryLimit: problem.memoryLimit
+    });
+    const statusId = result?.status?.id;
+    const verdict = mapJudge0Status(statusId);
+    if (verdict === "AC") {
+      passed += 1;
+    } else {
+      finalVerdict = verdict;
+    }
+    const t = parseFloat(result?.time || "0") * 1000;
+    if (!Number.isNaN(t)) maxTimeMs = Math.max(maxTimeMs, t);
+    if (result?.stdout) combinedStdout += Buffer.from(result.stdout, "base64").toString("utf-8") + "\n";
+    if (result?.stderr) combinedStderr += Buffer.from(result.stderr, "base64").toString("utf-8") + "\n";
+    if (finalVerdict !== "AC") {
+      break;
+    }
+  }
+
+  const submission = await Submission.create({
+    user: req.user._id,
+    contest: contest._id,
+    problem: problem._id,
+    languageId: Number(languageId),
+    sourceCode,
+    verdict: finalVerdict,
+    passed,
+    total,
+    execTimeMs: Math.round(maxTimeMs),
+    stdout: combinedStdout.slice(0, 10000),
+    stderr: combinedStderr.slice(0, 10000)
+  });
+
+  return res.status(201).json(new ApiResponse(201, submission, "Submission evaluated"));
+});
+
+export const getLeaderboard = asyncHandler(async (req, res) => {
+  const { contestId } = req.params;
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, "Contest not found");
+
+  const agg = await Submission.aggregate([
+    { $match: { contest: contest._id, verdict: "AC" } },
+    { $group: { _id: { user: "$user", problem: "$problem" }, firstAC: { $min: "$createdAt" } } },
+    { $group: { _id: "$_id.user", solved: { $sum: 1 }, lastAcceptedAt: { $max: "$firstAC" } } },
+    { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },
+    { $unwind: "$user" },
+    { $project: { _id: 0, userId: "$user._id", fullname: "$user.fullname", avatar: "$user.avatar", solved: 1, lastAcceptedAt: 1 } },
+    { $sort: { solved: -1, lastAcceptedAt: 1 } },
+    { $limit: 100 }
+  ]);
+
+  return res.status(200).json(new ApiResponse(200, agg));
+});
