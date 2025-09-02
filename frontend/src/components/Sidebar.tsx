@@ -125,7 +125,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
           </button>
         </div>
 
-        {/* Navigation Tabs */}
+        {/* Navigation */}
         <nav className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 mb-6 border border-gray-700/30">
           <ul className="space-y-2">
             {tabs.map((tab) => {
@@ -148,7 +148,15 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                 </li>
               );
             })}
-            
+            <li>
+              <button 
+                onClick={() => navigate('/contests')}
+                className="w-full flex items-center px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700/50 hover:text-white transition-all duration-200 hover:scale-[1.01]"
+              >
+                <Code className="h-5 w-5 mr-3" />
+                Contests
+              </button>
+            </li>
             <li>
               <button 
                 onClick={() => navigate('/messages')}
@@ -158,7 +166,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                 Messages
               </button>
             </li>
-            
             {user?.isAdmin && (
               <li>
                 <button 
@@ -170,7 +177,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                 </button>
               </li>
             )}
-            
             <li>
               <button className="w-full flex items-center px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700/50 hover:text-white transition-all duration-200 hover:scale-[1.01]">
                 <Bookmark className="h-5 w-5 mr-3" />
