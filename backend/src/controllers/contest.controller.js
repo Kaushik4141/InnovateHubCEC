@@ -89,17 +89,31 @@ export const getProblem = asyncHandler(async (req, res) => {
 function mapJudge0Status(statusId) {
   switch (statusId) {
     case 3:
-      return "AC";
+      return "Accepted";
     case 4:
-      return "WA";
+      return "Wrong Answer";
     case 5:
-      return "TLE";
+      return "Time Limit Exceeded";
     case 6:
-      return "CE";
-    case 7:
-      return "RE";
+      return "Compilation Error";
+    case 7: 
+      return "Runtime Error(SIGSEGV)";
+    case 8: 
+      return "Runtime Error(SIGXFSZ)";
+    case 9: 
+      return "Runtime Error(SIGFPE)";
+    case 10: 
+      return "Runtime Error(SIGABRT)";
+    case 11: 
+      return "Runtime Error(NZEC)";
+    case 12: 
+      return "Runtime Error(Other)";
+    case 14: 
+      return "Runtime Error(Exec format error)";
+    case 13:
+      return "Internal Error";
     default:
-      return "IE";
+      return "Internal Error";
   }
 }
 
@@ -124,7 +138,7 @@ export const submitSolution = asyncHandler(async (req, res) => {
   let passed = 0;
   const total = problem.testCases.length;
   let maxTimeMs = 0;
-  let finalVerdict = "AC";
+  let finalVerdict = "Accepted";
   let combinedStdout = "";
   let combinedStderr = "";
 
@@ -139,7 +153,7 @@ export const submitSolution = asyncHandler(async (req, res) => {
     });
     const statusId = result?.status?.id;
     const verdict = mapJudge0Status(statusId);
-    if (verdict === "AC") {
+    if (verdict === "Accepted") {
       passed += 1;
     } else {
       finalVerdict = verdict;
@@ -148,7 +162,7 @@ export const submitSolution = asyncHandler(async (req, res) => {
     if (!Number.isNaN(t)) maxTimeMs = Math.max(maxTimeMs, t);
     if (result?.stdout) combinedStdout += Buffer.from(result.stdout, "base64").toString("utf-8") + "\n";
     if (result?.stderr) combinedStderr += Buffer.from(result.stderr, "base64").toString("utf-8") + "\n";
-    if (finalVerdict !== "AC") {
+    if (finalVerdict !== "Accepted") {
       break;
     }
   }
@@ -176,7 +190,7 @@ export const getLeaderboard = asyncHandler(async (req, res) => {
   if (!contest) throw new ApiError(404, "Contest not found");
 
   const agg = await Submission.aggregate([
-    { $match: { contest: contest._id, verdict: "AC" } },
+    { $match: { contest: contest._id, verdict: "Accepted" } },
     { $group: { _id: { user: "$user", problem: "$problem" }, firstAC: { $min: "$createdAt" } } },
     { $group: { _id: "$_id.user", solved: { $sum: 1 }, lastAcceptedAt: { $max: "$firstAC" } } },
     { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "user" } },

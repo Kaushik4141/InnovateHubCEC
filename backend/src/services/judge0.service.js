@@ -23,15 +23,13 @@ export async function runSingleTest({ sourceCode, languageId, stdin, expectedOut
     stdin: b64(stdin ?? ""),
     expected_output: expectedOutput !== undefined ? b64(expectedOutput) : undefined,
     cpu_time_limit: cpuTimeLimit,
-    memory_limit: memoryLimit,
-    base64_encoded: true,
-    wait: true 
+    memory_limit: memoryLimit
   };
 
   const { data } = await axios.post(
     `${JUDGE0_URL}/submissions`,
     payload,
-    { headers: buildHeaders() }
+    { headers: buildHeaders(), params: { base64_encoded: true, wait: true } }
   );
   return data; 
 }
