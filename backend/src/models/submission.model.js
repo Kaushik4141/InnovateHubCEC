@@ -7,7 +7,7 @@ const submissionSchema = new mongoose.Schema(
     problem: { type: mongoose.Schema.Types.ObjectId, ref: "Problem", required: true, index: true },
     languageId: { type: Number, required: true },
     sourceCode: { type: String, required: true },
-    verdict: { type: String, enum: ["AC", "WA", "TLE", "RE", "CE", "IE"], default: "IE", index: true },
+    verdict: { type: String, enum: ["Accepted", "Wrong Answer", "Time Limit Exceeded", "Runtime Error(SIGSEGV)","Runtime Error(SIGXFSZ)","Runtime Error(SIGFPE)","Runtime Error(SIGABRT)", "Runtime Error(NZEC)","Runtime Error(Other)","Runtime Error(Exec format error)","Compilation Error", "Internal Error"], default: "IE", index: true },
     passed: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
     execTimeMs: { type: Number, default: 0 },
