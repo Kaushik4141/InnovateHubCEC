@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import Dashboard from './components/Dashboard';
@@ -24,6 +24,13 @@ import FeedbackFab from './components/FeedbackFab';
 import ChatBotFab from './components/chatbotFab';
 import ChatBot from './components/chatbot';
 import { Analytics } from '@vercel/analytics/react';
+import Contests from './components/Contests';
+import ContestView from './components/ContestView';
+import SolveProblem from './components/SolveProblem';
+import ContestLeaderboard from './components/ContestLeaderboard';
+
+import AdminContests from './components/AdminContests';
+import AdminContestProblems from './components/AdminContestProblems';
 
 
 type Me = {
@@ -89,13 +96,6 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
 };
 
 function AppRoutes() {
-  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const toggleChatbot = () => {
-    navigate('/chatbot'); 
-    setIsChatbotOpen(prev => !prev); 
-  };
 
   return (
     <>
@@ -105,6 +105,8 @@ function AppRoutes() {
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/mentors/apply" element={<MentorApply />} />
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
+        <Route path="/admin/contests" element={<RequireAdmin><AdminContests /></RequireAdmin>} />
+        <Route path="/admin/contests/:contestId/problems" element={<RequireAdmin><AdminContestProblems /></RequireAdmin>} />
         <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
         <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />
         <Route path="/messages" element={<RequireOnboardingComplete><Messages /></RequireOnboardingComplete>} />
@@ -120,25 +122,18 @@ function AppRoutes() {
         <Route path="/onboarding" element={<OnboardingOnly />} />
         <Route path="/feedback" element={<FeedbackForm />} />
         <Route path="/chatbot" element={<ChatBot />} />
+        <Route path="/contests" element={<RequireAuth><Contests /></RequireAuth>} />
+        <Route path="/contests/:contestId" element={<RequireAuth><ContestView /></RequireAuth>} />
+        <Route path="/contests/:contestId/problems/:problemId" element={<RequireAuth><SolveProblem /></RequireAuth>} />
+        <Route path="/contests/:contestId/leaderboard" element={<RequireAuth><ContestLeaderboard /></RequireAuth>} />
         
       </Routes>
 
       {/* Floating Feedback Button */}
       <FeedbackFab />
 
-      {/* Floating Chatbot Button */}
-      <div className="fixed bottom-8 right-4 z-50">
-        <button>
-          <ChatBotFab onButtonClick={toggleChatbot} />
-        </button>
-      </div>
-
-      {/* Chatbot Popup */}
-      {isChatbotOpen && (
-        <div className="fixed bottom-24 right-4 z-50">
-          <ChatBot onClose={toggleChatbot} />
-        </div>
-      )}
+      {/* Floating Chatbot Button (self-contained) */}
+      <ChatBotFab />
 
       <Analytics />
     </>

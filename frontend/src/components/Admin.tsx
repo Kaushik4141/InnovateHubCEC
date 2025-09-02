@@ -58,7 +58,13 @@ const Admin = () => {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100">
       <div className="max-w-5xl mx-auto p-6">
-        <h1 className="text-2xl font-semibold mb-4">Admin • Mentor Applications</h1>
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="text-2xl font-semibold">Admin • Mentor Applications</h1>
+          <button
+            onClick={() => navigate('/admin/contests')}
+            className="px-3 py-1.5 text-sm rounded bg-indigo-600 hover:bg-indigo-700"
+          >Contests Admin</button>
+        </div>
 
         <div className="flex items-center gap-3 mb-4">
           <label className="text-sm text-gray-400">Filter:</label>
