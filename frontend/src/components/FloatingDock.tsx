@@ -99,7 +99,7 @@ const FloatingDock: React.FC = () => {
       {/* Add safe area padding for iOS devices */}
       <div className="pb-safe-bottom bg-gray-900/95" />
       
-      <style jsx>{`
+      <style >{`
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;

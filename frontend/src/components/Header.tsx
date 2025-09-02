@@ -789,7 +789,7 @@ const Header = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style >{`
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
