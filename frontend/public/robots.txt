@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://innovatehubcec.vercel.app/sitemap.xml
