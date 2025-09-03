@@ -7,17 +7,23 @@ import {
   addProblem,
   getProblem,
   submitSolution,
-  getLeaderboard
+  getLeaderboard,
+  listProblems,
+  attachExistingProblem,
+  attachExistingProblemsBulk
 } from "../controllers/contest.controller.js";
 
 const router = Router();
 
 router.get("/", listContests);
 router.post("/", verifyJWT, requireAdmin, createContest);
+router.get("/problems", verifyJWT, requireAdmin, listProblems);
 router.get("/:id", getContest);
 
 router.post("/:contestId/problems", verifyJWT, requireAdmin, addProblem);
 router.get("/:contestId/problems/:problemId", verifyJWT, getProblem);
+router.post("/:contestId/problems/:problemId/attach", verifyJWT, requireAdmin, attachExistingProblem);
+router.post("/:contestId/problems/attach-bulk", verifyJWT, requireAdmin, attachExistingProblemsBulk);
 
 router.post("/:contestId/problems/:problemId/submit", verifyJWT, submitSolution);
 router.get("/:contestId/leaderboard", getLeaderboard);

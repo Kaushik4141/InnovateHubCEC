@@ -22,6 +22,10 @@ export type Problem = {
   memoryLimit?: number;
 };
 
+export type ProblemSummary = Pick<Problem, '_id' | 'title' | 'allowedLangs' | 'timeLimit' | 'memoryLimit'> & {
+  createdAt?: string;
+};
+
 export type Submission = {
   _id: string;
   verdict: string;
@@ -73,4 +77,28 @@ export async function createContest(body: { title: string; description: string; 
 export async function addProblem(contestId: string, body: Partial<Problem> & { title: string; statement: string }) {
   const { data } = await api.post(`/api/v1/contests/${contestId}/problems`, body);
   return data?.data as Problem;
+}
+
+export async function listProblemsBank(q?: string, limit = 20, skip = 0) {
+  const { data } = await api.get(`/api/v1/contests/problems`, { params: { q, limit, skip } });
+  return (data?.data || []) as ProblemSummary[];
+}
+
+export async function attachProblem(contestId: string, problemId: string) {
+  const { data } = await api.post(`/api/v1/contests/${contestId}/problems/${problemId}/attach`, {});
+  return data?.data as { attached: boolean; problemId: string };
+}
+
+export async function attachProblemsBulk(contestId: string, problemIds: string[]) {
+  const { data } = await api.post(`/api/v1/contests/${contestId}/problems/attach-bulk`, { problemIds });
+  return data?.data as {
+    requested: number;
+    valid: number;
+    attachedCount: number;
+    alreadyAttachedCount: number;
+    invalidCount: number;
+    addedIds: string[];
+    alreadyAttached: string[];
+    invalidIds: string[];
+  };
 }

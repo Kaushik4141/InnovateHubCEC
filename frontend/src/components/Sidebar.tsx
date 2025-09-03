@@ -166,6 +166,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                 Messages
               </button>
             </li>
+            
             {user?.isAdmin && (
               <li>
                 <button 

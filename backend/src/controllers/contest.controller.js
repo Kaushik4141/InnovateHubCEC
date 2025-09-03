@@ -52,7 +52,7 @@ export const addProblem = asyncHandler(async (req, res) => {
     constraints,
     samples = [],
     testCases = [],
-    allowedLangs = [54, 63, 71, 62],
+    allowedLangs = [54, 63, 71, 62, 50],
     timeLimit = 2.0,
     memoryLimit = 128000
   } = req.body;
@@ -84,6 +84,71 @@ export const getProblem = asyncHandler(async (req, res) => {
   const problem = await Problem.findById(problemId).select("title statement inputFormat outputFormat constraints samples allowedLangs timeLimit memoryLimit");
   if (!problem) throw new ApiError(404, "Problem not found");
   return res.status(200).json(new ApiResponse(200, problem));
+});
+
+export const listProblems = asyncHandler(async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const limit = Math.min(50, Math.max(1, Number(req.query.limit) || 20));
+  const skip = Math.max(0, Number(req.query.skip) || 0);
+  const filter = q ? { title: { $regex: q, $options: 'i' } } : {};
+  const problems = await Problem.find(filter)
+    .select('title allowedLangs timeLimit memoryLimit createdAt')
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  return res.status(200).json(new ApiResponse(200, problems));
+});
+
+export const attachExistingProblem = asyncHandler(async (req, res) => {
+  const { contestId, problemId } = req.params;
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, 'Contest not found');
+  const problem = await Problem.findById(problemId);
+  if (!problem) throw new ApiError(404, 'Problem not found');
+  const already = contest.problems.some((p) => String(p) === String(problemId));
+  if (!already) {
+    contest.problems.push(problem._id);
+    await contest.save();
+  }
+  return res.status(200).json(new ApiResponse(200, { attached: true, problemId: problem._id }, already ? 'Problem already attached' : 'Problem attached'));
+});
+
+export const attachExistingProblemsBulk = asyncHandler(async (req, res) => {
+  const { contestId } = req.params;
+  const { problemIds } = req.body || {};
+  if (!Array.isArray(problemIds) || problemIds.length === 0) {
+    throw new ApiError(400, 'problemIds (array) is required');
+  }
+
+  const uniqueIds = [...new Set(problemIds.map(String))];
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, 'Contest not found');
+
+  const existingSet = new Set((contest.problems || []).map((p) => String(p)));
+  const validProblems = await Problem.find({ _id: { $in: uniqueIds } }).select('_id');
+  const validIds = validProblems.map((p) => String(p._id));
+
+  const toAdd = validIds.filter((id) => !existingSet.has(id));
+  if (toAdd.length) {
+    contest.problems.push(...toAdd);
+    await contest.save();
+  }
+
+  const alreadyAttached = validIds.filter((id) => existingSet.has(id));
+  const invalidIds = uniqueIds.filter((id) => !validIds.includes(id));
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      requested: uniqueIds.length,
+      valid: validIds.length,
+      attachedCount: toAdd.length,
+      alreadyAttachedCount: alreadyAttached.length,
+      invalidCount: invalidIds.length,
+      addedIds: toAdd,
+      alreadyAttached,
+      invalidIds,
+    }, toAdd.length ? 'Problems attached' : 'No new problems attached')
+  );
 });
 
 function mapJudge0Status(statusId) {
