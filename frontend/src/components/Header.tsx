@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Search, Bell, MessageCircle, User, Home, Users, Briefcase,
   ChevronDown, Settings, LogOut, Plus,
-  Trophy, Handshake, Menu, X, Group
+  Trophy, Handshake, Menu, X, Group, Award, UserCheck, Folder
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -653,13 +653,13 @@ const Header = () => {
 
       {/* Mobile Menu Modal */}
       <div className={`
-        fixed inset-0 z-50 md:hidden transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]
-        ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible delay-300'}
-      `}>
+  fixed inset-0 z-50 md:hidden transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]
+  ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible delay-500'}
+`}>
         {/* Backdrop */}
         <div 
           className={`
-            absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]
+            absolute inset-0 bg-black/60 backdrop-blur-sm transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]
             ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}
           `}
           onClick={() => setMobileMenuOpen(false)}
@@ -667,9 +667,10 @@ const Header = () => {
         
         {/* Menu Panel */}
         <div className={`
-          absolute top-0 right-0 h-full w-80 bg-gray-900/95 backdrop-blur-lg border-l border-gray-700/50
-          transform transition-transform duration-500 ease-[cubic-bezier(0.19,1,0.22,1)]
-          ${mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
+          absolute top-0 right-0 h-full w-80 bg-gray-900/98 backdrop-blur-xl border-l border-gray-700/50
+          transform transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]
+          ${mobileMenuOpen ? 'translate-x-0 scale-100' : 'translate-x-full scale-95'}
+          shadow-2xl
         `}>
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
@@ -684,8 +685,11 @@ const Header = () => {
             
             <div className="flex-1 overflow-y-auto p-6">
               {/* Profile Section */}
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 flex-shrink-0">
+              <div className={`
+                flex items-center space-x-4 mb-8 transition-all duration-500 ease-out
+                ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+              `} style={{ transitionDelay: '100ms' }}>
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 flex-shrink-0 ring-2 ring-purple-500/30">
                   {user && (
                     <img
                       src={avatarUrl(user)}
@@ -697,16 +701,77 @@ const Header = () => {
                   )}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-white">{user?.fullname || 'User'}</h3>
+                  <h3 className="font-semibold text-white text-lg">{user?.fullname || 'User'}</h3>
                   <p className="text-sm text-gray-400">{user?.year}th year</p>
                 </div>
               </div>
               
+              {/* Featured Items - Mobile Only */}
+              <div className="space-y-2 mb-6">
+                <div className="text-xs uppercase text-purple-400 font-semibold tracking-wider mb-3 px-2">Featured</div>
+                
+                <button 
+                  onClick={() => { navigate('/competitions'); setMobileMenuOpen(false); }}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-orange-600/20 hover:to-orange-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-orange-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '200ms' }}
+                >
+                  <div className="p-2 bg-orange-600/20 rounded-lg group-hover:bg-orange-600/30 transition-colors">
+                    <Award className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <span className="font-medium">Competitions</span>
+                </button>
+                
+                <button 
+                  onClick={() => { navigate('/mentors'); setMobileMenuOpen(false); }}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-emerald-600/20 hover:to-emerald-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-emerald-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '250ms' }}
+                >
+                  <div className="p-2 bg-emerald-600/20 rounded-lg group-hover:bg-emerald-600/30 transition-colors">
+                    <UserCheck className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <span className="font-medium">Mentors</span>
+                </button>
+                
+                <button 
+                  onClick={() => { navigate('/projects'); setMobileMenuOpen(false); }}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-blue-600/20 hover:to-blue-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-blue-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '300ms' }}
+                >
+                  <div className="p-2 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
+                    <Folder className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <span className="font-medium">Projects</span>
+                </button>
+                
+              </div>
+              
               {/* Navigation Items */}
-              <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-3 px-2">Navigation</div>
+                
                 <button 
                   onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '350ms' }}
                 >
                   <Home className="h-5 w-5" />
                   <span className="font-medium">Home</span>
@@ -714,7 +779,12 @@ const Header = () => {
                 
                 <button 
                   onClick={() => { navigate('/chat'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '400ms' }}
                 >
                   <Handshake className="h-5 w-5" />
                   <span className="font-medium">Chat</span>
@@ -722,7 +792,12 @@ const Header = () => {
                 
                 <button 
                   onClick={() => { navigate('/network'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '450ms' }}
                 >
                   <Users className="h-5 w-5" />
                   <span className="font-medium">Network</span>
@@ -730,7 +805,12 @@ const Header = () => {
                 
                 <button 
                   onClick={() => { navigate('/jobs'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '500ms' }}
                 >
                   <Briefcase className="h-5 w-5" />
                   <span className="font-medium">Jobs</span>
@@ -738,7 +818,12 @@ const Header = () => {
                 
                 <button 
                   onClick={() => { navigate('/messages'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '550ms' }}
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span className="font-medium">Messages</span>
@@ -746,7 +831,12 @@ const Header = () => {
                 
                 <button 
                   onClick={() => { navigate('/Leaderboard'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '600ms' }}
                 >
                   <Trophy className="h-5 w-5" />
                   <span className="font-medium">Leaderboard</span>
@@ -754,15 +844,27 @@ const Header = () => {
                 
                 <button 
                   onClick={() => { navigate('/Team'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '650ms' }}
                 >
                   <Group className="h-5 w-5" />
                   <span className="font-medium">Our Team</span>
                 </button>
                 
+                <div className="border-t border-gray-700/50 my-4" />
+                
                 <button 
                   onClick={() => { navigate('/profile'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '700ms' }}
                 >
                   <User className="h-5 w-5" />
                   <span className="font-medium">Profile</span>
@@ -770,7 +872,12 @@ const Header = () => {
                 
                 <button 
                   onClick={() => { navigate('/addpost'); setMobileMenuOpen(false); }}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-purple-300 hover:text-purple-200 hover:bg-purple-700/20 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-purple-300 hover:text-purple-200 
+                    hover:bg-purple-700/20 rounded-lg transition-all duration-300 border border-transparent hover:border-purple-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '750ms' }}
                 >
                   <Plus className="h-5 w-5" />
                   <span className="font-medium">Add Project</span>
@@ -778,7 +885,12 @@ const Header = () => {
                 
                 <button 
                   onClick={handleLogout}
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-300 hover:text-red-200 hover:bg-red-700/20 rounded-lg transition-all duration-200"
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-red-300 hover:text-red-200 
+                    hover:bg-red-700/20 rounded-lg transition-all duration-300 border border-transparent hover:border-red-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '800ms' }}
                 >
                   <LogOut className="h-5 w-5" />
                   <span className="font-medium">Sign Out</span>
@@ -789,7 +901,7 @@ const Header = () => {
         </div>
       </div>
 
-      <style >{`
+      <style>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
@@ -800,6 +912,48 @@ const Header = () => {
         .pb-safe-bottom {
           padding-bottom: env(safe-area-inset-bottom, 0);
           height: env(safe-area-inset-bottom, 0);
+        }
+        
+        /* Enhanced smooth transitions */
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%) scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        .animate-slideIn {
+          animation: slideIn 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.3s ease-out;
+        }
+        
+        /* Staggered animations for menu items */
+        .menu-item-enter {
+          animation: fadeInUp 0.4s ease-out forwards;
+        }
+        
+        /* Smooth backdrop blur effect */
+        .backdrop-blur-smooth {
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
         }
       `}</style>
     </>
