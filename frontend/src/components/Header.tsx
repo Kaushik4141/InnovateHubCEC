@@ -4,7 +4,7 @@ import {
   Search, Bell, MessageCircle, User, Home, Users, Briefcase,
   ChevronDown, Settings, LogOut, Plus,
   Trophy, Handshake, Menu, X, Group, Award, UserCheck, Folder,
-  Calendar, Map, Shield, MessageSquare, MapPin // Added icons for contests, roadmaps, admin, and feedback
+  Calendar, Map, Shield // Added icons for contests, roadmaps, and admin
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -338,24 +338,6 @@ const Header = () => {
               >
                 <Group className="h-5 w-5" />
                 <span className="text-xs mt-1">Our Team</span>
-              </button>
-              
-              {/* Roadmaps Link */}
-              <button 
-                onClick={() => navigate('/roadmaps')}
-                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
-              >
-                <MapPin className="h-5 w-5" />
-                <span className="text-xs mt-1">Roadmaps</span>
-              </button>
-              
-              {/* Feedback Link */}
-              <button 
-                onClick={() => navigate('/feedback')}
-                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
-              >
-                <MessageSquare className="h-5 w-5" />
-                <span className="text-xs mt-1">Feedback</span>
               </button>
 
               {/* Desktop Notifications */}
@@ -772,11 +754,7 @@ const Header = () => {
                 </button>
                 
                 <button 
-                  onClick={() => { 
-                    // Open roadmap.sh in a new tab
-                    window.open('https://roadmap.sh', '_blank');
-                    setMobileMenuOpen(false); 
-                  }}
+                  onClick={() => { navigate('/roadmaps'); setMobileMenuOpen(false); }}
                   className={`
                     w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
                     hover:bg-gradient-to-r hover:from-indigo-600/20 hover:to-indigo-500/20 
@@ -824,7 +802,23 @@ const Header = () => {
                 </button>
                 
                 {/* Conditionally show Admin link for mobile */}
-                
+                {user?.role === 'admin' && (
+                  <button 
+                    onClick={() => { navigate('/admin'); setMobileMenuOpen(false); }}
+                    className={`
+                      w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                      hover:bg-gradient-to-r hover:from-red-600/20 hover:to-red-500/20 
+                      rounded-xl transition-all duration-300 group border border-transparent hover:border-red-500/30
+                      ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                    `}
+                    style={{ transitionDelay: '450ms' }}
+                  >
+                    <div className="p-2 bg-red-600/20 rounded-lg group-hover:bg-red-600/30 transition-colors">
+                      <Shield className="h-5 w-5 text-red-400" />
+                    </div>
+                    <span className="font-medium">Admin Panel</span>
+                  </button>
+                )}
               </div>
               
               {/* Navigation Items */}
@@ -922,36 +916,6 @@ const Header = () => {
                   <span className="font-medium">Our Team</span>
                 </button>
                 
-                <button 
-                  onClick={() => { 
-                    // Open roadmap.sh in a new tab
-                    window.open('https://roadmap.sh', '_blank');
-                    setMobileMenuOpen(false); 
-                  }}
-                  className={`
-                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
-                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
-                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-                  `}
-                  style={{ transitionDelay: '850ms' }}
-                >
-                  <MapPin className="h-5 w-5" />
-                  <span className="font-medium">Roadmaps</span>
-                </button>
-                
-                <button 
-                  onClick={() => { navigate('/feedback'); setMobileMenuOpen(false); }}
-                  className={`
-                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
-                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
-                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-                  `}
-                  style={{ transitionDelay: '900ms' }}
-                >
-                  <MessageSquare className="h-5 w-5" />
-                  <span className="font-medium">Feedback</span>
-                </button>
-                
                 <div className="border-t border-gray-700/50 my-4" />
                 
                 <button 
@@ -961,7 +925,7 @@ const Header = () => {
                     hover:bg-gray-700/50 rounded-lg transition-all duration-300
                     ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
                   `}
-                  style={{ transitionDelay: '950ms' }}
+                  style={{ transitionDelay: '850ms' }}
                 >
                   <User className="h-5 w-5" />
                   <span className="font-medium">Profile</span>
@@ -974,7 +938,7 @@ const Header = () => {
                     hover:bg-purple-700/20 rounded-lg transition-all duration-300 border border-transparent hover:border-purple-500/30
                     ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
                   `}
-                  style={{ transitionDelay: '1000ms' }}
+                  style={{ transitionDelay: '900ms' }}
                 >
                   <Plus className="h-5 w-5" />
                   <span className="font-medium">Add Project</span>
@@ -987,7 +951,7 @@ const Header = () => {
                     hover:bg-red-700/20 rounded-lg transition-all duration-300 border border-transparent hover:border-red-500/30
                     ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
                   `}
-                  style={{ transitionDelay: '1050ms' }}
+                  style={{ transitionDelay: '950ms' }}
                 >
                   <LogOut className="h-5 w-5" />
                   <span className="font-medium">Sign Out</span>

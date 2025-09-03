@@ -71,22 +71,22 @@ const ChatBotFab: React.FC = () => {
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chat Button - Positioned in bottom left corner */}
       {!isOpen && (
         <button
           aria-label="Chatbot"
           onClick={() => setIsOpen(true)}
-          className="fixed left-4 bottom-36 z-50 transition-transform hover:scale-110 animate-pulse"
+          className="fixed left-4 bottom-4 z-50 transition-transform hover:scale-110 animate-pulse"
         >
           <DotLottieReact
             src="https://lottie.host/83918992-7e51-48d7-bb5a-4a7086c57027/Lr0QJJj1Zi.lottie"
             loop
             autoplay
             style={{
-              width: window.innerWidth < 640 ? 120 : 150,
-              height: window.innerWidth < 640 ? 120 : 150,
+              width: window.innerWidth < 640 ? 80 : 100,
+              height: window.innerWidth < 640 ? 80 : 100,
               background: 'transparent',
-              filter: 'drop-shadow(0 0 25px #9f7aea)',
+              filter: 'drop-shadow(0 0 15px #9f7aea)',
             }}
           />
         </button>
@@ -94,13 +94,13 @@ const ChatBotFab: React.FC = () => {
 
       {/* Chatbox overlay */}
       {isOpen && (
-        <div className="fixed inset-0 z-40 flex items-end justify-end">
+        <div className="fixed inset-0 z-40 flex items-end justify-start">
           <div 
             onClick={() => setIsOpen(false)}
             className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
           />
 
-          <div className={`relative z-50 transition-all duration-300 ${isMinimized ? 'bottom-6' : 'bottom-24'} right-6`}>
+          <div className={`relative z-50 transition-all duration-300 ${isMinimized ? 'bottom-6' : 'bottom-24'} left-6`}>
             {isMinimized ? (
               <div className="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-2xl shadow-2xl p-3 flex items-center justify-between w-64">
                 <div className="flex items-center">
@@ -117,7 +117,7 @@ const ChatBotFab: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="w-96 h-[550px] bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-700/50">
+              <div className="w-80 sm:w-96 h-[500px] sm:h-[550px] bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-gray-700/50">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-700 to-indigo-800">
@@ -126,11 +126,11 @@ const ChatBotFab: React.FC = () => {
                       src="https://lottie.host/1323f360-55d5-43dc-bea5-1a6a74428278/XAtuhx1ec2.lottie"
                       autoplay
                       loop
-                      style={{ width: 100, height: 50, background: 'transparent' }}
+                      style={{ width: 80, height: 40, background: 'transparent' }}
                     />
                     <div className="ml-3">
-                      <h3 className="font-semibold text-white text-center">AI Assistant</h3>
-                      <p className="text-xs text-purple-200 text-center">Online • Ready to help</p>
+                      <h3 className="font-semibold text-white text-sm sm:text-base">AI Assistant</h3>
+                      <p className="text-xs text-purple-200">Online • Ready to help</p>
                     </div>
                   </div>
                   <div className="flex space-x-2">
@@ -147,7 +147,7 @@ const ChatBotFab: React.FC = () => {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
                   {messages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} transition-all duration-300`}>
-                      <div className={`px-4 py-3 rounded-2xl max-w-[80%] break-words relative ${msg.sender === 'user' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-br-none' : 'bg-gray-800/70 text-white rounded-bl-none'}`}>
+                      <div className={`px-3 py-2 sm:px-4 sm:py-3 rounded-2xl max-w-[80%] break-words relative ${msg.sender === 'user' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-br-none' : 'bg-gray-800/70 text-white rounded-bl-none'}`}>
                         {msg.text}
                         <span className={`text-xs opacity-50 block mt-1 ${msg.sender === 'user' ? 'text-purple-200' : 'text-gray-400'}`}>
                           {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -199,7 +199,7 @@ const ChatBotFab: React.FC = () => {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="Type your message..."
-                      className="flex-1 px-4 py-2.5 rounded-full bg-gray-700/50 text-white outline-none placeholder-gray-400 backdrop-blur-sm focus:ring-2 focus:ring-purple-500/30"
+                      className="flex-1 px-4 py-2.5 rounded-full bg-gray-700/50 text-white outline-none placeholder-gray-400 backdrop-blur-sm focus:ring-2 focus:ring-purple-500/30 text-sm sm:text-base"
                       onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                     />
                     <button

@@ -20,7 +20,6 @@ import Mentors from './components/Mentors';
 import Admin from './components/Admin';
 import MentorApply from './components/MentorApply';
 import FeedbackForm from './components/feedbackform';
-import FeedbackFab from './components/FeedbackFab';
 import ChatBotFab from './components/chatbotFab';
 import ChatBot from './components/chatbot';
 import { Analytics } from '@vercel/analytics/react';
@@ -129,8 +128,7 @@ function AppRoutes() {
         
       </Routes>
 
-      {/* Floating Feedback Button */}
-      <FeedbackFab />
+     
 
       {/* Floating Chatbot Button (self-contained) */}
       <ChatBotFab />
