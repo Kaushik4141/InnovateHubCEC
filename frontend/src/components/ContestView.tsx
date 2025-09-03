@@ -2,10 +2,9 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getContest, Contest } from '../services/contestApi';
 import { languageNameFromId } from '../services/judge0Langs';
-import Header from './Header';
 import {
   Clock, Calendar, Award, Users, ChevronRight, 
-  BarChart3, FileText, AlertCircle, Loader
+  BarChart3, FileText, AlertCircle, Loader, ArrowLeft
 } from 'lucide-react';
 
 const ContestView: React.FC = () => {
@@ -63,8 +62,7 @@ const ContestView: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900">
-        <Header />
-        <div className="max-w-[1200px] mx-auto p-4 pt-24 flex items-center justify-center h-96">
+        <div className="max-w-[1200px] mx-auto p-4 pt-8 flex items-center justify-center h-96">
           <div className="flex flex-col items-center space-y-4">
             <Loader className="h-12 w-12 text-purple-500 animate-spin" />
             <p className="text-gray-300">Loading contest details...</p>
@@ -77,8 +75,7 @@ const ContestView: React.FC = () => {
   if (!contest) {
     return (
       <div className="min-h-screen bg-gray-900">
-        <Header />
-        <div className="max-w-[1200px] mx-auto p-4 pt-24">
+        <div className="max-w-[1200px] mx-auto p-4 pt-8">
           <div className="flex flex-col items-center justify-center h-96 space-y-4">
             <AlertCircle className="h-16 w-16 text-red-400" />
             <div className="text-red-400 text-center">
@@ -100,15 +97,22 @@ const ContestView: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <Header />
+      {/* Back Button */}
+      <div className="max-w-[1200px] mx-auto p-4 pt-6">
+        <button
+          onClick={() => navigate('/contests')}
+          className="flex items-center text-purple-300 hover:text-purple-200 transition-colors mb-4"
+        >
+          <ArrowLeft className="h-5 w-5 mr-2" />
+          Back to Contests
+        </button>
+      </div>
       
-      <div className="max-w-[1200px] mx-auto p-4 pt-24">
+      <div className="max-w-[1200px] mx-auto p-4">
         {/* Header */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 p-4 bg-gray-800/40 rounded-xl border border-gray-700 backdrop-blur-sm transition-all duration-300 hover:bg-gray-800/60">
           <div className="space-y-2 mb-4 md:mb-0">
             <div className="text-xs text-purple-300 flex items-center">
-              <Link to="/contests" className="hover:text-purple-200 transition-colors">Contests</Link>
-              <ChevronRight className="h-3 w-3 mx-1" />
               <span className="truncate">{contest.title}</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-white">{contest.title}</h1>
@@ -243,12 +247,12 @@ const ContestView: React.FC = () => {
                 </Link>
               )}
               
-              <Link 
-                to="/contests"
+              <button 
+                onClick={() => navigate('/contests')}
                 className="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 px-4 rounded-xl font-medium flex items-center justify-center transition-all duration-300"
               >
                 Back to Contests
-              </Link>
+              </button>
             </div>
           </div>
         </div>
