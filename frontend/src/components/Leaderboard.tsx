@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Loader from './loading';
 import { useNavigate } from 'react-router-dom';
 import Header from './Header';
-import { Trophy, Medal, Award, TrendingUp, Code, Users, Target, Crown, Zap, ChevronDown, ChevronUp, Menu, X } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Code, Users, Target, Crown, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import axios from 'axios';
 
 const Leaderboard = () => {
@@ -12,7 +12,6 @@ const Leaderboard = () => {
   const [contribLoading, setContribLoading] = useState(false);
   const [contribError, setContribError] = useState<string|null>(null);
   const [expandedUser, setExpandedUser] = useState<number | null>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL;
 
   const contribSortMap = {
@@ -149,14 +148,6 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       
-      {/* Mobile Menu Button */}
-      <button 
-        className="md:hidden fixed top-4 right-4 z-50 p-2 bg-slate-800 rounded-lg"
-        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-      >
-        {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-      </button>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="mt-4 mb-6">
           {/* Mobile Tabs (Dropdown) */}
@@ -273,7 +264,7 @@ const Leaderboard = () => {
                 className="text-white font-bold text-base sm:text-lg mb-1 hover:underline focus:outline-none truncate max-w-full"
                 style={{ background: 'none', border: 'none', cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
                 onClick={() => {
-                  if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
+                    if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
                 }}
                 aria-label={`View profile of ${performer.name}`}
               >
