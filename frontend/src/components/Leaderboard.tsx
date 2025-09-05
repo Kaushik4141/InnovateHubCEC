@@ -1,539 +1,1033 @@
-import React, { useState } from 'react';
-import Loader from './loading';
-import { useNavigate } from 'react-router-dom';
-import Header from './Header';
-import { Trophy, Medal, Award, TrendingUp, Code, Users, Target, Crown, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  Search, Bell, MessageCircle, User, Home, Users, Briefcase,
+  ChevronDown, Settings, LogOut, Plus,
+  Trophy, Handshake, Menu, X, Group, Award, UserCheck, Folder,
+  Calendar, Map, Shield
+} from 'lucide-react';
 import axios from 'axios';
 
-const Leaderboard = () => {
-  const [leaderboardType, setLeaderboardType] = useState<'github' | 'leetcode'>('github');
-  const [contribType, setContribType] = useState<'overall' | 'thisMonth' | 'lastMonth' | 'thisYear'>('overall');
-  const [contribData, setContribData] = useState<any[]>([]);
-  const [contribLoading, setContribLoading] = useState(false);
-  const [contribError, setContribError] = useState<string|null>(null);
-  const [expandedUser, setExpandedUser] = useState<number | null>(null);
-  const apiBase = import.meta.env.VITE_API_URL;
-
-  const contribSortMap = {
-    overall: 'totalContributions',
-    thisMonth: 'thisMonthContributions',
-    lastMonth: 'lastMonthContributions',
-    thisYear: 'thisYearContributions',
-  } as const;
-
-  React.useEffect(() => {
-    setContribLoading(true);
-    setContribError(null);
-    setContribData([]);
-    let url = '';
-    if (leaderboardType === 'github') {
-      url = `${apiBase}/api/v1/leaderboard/github?sortBy=${contribSortMap[contribType]}`;
-    } else {
-      url = `${apiBase}/api/v1/leaderboard/leetcode`;
-    }
-    axios.get(url, { withCredentials: true })
-      .then(res => {
-        if (leaderboardType === 'github') {
-          setContribData(Array.isArray(res.data?.data?.leaderboard) ? res.data.data.leaderboard.slice(0, 10) : []);
-        } else {
-          console.log('LeetCode leaderboard raw data:', res.data?.data?.leaderboard);
-          setContribData(Array.isArray(res.data?.data?.leaderboard) ? res.data.data.leaderboard.slice(0, 10) : []);
-        }
-      })
-      .catch(e => {
-        setContribError(`Failed to fetch ${leaderboardType === 'github' ? 'GitHub' : 'LeetCode'} leaderboard`);
-        console.error(e);
-      })
-      .finally(() => setContribLoading(false));
-  }, [apiBase, contribType, leaderboardType]);
-
-  const topPerformers = contribData.map((user: any, idx: number) => {
-    if (leaderboardType === 'leetcode') {
-      return {
-        rank: idx + 1,
-        name: user?.user?.fullname || user?.username || 'Unknown',
-        username: user?.username || '',
-        avatar: user?.user?.avatar || user?.user?.fullname?.slice?.(0, 2) || user?.username?.slice?.(0, 2) || '?',
-        points: typeof user?.totalSolved === 'number' ? user.totalSolved : 0,
-        projects: typeof user?.easySolved === 'number' ? user.easySolved : 0,
-        competitions: typeof user?.mediumSolved === 'number' ? user.mediumSolved : 0,
-        badges: [
-          `Hard: ${user?.hardSolved ?? 0}`,
-          `Acc. Rate: ${user?.acceptanceRate ?? 0}%`,
-          `World Ranking: ${user?.ranking ?? '-'}`,
-          `Reputation: ${user?.reputation ?? '-'}`,
-          `Contrib: ${user?.contributionPoints ?? '-'}`
-        ],
-        trend: '',
-        department: user?.user?.leetcode || user?.username || '',
-        level: '',
-        streak: '',
-        leetcodeProfile: user?.user?.leetcode,
-      };
-    } else {
-      return {
-        rank: idx + 1,
-        name: user?.user?.fullname || user?.username || 'Unknown',
-        username: user?.username || '',
-        avatar: user?.user?.avatar || user?.user?.fullname?.slice?.(0, 2) || user?.username?.slice?.(0, 2) || '?',
-        points: typeof (contribType === 'overall' ? user?.totalContributions :
-          contribType === 'thisMonth' ? user?.thisMonthContributions :
-          contribType === 'lastMonth' ? user?.lastMonthContributions :
-          contribType === 'thisYear' ? user?.thisYearContributions : 0) === 'number'
-          ? (contribType === 'overall' ? user?.totalContributions :
-            contribType === 'thisMonth' ? user?.thisMonthContributions :
-            contribType === 'lastMonth' ? user?.lastMonthContributions :
-            contribType === 'thisYear' ? user?.thisYearContributions : 0)
-          : 0,
-        projects: typeof user?.projects === 'number' ? user.projects : 0,
-        competitions: typeof user?.competitions === 'number' ? user.competitions : 0,
-        badges: Array.isArray(user?.badges) ? user.badges : [],
-        trend: user?.trend || '',
-        department: user?.department || '',
-        level: user?.level || '',
-        streak: typeof user?.streak === 'number' ? user.streak : 0,
-      };
-    }
-  });
-
-  const leaderboardTabs = [
-    { id: 'github', name: 'GitHub', icon: Code },
-    { id: 'leetcode', name: 'LeetCode', icon: Target },
-  ];
-
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />;
-      case 2:
-        return <Medal className="w-5 h-5 sm:w-6 sm:h-6 text-gray-400" />;
-      case 3:
-        return <Award className="w-5 h-5 sm:w-6 sm:h-6 text-amber-600" />;
-      default:
-        return <span className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-slate-400 font-bold">#{rank}</span>;
-    }
-  };
-
-  const getRankBg = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return 'bg-gradient-to-r from-yellow-500/20 to-yellow-600/20 border-yellow-500/30 shadow-yellow-500/10';
-      case 2:
-        return 'bg-gradient-to-r from-gray-400/20 to-gray-500/20 border-gray-400/30 shadow-gray-400/10';
-      case 3:
-        return 'bg-gradient-to-r from-amber-600/20 to-amber-700/20 border-amber-600/30 shadow-amber-600/10';
-      default:
-        return 'bg-slate-800/50 border-slate-700/50';
-    }
-  };
-
-  const getLevelColor = (level: string) => {
-    switch (level) {
-      case 'Expert':
-        return 'text-yellow-400 bg-yellow-400/10 border-yellow-400/20';
-      case 'Advanced':
-        return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
-      case 'Intermediate':
-        return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
-      default:
-        return 'text-green-400 bg-green-400/10 border-green-400/20';
-    }
-  };
-
+const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const apiBase = import.meta.env.VITE_API_URL;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ users: any[]; posts: any[] }>({ users: [], posts: [] });
+  const [isMobile, setIsMobile] = useState(false);
 
-  if (contribLoading) return <Loader />;
+  // Check if we're on a mobile device
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await axios.get(`${apiBase}/api/v1/users/notifications`, {
+        withCredentials: true,
+      });
+      setNotifications(res.data?.data?.notifications || []);
+    } catch (e) {
+      console.error('Failed to fetch notifications', e);
+    }
+  }, [apiBase]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (showNotifications) fetchNotifications();
+  }, [showNotifications, fetchNotifications]);
+
+  useEffect(() => {
+    const handler = () => fetchNotifications();
+    window.addEventListener('app:notifications-refresh', handler);
+    return () => window.removeEventListener('app:notifications-refresh', handler);
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        const res = await axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true });
+        setUser(res.data?.data || res.data);
+      } catch (e) {
+        console.error('Failed to fetch current user', e);
+      }
+    };
+    fetchMe();
+  }, [apiBase]);
+
+  const avatarUrl = (u: { _id?: string; fullname?: string; avatar?: string } | null) => (
+    !u?.avatar || (u.avatar && u.avatar.includes('default_avatar'))
+      ? `https://api.dicebear.com/9.x/thumbs/svg?seed=${encodeURIComponent(u?._id || u?.fullname || 'user')}&size=48`
+      : (u.avatar as string)
+  );
+
+  const initials = (name?: string) => {
+    if (!name) return 'ME';
+    const parts = name.trim().split(/\s+/);
+    return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
+  };
+
+  // Default avatar fallback
+  const defaultAvatarFallback = (apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png';
+  const onImgErr = (e: any) => {
+    const img = e.currentTarget as HTMLImageElement;
+    img.onerror = null;
+    img.src = defaultAvatarFallback;
+  };
+
+  // Debounced search
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setSearchResults({ users: [], posts: [] });
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    setSearchOpen(true);
+    const t = setTimeout(async () => {
+      try {
+        const [uRes, pRes] = await Promise.all([
+          axios.get(`${apiBase}/api/v1/users/search`, { params: { q }, withCredentials: true }),
+          axios.get(`${apiBase}/api/v1/posts/getAllPost`, { params: { query: q, limit: 5 }, withCredentials: true }),
+        ]);
+        const users = uRes.data?.data || [];
+        const posts = pRes.data?.data?.result || [];
+        setSearchResults({ users, posts });
+      } catch (e) {
+        setSearchResults({ users: [], posts: [] });
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchQuery, apiBase]);
+
+  const handleAccept = async (fromUserId: string) => {
+    try {
+      await axios.post(
+        `${apiBase}/api/v1/users/${fromUserId}/accept-follow`,
+        {},
+        { withCredentials: true }
+      );
+      setNotifications((prev) => prev.filter((n: any) => n.from?._id !== fromUserId));
+    } catch (e) {
+      console.error('Accept follow failed', e);
+    }
+  };
+
+  const handleReject = async (fromUserId: string) => {
+    try {
+      await axios.post(
+        `${apiBase}/api/v1/users/${fromUserId}/reject-follow`,
+        {},
+        { withCredentials: true }
+      );
+      setNotifications((prev) => prev.filter((n: any) => n.from?._id !== fromUserId));
+    } catch (e) {
+      console.error('Reject follow failed', e);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${apiBase}/api/v1/users/logout`, {}, { withCredentials: true });
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed', error);
+    }
+  };
+
+  const handleNotificationClick = () => {
+    setShowNotifications(!showNotifications);
+  };
+
+  // Close search when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.search-container')) {
+        setSearchOpen(false);
+      }
+    };
+
+    if (searchOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [searchOpen]);
+
+  // Navigation handler for mobile menu
+  const navigateTo = (path: string) => {
+    navigate(path);
+    setMobileMenuOpen(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <Header />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-        <div className="mt-4 mb-6">
-          {/* Mobile Tabs (Dropdown) */}
-          <div className="md:hidden relative">
-            <select
-              className="w-full bg-slate-800 text-white border border-purple-500/50 rounded-xl px-4 py-3 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none"
-              value={leaderboardType}
-              onChange={e => setLeaderboardType(e.target.value as 'github' | 'leetcode')}
-            >
-              {leaderboardTabs.map(tab => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.name}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-purple-300">
-              <ChevronDown className="w-5 h-5" />
-            </div>
-          </div>
-          
-          {/* Desktop Tabs */}
-          <div className="hidden md:flex gap-3 justify-center">
-            {leaderboardTabs.map(tab => (
-              <button
-                key={tab.id}
-                className={`shrink-0 flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-colors ${leaderboardType === tab.id ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
-                onClick={() => setLeaderboardType(tab.id as 'github' | 'leetcode')}
-              >
-                <tab.icon className="w-5 h-5" />
-                {tab.name}
+    <>
+      <header className="bg-gray-800 border-b border-gray-700 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <button onClick={() => navigate('/')} className="flex items-center">
+                <img src="/logo1.png" alt="InnovateHubCEC" className="h-8 w-8" />
+                <span className="ml-2 text-xl font-bold text-white hidden sm:block">InnovateHubCEC</span>
+                <span className="ml-2 text-xl font-bold text-white sm:hidden">InnovateHubCEC</span>
               </button>
-            ))}
-          </div>
-        </div>
-        
-        <div className="text-center space-y-4 mb-8">
-          <div className="flex items-center justify-center space-x-3">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center">
-              <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-              Leaderboard
-            </h1>
-          </div>
-          <p className="text-slate-400 text-base sm:text-lg max-w-2xl mx-auto">
-            Celebrating excellence and innovation in our college community. Compete, collaborate, and climb the ranks!
-          </p>
-        </div>
 
-        <div className="relative mb-6">
-          <div className="w-full sm:w-64 mx-auto sm:ml-auto sm:mr-0">
-            <select
-              className="w-full bg-slate-900 text-white border border-purple-500/50 rounded-xl px-5 py-3 pl-16 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none cursor-pointer hover:border-purple-400 hover:bg-slate-800"
-              value={contribType}
-              onChange={e => setContribType(e.target.value as any)}
-            >
-              <option value="overall">Overall</option>
-              <option value="thisMonth">This Month</option>
-              <option value="lastMonth">Last Month</option>
-              <option value="thisYear">This Year</option>
-            </select>
-            <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-purple-300 transition-transform duration-300">
-              <ChevronDown className="w-5 h-5" />
-            </span>
-          </div>
-        </div>
-        
-        {contribError && (
-          <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 text-red-300 px-4 py-3">
-            {contribError}
-          </div>
-        )}
-
-        {/* Top 3 Podium */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8">
-          {topPerformers.slice(0, 3).map((performer) => (
-            <div
-              key={performer.rank}
-              className={`${getRankBg(performer.rank)} rounded-2xl p-4 sm:p-6 border text-center shadow-xl transition-all duration-300 hover:scale-[1.02] ${
-                performer.rank === 1 ? 'md:order-2 md:transform md:scale-105' : 
-                performer.rank === 2 ? 'md:order-1' : 
-                performer.rank === 3 ? 'md:order-3' : 'md:order-1'
-              }`}
-            >
-              <div className="flex justify-center mb-3 sm:mb-4">
-                {getRankIcon(performer.rank)}
+            {/* Desktop Search Bar */}
+            <div className="flex-1 max-w-2xl mx-8 hidden md:block">
+              <div className="relative search-container">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setSearchOpen(true)}
+                  placeholder="Search people, posts/projects..."
+                  className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                />
+                {searchOpen && (searchQuery.trim().length >= 2 || searchLoading) && (
+                  <div className="absolute mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+                    {searchLoading ? (
+                      <div className="p-4 text-gray-400 text-sm">Searching...</div>
+                    ) : (
+                      <div className="max-h-96 overflow-y-auto">
+                        <div className="p-2 border-b border-gray-700">
+                          <p className="text-xs uppercase text-gray-400 px-2">People</p>
+                          {searchResults.users.length === 0 && (
+                            <div className="px-2 py-2 text-sm text-gray-500">No people found</div>
+                          )}
+                          {searchResults.users.map((u) => (
+                            <button
+                              key={u._id}
+                              onClick={() => { setSearchOpen(false); setSearchQuery(''); navigate(`/profile/c/${encodeURIComponent(u.fullname)}`); }}
+                              className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                            >
+                              <img src={avatarUrl(u)} onError={onImgErr} alt={u.fullname} className="w-8 h-8 rounded-full object-cover" />
+                              <span className="text-sm text-white">{u.fullname}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div className="p-2">
+                          <p className="text-xs uppercase text-gray-400 px-2">Posts / Projects</p>
+                          {searchResults.posts.length === 0 && (
+                            <div className="px-2 py-2 text-sm text-gray-500">No posts/projects found</div>
+                          )}
+                          {searchResults.posts.map((p: any) => (
+                            <button
+                              key={p._id}
+                              onClick={() => { setSearchOpen(false); setSearchQuery(''); if (p.owner?.fullname) navigate(`/profile/c/${encodeURIComponent(p.owner.fullname)}`); }}
+                              className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                            >
+                              {Array.isArray(p.postFile) && p.postFile[0] ? (
+                                <img src={p.postFile[0]} alt="thumb" className="w-10 h-10 rounded object-cover" />
+                              ) : (
+                                <div className="w-10 h-10 bg-gray-700 rounded" />
+                              )}
+                              <div>
+                                <p className="text-sm text-white line-clamp-1">{p.description || 'Project post'}</p>
+                                {p.owner?.fullname && (
+                                  <p className="text-xs text-gray-400">by {p.owner.fullname}</p>
+                                )}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="relative mb-3 sm:mb-4">
-                <button
-                  className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mx-auto flex items-center justify-center text-white font-bold text-xl shadow-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
-                  style={{ cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
-                  onClick={() => {
-                    if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
-                  }}
-                  aria-label={`View profile of ${performer.name}`}
+            </div>
+
+            {/* Mobile Search and Menu Buttons */}
+            <div className="flex items-center space-x-2 md:hidden">
+              <button
+                className="p-2 text-gray-300 hover:text-white transition-colors"
+                aria-label="Open search"
+                onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
+              >
+                {mobileSearchOpen ? <X className="h-6 w-6" /> : <Search className="h-6 w-6" />}
+              </button>
+              
+              {/* Mobile Notifications Button */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="p-2 text-gray-300 hover:text-white transition-colors"
                 >
-                  {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
-                    <img
-                      src={performer.avatar}
-                      alt={performer.name}
-                      className="w-full h-full rounded-full object-cover border border-slate-700"
-                    />
-                  ) : (
-                    <span className="text-sm sm:text-base">{performer.avatar}</span>
+                  <Bell className="h-6 w-6" />
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {Math.min(notifications.length, 9)}
+                    </span>
                   )}
                 </button>
-                {performer.level && (
-                  <div className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(performer.level)}`}>
-                    {performer.level}
-                  </div>
-                )}
               </div>
+
+              {/* Mobile Menu Button */}
               <button
-                className="text-white font-bold text-base sm:text-lg mb-1 hover:underline focus:outline-none truncate max-w-full"
-                style={{ background: 'none', border: 'none', cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
-                onClick={() => {
-                    if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
-                }}
-                aria-label={`View profile of ${performer.name}`}
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-2 text-gray-300 hover:text-white transition-colors"
               >
-                {performer.name}
+                {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
-              {performer.username && (
-                <div className="text-xs text-purple-300 font-mono mb-1 truncate max-w-full">{performer.username}</div>
-              )}
-              <p className="text-slate-400 text-xs sm:text-sm mb-2 sm:mb-3 truncate max-w-full">{performer.department}</p>
-              <div className="space-y-1 sm:space-y-2 mb-3 sm:mb-4">
-                <div className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                  {performer.points.toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-400">points</div>
-              </div>
-              <div className="flex items-center justify-center space-x-3 sm:space-x-4 text-xs sm:text-sm mb-3 sm:mb-4">
-                <div className="flex items-center space-x-1">
-                  <Zap className="w-3 h-3 sm:w-4 sm:h-4 text-orange-400" />
-                  <span className="text-slate-300">{performer.streak}</span>
-                </div>
-                <div className="flex items-center space-x-1 text-green-400">
-                  <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span>{performer.trend}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-1 justify-center">
-                {performer.badges.slice(0, 2).map((badge: string, idx: number) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-1 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30"
-                  >
-                    {badge.length > 20 ? `${badge.substring(0, 20)}...` : badge}
-                  </span>
-                ))}
-              </div>
             </div>
-          ))}
-        </div>
 
-        {/* Full Rankings */}
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden mb-8">
-          <div className="p-4 sm:p-6 border-b border-slate-700/50">
-            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center space-x-2">
-              <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
-              <span>Full Rankings</span>
-            </h2>
-          </div>
-          <div className="divide-y divide-slate-700/50">
-            {topPerformers.map((performer) => (
-              <div 
-                key={performer.rank} 
-                className="p-4 sm:p-6 hover:bg-slate-700/30 transition-all duration-200"
-                onClick={() => setExpandedUser(expandedUser === performer.rank ? null : performer.rank)}
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-6">
+              <button 
+                onClick={() => navigate('/')}
+                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                    <div className="flex items-center justify-center w-8 sm:w-10">
-                      {getRankIcon(performer.rank)}
-                    </div>
-                    <div className="relative">
-                      <button
-                        className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center text-white font-medium focus:outline-none focus:ring-2 focus:ring-purple-400"
-                        style={{ cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
-                        }}
-                        aria-label={`View profile of ${performer.name}`}
-                      >
-                        {typeof performer.avatar === 'string' && (performer.avatar.startsWith('http') || performer.avatar.startsWith('/')) ? (
-                          <img
-                            src={performer.avatar}
-                            alt={performer.name}
-                            className="w-full h-full rounded-full object-cover border border-slate-700"
-                          />
-                        ) : (
-                          <span className="text-xs sm:text-sm">{performer.avatar}</span>
-                        )}
-                      </button>
-                      <div className={`absolute -bottom-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                        performer.rank <= 3 ? 'bg-yellow-400 text-black' : 'bg-slate-600 text-white'
-                      }`}>
-                        {performer.rank}
-                      </div>
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <button
-                        className="text-white font-semibold hover:underline focus:outline-none truncate max-w-full block text-left"
-                        style={{ background: 'none', border: 'none', cursor: performer.name !== 'Unknown' ? 'pointer' : 'default' }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (performer.name !== 'Unknown') navigate(`/profile/c/${encodeURIComponent(performer.name)}`);
-                        }}
-                        aria-label={`View profile of ${performer.name}`}
-                      >
-                        {performer.name}
-                      </button>
-                      <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
-                        {performer.level && (
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getLevelColor(performer.level)}`}>
-                            {performer.level}
-                          </span>
-                        )}
-                        {performer.username && (
-                          <div className="text-xs text-purple-300 font-mono truncate max-w-[100px] sm:max-w-none">
-                            {performer.username}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                <Home className="h-5 w-5" />
+                <span className="text-xs mt-1">Home</span>
+              </button>
+              <button 
+                onClick={() => navigate('/chat')}
+                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+              >
+                <Handshake className="h-5 w-5" />
+                <span className="text-xs mt-1">Chat</span>
+              </button>
+              <button 
+                onClick={() => navigate('/network')}
+                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+              >
+                <Users className="h-5 w-5" />
+                <span className="text-xs mt-1">Network</span>
+              </button>
+              <button 
+                onClick={() => navigate('/jobs')}
+                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+              >
+                <Briefcase className="h-5 w-5" />
+                <span className="text-xs mt-1">Jobs</span>
+              </button>
+              <button 
+                onClick={() => navigate('/messages')}
+                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+              >
+                <MessageCircle className="h-5 w-5" />
+                <span className="text-xs mt-1">Messages</span>
+              </button>
+              <button 
+                onClick={() => navigate('/leaderboard')}
+                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+              >
+                <Trophy className="h-5 w-5" />
+                <span className="text-xs mt-1">Leaderboard</span>
+              </button>
+              <button 
+                onClick={() => navigate('/team')}
+                className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+              >
+                <Group className="h-5 w-5" />
+                <span className="text-xs mt-1">Our Team</span>
+              </button>
 
-                  <div className="hidden sm:flex items-center gap-4 sm:gap-6 ml-4">
-                    <div className="text-center">
-                      <div className="text-purple-400 font-bold text-lg">{performer.points.toLocaleString()}</div>
-                      <div className="text-slate-400 text-xs">Points</div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center space-x-1 text-slate-300">
-                        <Code className="w-4 h-4" />
-                        <span>{performer.projects}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-slate-300">
-                        <Trophy className="w-4 h-4" />
-                        <span>{performer.competitions}</span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-orange-400">
-                        <Zap className="w-4 h-4" />
-                        <span>{performer.streak}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-1 text-green-400 text-sm">
-                      <TrendingUp className="w-4 h-4" />
-                      <span>{performer.trend}</span>
-                    </div>
-                  </div>
-                  
-                  {/* Mobile Points Display */}
-                  <div className="sm:hidden flex flex-col items-end ml-2">
-                    <div className="text-purple-400 font-bold text-lg">{performer.points.toLocaleString()}</div>
-                    <div className="text-slate-400 text-xs">Points</div>
-                  </div>
-                  
-                  <button 
-                    className="ml-2 sm:ml-4 text-slate-400"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setExpandedUser(expandedUser === performer.rank ? null : performer.rank);
-                    }}
-                  >
-                    {expandedUser === performer.rank ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                  </button>
-                </div>
+              {/* Desktop Notifications */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+                >
+                  <Bell className="h-5 w-5" />
+                  <span className="text-xs mt-1">Notifications</span>
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                      {Math.min(notifications.length, 99)}
+                    </span>
+                  )}
+                </button>
                 
-                {/* Expanded Content for Mobile */}
-                {expandedUser === performer.rank && (
-                  <div className="mt-4 sm:hidden border-t border-slate-700/50 pt-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-4 text-slate-300">
-                        <div className="flex items-center space-x-1">
-                          <Code className="w-4 h-4" />
-                          <span>Projects: {performer.projects}</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Trophy className="w-4 h-4" />
-                          <span>Competitions: {performer.competitions}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1 text-orange-400">
-                        <Zap className="w-4 h-4" />
-                        <span>Streak: {performer.streak}</span>
-                      </div>
+                {showNotifications && (
+                  <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
+                    <div className="p-4 border-b border-gray-700">
+                      <h3 className="font-semibold text-white">Notifications</h3>
                     </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {performer.badges.map((badge: string, index: number) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30"
-                        >
-                          {badge.length > 30 ? `${badge.substring(0, 30)}...` : badge}
-                        </span>
+                    <div className="max-h-96 overflow-y-auto">
+                      {notifications.length === 0 && (
+                        <div className="p-4 text-sm text-gray-400">No notifications</div>
+                      )}
+                      {notifications.map((n: any) => (
+                        <div key={n._id} className="p-4 border-b border-gray-700 hover:bg-gray-700">
+                          {n.type === 'follow-request' ? (
+                            <div className="flex items-center gap-3">
+                              <img
+                                src={avatarUrl(n.from)}
+                                alt={n.from?.fullname || 'User'}
+                                className="w-8 h-8 rounded-full object-cover"
+                                onError={onImgErr}
+                              />
+                              <div className="flex-1">
+                                <p className="text-sm text-white">
+                                  <span className="font-medium">{n.from?.fullname}</span> wants to connect.
+                                </p>
+                                <div className="mt-2 flex gap-2">
+                                  <button
+                                    onClick={() => handleAccept(n.from._id)}
+                                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => handleReject(n.from._id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                                  >
+                                    Reject
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <p className="text-sm text-white">Notification</p>
+                              {n.date && (
+                                <p className="text-xs text-gray-400 mt-1">{new Date(n.date).toLocaleString()}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       ))}
                     </div>
+                    <div className="p-4">
+                      <button 
+                        onClick={() => navigate('/notifications')}
+                        className="text-purple-400 text-sm hover:text-purple-300"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
                   </div>
                 )}
+              </div>
+
+              {/* Desktop Profile Menu */}
+              <div className="relative">
+                <button 
+                  onClick={() => setShowProfileMenu(!showProfileMenu)}
+                  className="flex items-center text-gray-400 hover:text-purple-400 transition-colors"
+                >
+                  {user ? (
+                    <img
+                      src={avatarUrl(user)}
+                      alt={user?.fullname || 'User'}
+                      className="w-8 h-8 rounded-full object-cover mr-2"
+                      onError={onImgErr}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm mr-2">
+                      ME
+                    </div>
+                  )}
+                  <span className="text-xs">{user?.fullname?.split(' ')[0] || 'Me'}</span>
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </button>
                 
-                {/* Desktop Badges */}
-                <div className="hidden sm:block mt-4 flex flex-wrap gap-2">
-                  {performer.badges.map((badge: string, index: number) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-purple-600/20 text-purple-300 text-xs rounded-full border border-purple-600/30"
-                    >
-                      {badge}
-                    </span>
-                  ))}
+                {showProfileMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-gray-800 rounded-lg shadow-lg border border-gray-700 z-50">
+                    <div className="p-4 border-b border-gray-700">
+                      <div className="flex items-center">
+                        {user ? (
+                          <img
+                            src={avatarUrl(user)}
+                            alt={user?.fullname || 'User'}
+                            className="w-12 h-12 rounded-full object-cover mr-3"
+                            onError={onImgErr}
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                            {initials('Me')}
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-semibold text-white">{user?.fullname || 'Me'}</p>
+                          {user?.year && (
+                            <p className="text-sm text-gray-400">Year: {user.year}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="py-2">
+                      <button 
+                        onClick={() => navigate('/profile')}
+                        className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center"
+                      >
+                        <User className="h-4 w-4 mr-3" />
+                        View Profile
+                      </button>
+                      <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center">
+                        <Settings className="h-4 w-4 mr-3" />
+                        Settings
+                      </button>
+                      {/* Conditionally show Admin link */}
+                      {user?.role === 'admin' && (
+                        <button 
+                          onClick={() => navigate('/admin')}
+                          className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center"
+                        >
+                          <Shield className="h-4 w-4 mr-3" />
+                          Admin Panel
+                        </button>
+                      )}
+                      <button className="w-full text-left px-4 py-2 text-gray-300 hover:bg-gray-700 flex items-center" onClick={handleLogout}>
+                        <LogOut className="h-4 w-4 mr-3" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Post Button */}
+              <button
+                onClick={() => navigate('/addpost')}
+                className="bg-purple-600 text-white p-2 rounded-lg hover:bg-purple-700 transition-colors"
+                aria-label="Add Project"
+                title="Add Project"
+              >
+                <Plus className="h-5 w-5" />
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Mobile Search Panel */}
+        {mobileSearchOpen && (
+          <div className="md:hidden bg-gray-800 border-t border-gray-700 px-4 py-3 animate-slideDown">
+            <div className="relative search-container">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setSearchOpen(true)}
+                placeholder="Search people, posts/projects..."
+                className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                autoFocus
+              />
+              {searchOpen && (searchQuery.trim().length >= 2 || searchLoading) && (
+                <div className="absolute mt-2 left-0 right-0 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+                  {searchLoading ? (
+                    <div className="p-4 text-gray-400 text-sm">Searching...</div>
+                  ) : (
+                    <div className="max-h-96 overflow-y-auto">
+                      <div className="p-2 border-b border-gray-700">
+                        <p className="text-xs uppercase text-gray-400 px-2">People</p>
+                        {searchResults.users.length === 0 && (
+                          <div className="px-2 py-2 text-sm text-gray-500">No people found</div>
+                        )}
+                        {searchResults.users.map((u) => (
+                          <button
+                            key={u._id}
+                            onClick={() => { 
+                              setSearchOpen(false); 
+                              setMobileSearchOpen(false); 
+                              setSearchQuery(''); 
+                              navigate(`/profile/c/${encodeURIComponent(u.fullname)}`); 
+                            }}
+                            className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                          >
+                            <img src={avatarUrl(u)} onError={onImgErr} alt={u.fullname} className="w-8 h-8 rounded-full object-cover" />
+                            <span className="text-sm text-white">{u.fullname}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="p-2">
+                        <p className="text-xs uppercase text-gray-400 px-2">Posts / Projects</p>
+                        {searchResults.posts.length === 0 && (
+                          <div className="px-2 py-2 text-sm text-gray-500">No posts/projects found</div>
+                        )}
+                        {searchResults.posts.map((p: any) => (
+                          <button
+                            key={p._id}
+                            onClick={() => { 
+                              setSearchOpen(false); 
+                              setMobileSearchOpen(false); 
+                              setSearchQuery(''); 
+                              if (p.owner?.fullname) navigate(`/profile/c/${encodeURIComponent(p.owner.fullname)}`); 
+                            }}
+                            className="w-full flex items-center gap-3 px-2 py-2 hover:bg-gray-700 text-left"
+                          >
+                            {Array.isArray(p.postFile) && p.postFile[0] ? (
+                              <img src={p.postFile[0]} alt="thumb" className="w-10 h-10 rounded object-cover" />
+                            ) : (
+                              <div className="w-10 h-10 bg-gray-700 rounded" />
+                            )}
+                            <div>
+                              <p className="text-sm text-white line-clamp-1">{p.description || 'Project post'}</p>
+                              {p.owner?.fullname && (
+                                <p className="text-xs text-gray-400">by {p.owner.fullname}</p>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Mobile Notifications Modal */}
+      {showNotifications && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 md:hidden">
+          <div className="fixed bottom-0 left-0 right-0 bg-gray-900 rounded-t-2xl max-h-[80vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+              <h3 className="font-semibold text-white">Notifications</h3>
+              <button 
+                onClick={() => setShowNotifications(false)}
+                className="p-2 text-gray-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="max-h-96 overflow-y-auto">
+              {notifications.length === 0 && (
+                <div className="p-4 text-sm text-gray-400 text-center">No notifications</div>
+              )}
+              {notifications.map((n: any) => (
+                <div key={n._id} className="p-4 border-b border-gray-700">
+                  {n.type === 'follow-request' ? (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={avatarUrl(n.from)}
+                        alt={n.from?.fullname || 'User'}
+                        className="w-10 h-10 rounded-full object-cover"
+                        onError={onImgErr}
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm text-white">
+                          <span className="font-medium">{n.from?.fullname}</span> wants to connect.
+                        </p>
+                        <div className="mt-3 flex gap-2">
+                          <button
+                            onClick={() => handleAccept(n.from._id)}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleReject(n.from._id)}
+                            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-white">Notification</p>
+                      {n.date && (
+                        <p className="text-xs text-gray-400 mt-1">{new Date(n.date).toLocaleString()}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="p-4 border-t border-gray-700">
+              <button 
+                onClick={() => {
+                  setShowNotifications(false);
+                  navigate('/notifications');
+                }}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg py-3 font-medium"
+              >
+                View all notifications
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Menu Modal */}
+      <div className={`
+  fixed inset-0 z-50 md:hidden transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]
+  ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible delay-500'}
+`}>
+        {/* Backdrop */}
+        <div 
+          className={`
+            absolute inset-0 bg-black/60 backdrop-blur-sm transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]
+            ${mobileMenuOpen ? 'opacity-100' : 'opacity-0'}
+          `}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+        
+        {/* Menu Panel */}
+        <div className={`
+          absolute top-0 right-0 h-full w-80 bg-gray-900/98 backdrop-blur-xl border-l border-gray-700/50
+          transform transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]
+          ${mobileMenuOpen ? 'translate-x-0 scale-100' : 'translate-x-full scale-95'}
+          shadow-2xl
+        `}>
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-700/50">
+              <h2 className="text-lg font-semibold text-white">Menu</h2>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700/50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Profile Section */}
+              <div className={`
+                flex items-center space-x-4 mb-8 transition-all duration-500 ease-out
+                ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+              `} style={{ transitionDelay: '100ms' }}>
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-r from-purple-500 to-blue-500 flex-shrink-0 ring-2 ring-purple-500/30">
+                  {user && (
+                    <img
+                      src={avatarUrl(user)}
+                      alt={user.fullname}
+                      className="w-full h-full object-cover"
+                      onError={onImgErr}
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white text-lg">{user?.fullname || 'User'}</h3>
+                  <p className="text-sm text-gray-400">{user?.year}th year</p>
                 </div>
               </div>
-            ))}
+              
+              {/* Featured Items - Mobile Only */}
+              <div className="space-y-2 mb-6">
+                <div className="text-xs uppercase text-purple-400 font-semibold tracking-wider mb-3 px-2">Featured</div>
+                
+                <button 
+                  onClick={() => navigateTo('/competitions')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-orange-600/20 hover:to-orange-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-orange-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '200ms' }}
+                >
+                  <div className="p-2 bg-orange-600/20 rounded-lg group-hover:bg-orange-600/30 transition-colors">
+                    <Award className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <span className="font-medium">Competitions</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/contests')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-pink-600/20 hover:to-pink-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-pink-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '250ms' }}
+                >
+                  <div className="p-2 bg-pink-600/20 rounded-lg group-hover:bg-pink-600/30 transition-colors">
+                    <Calendar className="h-5 w-5 text-pink-400" />
+                  </div>
+                  <span className="font-medium">Contests</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/roadmaps')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-indigo-600/20 hover:to-indigo-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-indigo-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '300ms' }}
+                >
+                  <div className="p-2 bg-indigo-600/20 rounded-lg group-hover:bg-indigo-600/30 transition-colors">
+                    <Map className="h-5 w-5 text-indigo-400" />
+                  </div>
+                  <span className="font-medium">Roadmaps</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/mentors')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-emerald-600/20 hover:to-emerald-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-emerald-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '350ms' }}
+                >
+                  <div className="p-2 bg-emerald-600/20 rounded-lg group-hover:bg-emerald-600/30 transition-colors">
+                    <UserCheck className="h-5 w-5 text-emerald-400" />
+                  </div>
+                  <span className="font-medium">Mentors</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/projects')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                    hover:bg-gradient-to-r hover:from-blue-600/20 hover:to-blue-500/20 
+                    rounded-xl transition-all duration-300 group border border-transparent hover:border-blue-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '400ms' }}
+                >
+                  <div className="p-2 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
+                    <Folder className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <span className="font-medium">Projects</span>
+                </button>
+                
+                {/* Conditionally show Admin link for mobile */}
+                {user?.role === 'admin' && (
+                  <button 
+                    onClick={() => navigateTo('/admin')}
+                    className={`
+                      w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+                      hover:bg-gradient-to-r hover:from-red-600/20 hover:to-red-500/20 
+                      rounded-xl transition-all duration-300 group border border-transparent hover:border-red-500/30
+                      ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                    `}
+                    style={{ transitionDelay: '450ms' }}
+                  >
+                    <div className="p-2 bg-red-600/20 rounded-lg group-hover:bg-red-600/30 transition-colors">
+                      <Shield className="h-5 w-5 text-red-400" />
+                    </div>
+                    <span className="font-medium">Admin Panel</span>
+                  </button>
+                )}
+              </div>
+              
+              {/* Navigation Items */}
+              <div className="space-y-2">
+                <div className="text-xs uppercase text-gray-500 font-semibold tracking-wider mb-3 px-2">Navigation</div>
+                
+                <button 
+                  onClick={() => navigateTo('/')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '500ms' }}
+                >
+                  <Home className="h-5 w-5" />
+                  <span className="font-medium">Home</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/chat')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '550ms' }}
+                >
+                  <Handshake className="h-5 w-5" />
+                  <span className="font-medium">Chat</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/network')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '600ms' }}
+                >
+                  <Users className="h-5 w-5" />
+                  <span className="font-medium">Network</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/jobs')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '650ms' }}
+                >
+                  <Briefcase className="h-5 w-5" />
+                  <span className="font-medium">Jobs</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/messages')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '700ms' }}
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="font-medium">Messages</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/leaderboard')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '750ms' }}
+                >
+                  <Trophy className="h-5 w-5" />
+                  <span className="font-medium">Leaderboard</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/team')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '800ms' }}
+                >
+                  <Group className="h-5 w-5" />
+                  <span className="font-medium">Our Team</span>
+                </button>
+                
+                <div className="border-t border-gray-700/50 my-4" />
+                
+                <button 
+                  onClick={() => navigateTo('/profile')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+                    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '850ms' }}
+                >
+                  <User className="h-5 w-5" />
+                  <span className="font-medium">Profile</span>
+                </button>
+                
+                <button 
+                  onClick={() => navigateTo('/addpost')}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-purple-300 hover:text-purple-200 
+                    hover:bg-purple-700/20 rounded-lg transition-all duration-300 border border-transparent hover:border-purple-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '900ms' }}
+                >
+                  <Plus className="h-5 w-5" />
+                  <span className="font-medium">Add Project</span>
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`
+                    w-full flex items-center space-x-4 px-4 py-3 text-red-300 hover:text-red-200 
+                    hover:bg-red-700/20 rounded-lg transition-all duration-300 border border-transparent hover:border-red-500/30
+                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+                  `}
+                  style={{ transitionDelay: '950ms' }}
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span className="font-medium">Sign Out</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-8">
-          <div className="bg-slate-800/50 rounded-2xl p-4 sm:p-6 border border-slate-700/50">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-sm sm:text-base">Active Students</h3>
-                <p className="text-slate-400 text-xs sm:text-sm">This month</p>
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold text-white mb-2">1,247</div>
-            <div className="flex items-center space-x-1 text-green-400 text-xs sm:text-sm">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>+12% from last month</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-800/50 rounded-2xl p-4 sm:p-6 border border-slate-700/50">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                <Code className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-sm sm:text-base">Projects Shared</h3>
-                <p className="text-slate-400 text-xs sm:text-sm">This month</p>
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold text-white mb-2">89</div>
-            <div className="flex items-center space-x-1 text-green-400 text-xs sm:text-sm">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>+8% from last month</span>
-            </div>
-          </div>
-
-          <div className="bg-slate-800/50 rounded-2xl p-4 sm:p-6 border border-slate-700/50">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
-                <Target className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
-              </div>
-              <div>
-                <h3 className="text-white font-semibold text-sm sm:text-base">Competitions</h3>
-                <p className="text-slate-400 text-xs sm:text-sm">This month</p>
-              </div>
-            </div>
-            <div className="text-2xl sm:text-3xl font-bold text-white mb-2">23</div>
-            <div className="flex items-center space-x-1 text-green-400 text-xs sm:text-sm">
-              <TrendingUp className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span>+15% from last month</span>
-            </div>
-          </div>
-        </div>
-        
-        {/* Footer */}
-        <footer className="bg-gray-900 border-t border-gray-800 mt-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-gray-400 text-sm sm:text-base">
-            © 2025 InnovateHubCEC
-          </div>
-        </footer>
       </div>
-    </div> 
+
+      <style>{`
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .pb-safe-bottom {
+          padding-bottom: env(safe-area-inset-bottom, 0);
+          height: env(safe-area-inset-bottom, 0);
+        }
+        
+        /* Enhanced smooth transitions */
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%) scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0) scale(1);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes fadeInUp {
+          from {
+            transform: translateY(20px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        
+        .animate-slideIn {
+          animation: slideIn 0.7s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        
+        .animate-fadeInUp {
+          animation: fadeInUp 0.3s ease-out;
+        }
+        
+        /* Staggered animations for menu items */
+        .menu-item-enter {
+          animation: fadeInUp 0.4s ease-out forwards;
+        }
+        
+        /* Smooth backdrop blur effect */
+        .backdrop-blur-smooth {
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+      `}</style>
+    </>
   );
 };
 
-export default Leaderboard;
+export default Header;
