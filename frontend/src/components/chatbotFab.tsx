@@ -37,11 +37,16 @@ const ChatBotFab: React.FC = () => {
     setIsTyping(true);
 
     try {
-      const response = await fetch('https://innovatehubcec-chatbot-ffqz.onrender.com/chat', {
+      const apiBase = import.meta.env.VITE_API_URL as string;
+      const response = await fetch(`${apiBase}/api/v1/chatbot/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
       const data = await response.json();
       const botReply = data.reply || "Sorry, I didn't understand that.";
