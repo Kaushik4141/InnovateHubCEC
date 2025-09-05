@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "../cookiescheker";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import LinkedinPostFeed from "./LinkedinPostFeed"; 
 import { useNavigate } from "react-router-dom";
 import Loader from './loading'
 import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
+import { toggleLike as apiToggleLike, getComments as apiGetComments, addComment as apiAddComment, incrementView as apiIncrementView, type CommentItem } from "../services/postApi";
+import {ThumbsUp,MessageCircle,Eye } from 'lucide-react';
 
 const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
   const [showAll, setShowAll] = useState(false);
@@ -154,15 +156,20 @@ const ProjectImageGrid: React.FC<{ files: string[] }> = ({ files }) => {
 
 interface Post {
   _id: string;
-  title: string;
+  title?: string;
   description: string;
   link?: string;
   tags?: string[];
   postFile?: string | string[];
   owner?: {
+    _id?: string;
     fullname: string;
     avatar?: string;
   };
+  likesCount?: number;
+  commentsCount?: number;
+  isLiked?: boolean;
+  views?: number;
   createdAt: string;
   liveLink?: string;
   githubLink?: string;
@@ -178,6 +185,14 @@ const Feed: React.FC = () => {
   const [tab, setTab] = useState<'project' | 'post'>('project');
   const apiBase = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
+  const viewedSetRef = useRef<Set<string>>(new Set());
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Local state overrides for per-post counts and flags
+  const [localPostState, setLocalPostState] = useState<Record<string, { likesCount: number; commentsCount: number; isLiked: boolean; views: number }>>({});
+  const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [commentsMap, setCommentsMap] = useState<Record<string, { items: CommentItem[]; total: number; page: number; hasMore: boolean }>>({});
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
  
 
   const query = useInfiniteQuery({
@@ -237,10 +252,157 @@ const Feed: React.FC = () => {
     return avatar as string;
   };
 
-  if (tab === 'project' && loading)
+
+  // Handlers
+  const handleLike = async (post: Post) => {
+    try {
+      const id = post._id;
+      const current = localPostState[id] ?? {
+        likesCount: post.likesCount ?? 0,
+        commentsCount: post.commentsCount ?? 0,
+        isLiked: !!post.isLiked,
+        views: post.views ?? 0,
+      };
+      // optimistic toggle
+      setLocalPostState((s) => ({
+        ...s,
+        [id]: {
+          ...current,
+          likesCount: current.likesCount + (current.isLiked ? -1 : 1),
+          isLiked: !current.isLiked,
+        },
+      }));
+      const resp = await apiToggleLike(id);
+      setLocalPostState((s) => ({
+        ...s,
+        [id]: {
+          likesCount: resp.likesCount,
+          commentsCount: resp.commentsCount,
+          isLiked: resp.isLiked,
+          views: resp.views,
+        },
+      }));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const ensureCommentsLoaded = async (postId: string) => {
+    const existing = commentsMap[postId];
+    if (existing && existing.items.length > 0) return;
+    const data = await apiGetComments(postId, 1, 10);
+    setCommentsMap((m) => ({
+      ...m,
+      [postId]: { items: data.items, total: data.total, page: 1, hasMore: data.items.length < data.total },
+    }));
+  };
+
+  const handleToggleComments = async (postId: string) => {
+    setOpenComments((o) => ({ ...o, [postId]: !o[postId] }));
+    if (!openComments[postId]) await ensureCommentsLoaded(postId);
+  };
+
+  const handleLoadMoreComments = async (postId: string) => {
+    const entry = commentsMap[postId];
+    const nextPage = (entry?.page ?? 1) + 1;
+    const data = await apiGetComments(postId, nextPage, 10);
+    setCommentsMap((m) => ({
+      ...m,
+      [postId]: {
+        items: [...(m[postId]?.items ?? []), ...data.items],
+        total: data.total,
+        page: nextPage,
+        hasMore: (m[postId]?.items?.length ?? 0) + data.items.length < data.total,
+      },
+    }));
+  };
+
+  const handleAddComment = async (post: Post) => {
+    const text = (commentInputs[post._id] ?? '').trim();
+    if (!text) return;
+    try {
+      const newItem = await apiAddComment(post._id, text);
+      setCommentsMap((m) => ({
+        ...m,
+        [post._id]: {
+          items: [newItem, ...(m[post._id]?.items ?? [])],
+          total: (m[post._id]?.total ?? 0) + 1,
+          page: m[post._id]?.page ?? 1,
+          hasMore: ((m[post._id]?.items?.length ?? 0) + 1) < ((m[post._id]?.total ?? 0) + 1),
+        },
+      }));
+      setCommentInputs((i) => ({ ...i, [post._id]: '' }));
+      setLocalPostState((s) => {
+        const current = s[post._id] ?? {
+          likesCount: post.likesCount ?? 0,
+          commentsCount: post.commentsCount ?? 0,
+          isLiked: !!post.isLiked,
+          views: post.views ?? 0,
+        };
+        return {
+          ...s,
+          [post._id]: { ...current, commentsCount: current.commentsCount + 1 },
+        };
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Increment view when post enters viewport (once)
+  useEffect(() => {
+    if (tab !== 'project') return;
+    if (observerRef.current) observerRef.current.disconnect();
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(async (entry) => {
+        if (entry.isIntersecting) {
+          const target = entry.target as HTMLElement;
+          const postId = target.getAttribute('data-post-id');
+          if (!postId) return;
+          if (viewedSetRef.current.has(postId)) return;
+          viewedSetRef.current.add(postId);
+          try {
+            const data = await apiIncrementView(postId);
+            setLocalPostState((s) => {
+              const prev = s[postId];
+              if (prev) return { ...s, [postId]: { ...prev, views: data.views } };
+              // fallback from original post
+              const post = posts.find(p => p._id === postId);
+              return {
+                ...s,
+                [postId]: {
+                  likesCount: post?.likesCount ?? 0,
+                  commentsCount: post?.commentsCount ?? 0,
+                  isLiked: !!post?.isLiked,
+                  views: data.views,
+                },
+              };
+            });
+          } catch (e) {
+            console.warn('Failed to increment view', e);
+          }
+        }
+      });
+    }, { threshold: 0.4 });
+
+    // Observe each post card
+    posts.forEach((p) => {
+      const el = document.getElementById(`post-card-${p._id}`);
+      if (el) observerRef.current?.observe(el);
+    });
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [tab, posts.map(p => p._id).join('|')]);
+
+  // Early returns must come after all hooks to preserve hook call order
+  if (tab === 'project' && loading) {
     return <Loader />;
-  if (tab === 'project' && error)
+  }
+  if (tab === 'project' && error) {
     return <div className="text-center text-red-500 py-8">{error?.message || 'Failed to load posts'}</div>;
+  }
 
   return (
     <div>
@@ -273,6 +435,8 @@ const Feed: React.FC = () => {
               <div
                 key={post._id}
                 className="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-md"
+                id={`post-card-${post._id}`}
+                data-post-id={post._id}
               >
                 <div className="flex items-center mb-3">
                   <img
@@ -326,6 +490,7 @@ const Feed: React.FC = () => {
                     )}
                   </div>
                 )}
+               
                 {post.link && (
                   <a
                     href={post.link}
@@ -341,6 +506,43 @@ const Feed: React.FC = () => {
                     files={Array.isArray(post.postFile) ? post.postFile : [post.postFile]} 
                   />
                 )}
+                {
+                  (() => {
+                    const s = localPostState[post._id] ?? {
+                      likesCount: post.likesCount ?? 0,
+                      commentsCount: post.commentsCount ?? 0,
+                      isLiked: !!post.isLiked,
+                      views: post.views ?? 0,
+                    };
+                    return (
+                      <div className="flex items-center text-gray-400 text-sm gap-6 mb-3 mt-2">
+                        <button
+                          className={`inline-flex items-center gap-1 hover:text-blue-300 transition-colors ${s.isLiked ? 'text-blue-400' : ''}`}
+                          onClick={() => handleLike(post)}
+                          aria-label={s.isLiked ? 'Unlike' : 'Like'}
+                        >
+                          <ThumbsUp/>
+                          <span>{s.likesCount}</span>
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1 hover:text-purple-300 transition-colors"
+                          onClick={() => handleToggleComments(post._id)}
+                          aria-label="Comments"
+                        >
+                          <MessageCircle/>
+                          <span>{s.commentsCount}</span>
+                        </button>
+                        <div className="inline-flex items-center gap-1">
+                          <Eye/>
+                          <span>{s.views}</span>
+                        </div>
+                      </div>
+                    );
+                  })()
+                }
+                
+
+
                 {post.tags && post.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-4">
                     {post.tags.map((tag: string) => (
@@ -351,6 +553,54 @@ const Feed: React.FC = () => {
                         {tag}
                       </span>
                     ))}
+                  </div>
+                )}
+
+                {openComments[post._id] && (
+                  <div className="mt-4 border-t border-gray-700 pt-3">
+                    <div className="flex gap-2 mb-3">
+                      <input
+                        value={commentInputs[post._id] ?? ''}
+                        onChange={(e) => setCommentInputs((i) => ({ ...i, [post._id]: e.target.value }))}
+                        placeholder="Add a comment..."
+                        className="flex-1 bg-gray-900 text-gray-100 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                      <button
+                        onClick={() => handleAddComment(post)}
+                        className="px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md"
+                      >
+                        Post
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      {(commentsMap[post._id]?.items ?? []).map((c) => (
+                        <div key={c.commentId} className="flex items-start gap-3">
+                          <img
+                            src={avatarUrlFrom(c.user?.fullname || 'user', c.user?.avatar)}
+                            alt={c.user?.fullname || 'User'}
+                            className="w-8 h-8 rounded-full"
+                          />
+                          <div className="flex-1">
+                            <div className="text-sm text-gray-300">
+                              <span className="font-semibold">{c.user?.fullname || 'User'}</span>
+                              <span className="ml-2 text-xs text-gray-500">{new Date(c.createdAt).toLocaleString()}</span>
+                            </div>
+                            <div className="text-gray-200 text-sm">{c.comment}</div>
+                          </div>
+                        </div>
+                      ))}
+                      {(commentsMap[post._id]?.hasMore) && (
+                        <button
+                          onClick={() => handleLoadMoreComments(post._id)}
+                          className="text-sm text-blue-400 hover:text-blue-300"
+                        >
+                          Load more comments
+                        </button>
+                      )}
+                      {((commentsMap[post._id]?.items ?? []).length === 0) && (
+                        <div className="text-sm text-gray-500">No comments yet. Be the first to comment!</div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

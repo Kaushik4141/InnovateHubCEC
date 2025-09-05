@@ -802,7 +802,7 @@ const getConnectionSuggestions = asyncHandler(async (req, res) => {
         ...mutualConnections.followers.map(f => f._id.toString()),
         ...mutualConnections.following.map(f => f._id.toString())
       ]).size;
-
+      
       return {
         ...suggestion.toObject(),
         mutualConnections: mutualCount,

@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/apiresponsehandler.js";
 import { deleteFile, uploadOnCloudinary } from "../utils/cloudinary.js";
 import { asyncHandler } from "../utils/asynchandler.js";
 import { User } from "../models/user.model.js";
+import mongoose from "mongoose";
 
 const postUpload = asyncHandler(async (req, res) => {
   try {
@@ -43,13 +44,12 @@ const getAllPost = asyncHandler(async (req, res) => {
       match.description = { $regex: query, $options: "i" };
     }
     if (userId) {
-      match.owner = userId;
+      match.owner = new mongoose.Types.ObjectId(userId);
     }
     const pipeline = [];
     if (Object.keys(match).length) {
       pipeline.push({ $match: match });
     }
-    // Use $sample to randomize posts
     pipeline.push({ $sample: { size: parseInt(limit) } });
     pipeline.push(
       {
@@ -60,8 +60,46 @@ const getAllPost = asyncHandler(async (req, res) => {
           as: "owner"
         }
       },
-      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } }
+      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+      {
+        $addFields: {
+          likesCount: { $size: { $ifNull: ["$likes", []] } },
+          commentsCount: { $size: { $ifNull: ["$comments", []] } }
+        }
+      }
     );
+
+    if (req.user?._id) {
+      pipeline.push({
+        $addFields: {
+          isLiked: { $in: [ req.user._id, { $ifNull: ["$likes", []] } ] }
+        }
+      });
+    } else {
+      pipeline.push({ $addFields: { isLiked: false } });
+    }
+
+    pipeline.push({
+      $project: {
+        description: 1,
+        postFile: 1,
+        liveLink: 1,
+        githubLink: 1,
+        tags: 1,
+        views: 1,
+        createdAt: 1,
+        ispublished: 1,
+        likesCount: 1,
+        commentsCount: 1,
+        isLiked: 1,
+        owner: {
+          _id: "$owner._id",
+          fullname: "$owner.fullname",
+          avatar: "$owner.avatar"
+        }
+      }
+    });
+
     const result = await Post.aggregate(pipeline);
     const total = await Post.countDocuments(match);
     return res.status(200).json(new ApiResponse(200, { result, total }, "Success"));
@@ -190,11 +228,139 @@ const getCombinedPosts = asyncHandler(async (req, res) => {
   }
 });
 
+
+const toggleLike = asyncHandler(async (req, res) => {
+  try{
+  const { postId } = req.params;
+  const userId = req.user?._id;
+  if (!userId) throw new ApiError(401, "Unauthorized");
+
+  const post = await Post.findById(postId).select("likes comments views");
+  if (!post) throw new ApiError(404, "Post not found");
+
+  const hasLiked = (post.likes || []).some((id) => id.toString() === userId.toString());
+  const update = hasLiked ? { $pull: { likes: userId } } : { $addToSet: { likes: userId } };
+  const updated = await Post.findByIdAndUpdate(postId, update, { new: true })
+    .select("likes comments views")
+    .lean();
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      likesCount: (updated?.likes || []).length,
+      commentsCount: (updated?.comments || []).length,
+      views: updated?.views || 0,
+      isLiked: !hasLiked
+    }, hasLiked ? "Unliked" : "Liked")
+  );
+}
+catch (e){
+  throw new ApiError(500, "server error", e.message)
+}
+});
+
+const addComment = asyncHandler(async (req, res) => {
+  try{
+  const { postId } = req.params;
+  const userId = req.user?._id;
+  const { comment } = req.body || {};
+  if (!userId) throw new ApiError(401, "Unauthorized");
+  if (!comment || !String(comment).trim()) throw new ApiError(400, "Comment is required");
+
+  const newComment = {
+    user: userId,
+    comment: String(comment).trim(),
+    createdAt: new Date(),
+    commentlikes: []
+  };
+
+  const pushRes = await Post.findByIdAndUpdate(
+    postId,
+    { $push: { comments: newComment } },
+    { new: true }
+  ).select("comments");
+  if (!pushRes) throw new ApiError(404, "Post not found");
+
+  const agg = await Post.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(postId) } },
+    { $project: { comments: { $slice: ["$comments", -1] } } },
+    { $unwind: "$comments" },
+    { $lookup: { from: "users", localField: "comments.user", foreignField: "_id", as: "userDoc" } },
+    { $unwind: { path: "$userDoc", preserveNullAndEmptyArrays: true } },
+    { $project: {
+      _id: 0,
+      commentId: "$comments._id",
+      comment: "$comments.comment",
+      createdAt: "$comments.createdAt",
+      commentlikes: "$comments.commentlikes",
+      user: { _id: "$userDoc._id", fullname: "$userDoc.fullname", avatar: "$userDoc.avatar" }
+    } }
+  ]);
+
+  return res.status(201).json(new ApiResponse(201, agg[0] || {}, "Comment added"));
+}
+catch(e){
+  throw new ApiError(500, "Server Error", e.message)
+}
+});
+
+const getComments = asyncHandler(async (req, res) => {
+  try{
+  const { postId } = req.params;
+  const { page = 1, limit = 10 } = req.query;
+  const p = parseInt(page, 10) || 1;
+  const l = Math.min(parseInt(limit, 10) || 10, 50);
+
+  const pipeline = [
+    { $match: { _id: new mongoose.Types.ObjectId(postId) } },
+    { $unwind: "$comments" },
+    { $sort: { "comments.createdAt": -1 } },
+    { $skip: (p - 1) * l },
+    { $limit: l },
+    { $lookup: { from: "users", localField: "comments.user", foreignField: "_id", as: "userDoc" } },
+    { $unwind: { path: "$userDoc", preserveNullAndEmptyArrays: true } },
+    { $project: {
+      _id: 0,
+      commentId: "$comments._id",
+      comment: "$comments.comment",
+      createdAt: "$comments.createdAt",
+      commentlikes: "$comments.commentlikes",
+      user: { _id: "$userDoc._id", fullname: "$userDoc.fullname", avatar: "$userDoc.avatar" }
+    } }
+  ];
+
+  const [items, totalArr] = await Promise.all([
+    Post.aggregate(pipeline),
+    Post.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(postId) } },
+      { $project: { count: { $size: { $ifNull: ["$comments", []] } } } }
+    ])
+  ]);
+  const total = totalArr?.[0]?.count || 0;
+
+  return res.status(200).json(new ApiResponse(200, { items, total, page: p, limit: l }, "Comments fetched"));
+}
+catch (e){
+  throw new ApiError(500,"Server Error", e.message)
+}
+});
+
+const incrementViews = asyncHandler(async (req, res) => {
+  try{
+  const { postId } = req.params;
+  await Post.updateOne({ _id: postId }, { $inc: { views: 1 } });
+  const doc = await Post.findById(postId).select("views").lean();
+  return res.status(200).json(new ApiResponse(200, { views: doc?.views || 0 }, "View incremented"));
+  }
+  catch(e){
+    throw new ApiError(500,"Server Error",e.message);
+  }
+});
+
 const getSuggestedPosts = asyncHandler(async (req, res) => {
   try {
-    const userId = req.user._id;
-    const user = await User.findById(userId);
-    if (!user) throw new ApiError(404, "User not found");
+    const userId = req.user._id
+    const user = await User.findById(userId)
+    if (!user) throw new ApiError(404, "User not found")
     const userSkills = user.skills || [];
 
     const match = {
@@ -225,5 +391,9 @@ export {
   getAllPost,
   getCombinedPosts,
   getPostByUserId,
-  getSuggestedPosts
+  getSuggestedPosts,
+  toggleLike,
+  addComment,
+  getComments,
+  incrementViews
 };
