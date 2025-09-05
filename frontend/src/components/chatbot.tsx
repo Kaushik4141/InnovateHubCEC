@@ -32,12 +32,16 @@ const ChatBot: React.FC = () => {
     setIsTyping(true);
 
     try {
-      // Call your Flask backend
-      const response = await fetch('https://innovatehubcec-chatbot-ffqz.onrender.com/chat', {
+      const apiBase = import.meta.env.VITE_API_URL as string;
+      const response = await fetch(`${apiBase}/api/v1/chatbot/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: input }),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
       const data = await response.json();
 
