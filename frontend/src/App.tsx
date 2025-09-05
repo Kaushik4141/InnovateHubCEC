@@ -101,6 +101,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/team" element={<Team />} />
+          <Route path="/Team" element={<Navigate to="/team" replace />} />
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/mentors/apply" element={<MentorApply />} />
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
@@ -116,6 +117,7 @@ function AppRoutes() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<SignupForm />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/Leaderboard" element={<Navigate to="/leaderboard" replace />} />
         <Route path="/addpost" element={<RequireOnboardingComplete><AddPost /></RequireOnboardingComplete>} />
         <Route path="/profile/c/:fullname" element={<RequireAuth><UserProfileView /></RequireAuth>} />
         <Route path="/onboarding" element={<OnboardingOnly />} />

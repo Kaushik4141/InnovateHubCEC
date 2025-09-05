@@ -326,14 +326,14 @@ const Header = () => {
                 <span className="text-xs mt-1">Messages</span>
               </button>
               <button 
-                onClick={() => navigate('/Leaderboard')}
+                onClick={() => navigate('/leaderboard')}
                 className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
               >
                 <Trophy className="h-5 w-5" />
                 <span className="text-xs mt-1">Leaderboard</span>
               </button>
               <button 
-                onClick={() => navigate('/Team')}
+                onClick={() => navigate('/team')}
                 className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
               >
                 <Group className="h-5 w-5" />

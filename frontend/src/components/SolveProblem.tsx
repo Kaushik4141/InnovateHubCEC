@@ -1,13 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Editor } from '@monaco-editor/react';
 import { 
   Play, 
   RotateCcw, 
   ChevronLeft, 
-  CheckCircle2, 
   Clock, 
-  Users,
   Tag,
   Heart,
   Share2,
@@ -21,28 +19,74 @@ import {
   X
 } from "lucide-react";
 
+// Types
+type LeftTab = 'description' | 'submissions' | 'solutions';
+type RightTab = 'test' | 'result';
+
+interface Sample {
+  input: string;
+  output: string;
+  explanation?: string;
+}
+
+interface Problem {
+  title: string;
+  difficulty?: string;
+  tags?: string[];
+  statement: string;
+  inputFormat?: string;
+  outputFormat?: string;
+  constraints?: string;
+  samples?: Sample[];
+  allowedLangs?: number[];
+}
+
+interface Contest {
+  title: string;
+  startAt: string; // ISO string
+  endAt: string;   // ISO string
+}
+
+type SubmissionSuccess = {
+  verdict: string; // e.g., 'AC', 'WA'
+  passed: number;
+  total: number;
+  execTimeMs?: number;
+};
+
+type SubmissionError = { error: string };
+type SubmissionResultOrError = SubmissionSuccess | SubmissionError;
+
+type CustomTestCaseResult = {
+  passed?: boolean;
+  input?: string;
+  expected?: string;
+  actual?: string;
+  error?: string;
+};
+
 const SolveProblem = () => {
   const { contestId, problemId } = useParams();
   const navigate = useNavigate();
-  const [problem, setProblem] = useState(null);
-  const [contest, setContest] = useState(null);
-  const [sourceCode, setSourceCode] = useState('// Write your solution here\n');
-  const [loading, setLoading] = useState(true);
-  const [languageId, setLanguageId] = useState(63); // Default to JavaScript
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(null);
-  const [status, setStatus] = useState(null);
-  const [leftActiveTab, setLeftActiveTab] = useState('description');
-  const [testCaseInput, setTestCaseInput] = useState('');
-  const [testCaseOutput, setTestCaseOutput] = useState('');
-  const [customTestCaseResult, setCustomTestCaseResult] = useState(null);
-  const [runningCustomTest, setRunningCustomTest] = useState(false);
-  const [rightPanelTab, setRightPanelTab] = useState('test');
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [showProblemPanel, setShowProblemPanel] = useState(true);
-  const [showTestPanel, setShowTestPanel] = useState(true);
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [problem, setProblem] = useState<Problem | null>(null);
+  const [contest, setContest] = useState<Contest | null>(null);
+  const [sourceCode, setSourceCode] = useState<string>('// Write your solution here\n');
+  const [loading, setLoading] = useState<boolean>(true);
+  const [languageId, setLanguageId] = useState<number>(63); // Default to JavaScript
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [result, setResult] = useState<SubmissionResultOrError | null>(null);
+  const [timeLeft, setTimeLeft] = useState<string | null>(null);
+  const [status, setStatus] = useState<'Upcoming' | 'Running' | 'Ended' | null>(null);
+  const [leftActiveTab, setLeftActiveTab] = useState<LeftTab>('description');
+  const [testCaseInput, setTestCaseInput] = useState<string>('');
+  const [testCaseOutput, setTestCaseOutput] = useState<string>('');
+  const [customTestCaseResult, setCustomTestCaseResult] = useState<CustomTestCaseResult | null>(null);
+  const [runningCustomTest, setRunningCustomTest] = useState<boolean>(false);
+  const [rightPanelTab, setRightPanelTab] = useState<RightTab>('test');
+  const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+  const [showProblemPanel, setShowProblemPanel] = useState<boolean>(true);
+  const [showTestPanel, setShowTestPanel] = useState<boolean>(true);
+  const [windowWidth, setWindowWidth] = useState<number>(window.innerWidth);
 
   // Track window size for responsiveness
   useEffect(() => {
@@ -63,24 +107,32 @@ const SolveProblem = () => {
   }, [windowWidth]);
 
   // Monaco editor language mapping
-  const getMonacoLanguage = (langId) => {
-    const langMap = {
-      50: 'c',           // C
-      54: 'cpp',         // C++
-      62: 'java',        // Java
-      63: 'javascript',  // JavaScript
-      71: 'python',      // Python
-      78: 'kotlin',      // Kotlin
-      68: 'php',         // PHP
-      74: 'typescript',  // TypeScript
-      51: 'csharp',      // C#
-      60: 'go',          // Go
-      64: 'swift',       // Swift
-      72: 'ruby',        // Ruby
-      73: 'rust',        // Rust
+  const getMonacoLanguage = (langId: number): string => {
+    const langMap: Record<number, string> = {
+      50: 'c',          
+      54: 'cpp',         
+      62: 'java',        
+      63: 'javascript',  
+      71: 'python',      
+      // 78: 'kotlin',      
+      // 68: 'php',         
+      74: 'typescript',  
+      // 51: 'csharp',      
+      // 60: 'go',          
+      // 64: 'swift',       
+      // 72: 'ruby',        
+      // 73: 'rust',        
     };
+
     return langMap[langId] || 'javascript';
   };
+
+  // Strongly typed tabs for the left panel
+  const leftTabs: { id: LeftTab; label: string }[] = [
+    { id: 'description', label: 'Description' },
+    { id: 'submissions', label: 'Submissions' },
+    { id: 'solutions', label: 'Solutions' }
+  ];
 
   // Mock data for demonstration
   useEffect(() => {
@@ -194,7 +246,7 @@ const SolveProblem = () => {
         input: testCaseInput,
         expected: testCaseOutput,
         actual: simulatedOutput,
-        error: isCorrect ? null : "Output doesn't match expected result"
+        error: isCorrect ? undefined : "Output doesn't match expected result"
       });
     } catch (e) {
       setCustomTestCaseResult({ error: 'Test execution failed' });
@@ -203,13 +255,17 @@ const SolveProblem = () => {
     }
   };
 
-  const getDifficultyColor = (difficulty) => {
+  const getDifficultyColor = (difficulty?: string) => {
     switch (difficulty?.toLowerCase()) {
       case 'easy': return 'text-green-300 bg-green-900/30';
       case 'medium': return 'text-yellow-300 bg-yellow-900/30';
       case 'hard': return 'text-red-300 bg-red-900/30';
       default: return 'text-gray-300 bg-gray-900/30';
     }
+  };
+
+  const formatDifficulty = (difficulty?: string) => {
+    return difficulty ? difficulty.charAt(0).toUpperCase() + difficulty.slice(1) : 'Unknown';
   };
 
   const toggleFullScreen = () => {
@@ -345,11 +401,7 @@ const SolveProblem = () => {
               <div className="w-full lg:w-1/2 xl:w-2/5 bg-gray-800/40 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-purple-900/10 flex flex-col">
                 {/* Tabs */}
                 <div className="flex border-b border-gray-700">
-                  {[
-                    { id: 'description', label: 'Description' },
-                    { id: 'submissions', label: 'Submissions' },
-                    { id: 'solutions', label: 'Solutions' }
-                  ].map((tab) => (
+                  {leftTabs.map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setLeftActiveTab(tab.id)}
@@ -371,7 +423,7 @@ const SolveProblem = () => {
                       {/* Problem metadata */}
                       <div className="flex items-center gap-2 md:gap-3 mb-4 md:mb-6 flex-wrap">
                         <span className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium ${getDifficultyColor(problem.difficulty)}`}>
-                          {problem.difficulty?.charAt(0).toUpperCase() + problem.difficulty?.slice(1) || 'Unknown'}
+                          {formatDifficulty(problem.difficulty)}
                         </span>
                         {problem.tags && problem.tags.map((tag, index) => (
                           <span key={index} className="inline-flex items-center gap-1 px-2 py-1 bg-blue-900/30 text-blue-300 text-xs rounded transition-all duration-300 hover:scale-105">
@@ -566,8 +618,8 @@ const SolveProblem = () => {
                     <button
                       onClick={() => {
                         setSourceCode('// Write your solution here\n');
-                        setTestCaseInput(problem.samples && problem.samples.length > 0 ? problem.samples[0].input : '');
-                        setTestCaseOutput(problem.samples && problem.samples.length > 0 ? problem.samples[0].output : '');
+                        setTestCaseInput(problem?.samples?.[0]?.input ?? '');
+                        setTestCaseOutput(problem?.samples?.[0]?.output ?? '');
                       }}
                       className="flex items-center gap-1 md:gap-2 px-2 py-1 md:px-3 md:py-2 text-sm text-gray-400 hover:text-purple-300 transition-colors duration-300"
                     >
@@ -637,7 +689,7 @@ const SolveProblem = () => {
                               </div>
                             </div>
                           ) : customTestCaseResult ? (
-                            customTestCaseResult.error ? (
+                            ('error' in customTestCaseResult) && customTestCaseResult.error ? (
                               <div className="text-red-400 p-2 md:p-3 bg-red-900/20 rounded-lg border border-red-800/50 text-sm">{customTestCaseResult.error}</div>
                             ) : (
                               <div className="space-y-2 md:space-y-3">
@@ -670,20 +722,22 @@ const SolveProblem = () => {
                                 )}
                               </div>
                             )
-                          ) : result?.error ? (
-                            <div className="text-red-400 p-2 md:p-3 bg-red-900/20 rounded-lg border border-red-800/50 text-sm">{result.error}</div>
                           ) : result ? (
-                            <div className="space-y-2 md:space-y-3">
-                              <div className="text-gray-200 p-2 md:p-3 bg-gray-900/50 rounded-lg border border-gray-700 text-sm">
-                                Verdict: <span className={result.verdict === 'AC' ? 'text-green-400' : 'text-red-400'}>{result.verdict}</span>
+                            ('error' in result) ? (
+                              <div className="text-red-400 p-2 md:p-3 bg-red-900/20 rounded-lg border border-red-800/50 text-sm">{result.error}</div>
+                            ) : (
+                              <div className="space-y-2 md:space-y-3">
+                                <div className="text-gray-200 p-2 md:p-3 bg-gray-900/50 rounded-lg border border-gray-700 text-sm">
+                                  Verdict: <span className={result.verdict === 'AC' ? 'text-green-400' : 'text-red-400'}>{result.verdict}</span>
+                                </div>
+                                <div className="text-xs md:text-sm text-gray-400">
+                                  Passed {result.passed}/{result.total}
+                                </div>
+                                {result.execTimeMs != null && (
+                                  <div className="text-xs md:text-sm text-gray-400">Time: {result.execTimeMs} ms</div>
+                                )}
                               </div>
-                              <div className="text-xs md:text-sm text-gray-400">
-                                Passed {result.passed}/{result.total}
-                              </div>
-                              {result.execTimeMs != null && (
-                                <div className="text-xs md:text-sm text-gray-400">Time: {result.execTimeMs} ms</div>
-                              )}
-                            </div>
+                            )
                           ) : (
                             <div className="text-gray-400 p-3 text-center text-sm">
                               Run a test case or submit your solution to see results
