@@ -10,7 +10,9 @@ import {
   getLeaderboard,
   listProblems,
   attachExistingProblem,
-  attachExistingProblemsBulk
+  attachExistingProblemsBulk,
+  runCustomTest,
+  getMyProblemStatus
 } from "../controllers/contest.controller.js";
 
 const router = Router();
@@ -24,6 +26,8 @@ router.post("/:contestId/problems", verifyJWT, requireAdmin, addProblem);
 router.get("/:contestId/problems/:problemId", verifyJWT, getProblem);
 router.post("/:contestId/problems/:problemId/attach", verifyJWT, requireAdmin, attachExistingProblem);
 router.post("/:contestId/problems/attach-bulk", verifyJWT, requireAdmin, attachExistingProblemsBulk);
+router.post("/:contestId/problems/:problemId/run", verifyJWT, runCustomTest);
+router.get("/:contestId/problems/:problemId/my-status", verifyJWT, getMyProblemStatus);
 
 router.post("/:contestId/problems/:problemId/submit", verifyJWT, submitSolution);
 router.get("/:contestId/leaderboard", getLeaderboard);

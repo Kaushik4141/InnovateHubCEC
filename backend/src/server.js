@@ -37,7 +37,7 @@ connectDB()
     server.listen(PORT, () => {
       console.log(` Server is running at port : ${PORT}`);
       startStatsUpdater();
-      startJobScraper();
+      scheduleJobScraper();
     });
   })
   .catch((err) => {
@@ -45,17 +45,19 @@ connectDB()
   });
 
 let jobScraperProc = null;
-function startJobScraper() {
+let jobScraperTimer = null;
+
+function runJobScraperOnce() {
   if (process.env.ENABLE_JOB_SCRAPER === "false") {
     console.log("[JobScraper] Disabled via ENABLE_JOB_SCRAPER=false");
     return;
   }
   if (jobScraperProc) {
-    console.log("[JobScraper] Already running.");
+    console.log("[JobScraper] Previous run still in progress; skipping this tick.");
     return;
   }
   try {
-    const pythonBin = process.env.PYTHON_BIN || "python"; // or set to 'py' on Windows if needed
+    const pythonBin = process.env.PYTHON_BIN || "python"; 
     const __filenameLocal = fileURLToPath(import.meta.url);
     const __dirnameLocal = path.dirname(__filenameLocal);
     const backendRoot = path.resolve(__dirnameLocal, "..");
@@ -83,34 +85,51 @@ function startJobScraper() {
       console.log(`[JobScraper] Exited with code ${code} signal ${signal}`);
       jobScraperProc = null;
       if (code !== 0) {
-        const delayMs = 5000;
-        console.log(`[JobScraper] Restarting in ${delayMs / 1000}s...`);
-        setTimeout(startJobScraper, delayMs);
+        console.log(`[JobScraper] Will try again on next schedule tick.`);
       }
     });
 
     jobScraperProc.on("error", (err) => {
       console.error("[JobScraper] Failed to start:", err.message);
     });
-    const cleanup = () => {
-      if (jobScraperProc) {
-        console.log("[JobScraper] Shutting down...");
-        try {
-          jobScraperProc.kill();
-        } catch {}
-        jobScraperProc = null;
-      }
-    };
-    process.on("SIGINT", () => {
-      cleanup();
-      process.exit(0);
-    });
-    process.on("SIGTERM", () => {
-      cleanup();
-      process.exit(0);
-    });
-    process.on("exit", cleanup);
   } catch (e) {
     console.error("[JobScraper] Unexpected error:", e);
   }
+}
+
+function scheduleJobScraper() {
+  if (process.env.ENABLE_JOB_SCRAPER === "false") {
+    console.log("[JobScraper] Disabled via ENABLE_JOB_SCRAPER=false");
+    return;
+  }
+  const minutes = parseFloat(process.env.JOB_SCRAPER_INTERVAL_MINUTES || "90");
+  const intervalMs = Math.max(1, minutes) * 60 * 1000;
+  console.log(`[JobScraper] Scheduling every ${minutes} minute(s)`);
+
+  runJobScraperOnce();
+  if (jobScraperTimer) clearInterval(jobScraperTimer);
+  jobScraperTimer = setInterval(runJobScraperOnce, intervalMs);
+
+  const cleanup = () => {
+    if (jobScraperTimer) {
+      clearInterval(jobScraperTimer);
+      jobScraperTimer = null;
+    }
+    if (jobScraperProc) {
+      console.log("[JobScraper] Shutting down...");
+      try {
+        jobScraperProc.kill();
+      } catch {}
+      jobScraperProc = null;
+    }
+  };
+  process.on("SIGINT", () => {
+    cleanup();
+    process.exit(0);
+  });
+  process.on("SIGTERM", () => {
+    cleanup();
+    process.exit(0);
+  });
+  process.on("exit", cleanup);
 }

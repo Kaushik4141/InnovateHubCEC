@@ -13,6 +13,7 @@ function ensureWindow(contest) {
 }
 
 export const createContest = asyncHandler(async (req, res) => {
+  try {
   const { title, description, startAt, endAt, visibility = "public" } = req.body;
   if (!title || !description || !startAt || !endAt) {
     throw new ApiError(400, "title, description, startAt, endAt are required");
@@ -26,21 +27,39 @@ export const createContest = asyncHandler(async (req, res) => {
     visibility
   });
   return res.status(201).json(new ApiResponse(201, contest, "Contest created"));
-});
+}
+
+catch (e) {
+  throw new ApiError(500, "Internal Server Error", e);
+}
+}
+);
+
 
 export const listContests = asyncHandler(async (_req, res) => {
+  try {
   const contests = await Contest.find({}).select("title description startAt endAt visibility").sort({ startAt: -1 });
   return res.status(200).json(new ApiResponse(200, contests));
+  }
+  catch (e) {
+    throw new ApiError(500, "Internal Server Error", e);
+  }
 });
 
 export const getContest = asyncHandler(async (req, res) => {
+  try{
   const { id } = req.params;
   const contest = await Contest.findById(id).populate({ path: "problems", select: "title allowedLangs timeLimit memoryLimit" });
   if (!contest) throw new ApiError(404, "Contest not found");
   return res.status(200).json(new ApiResponse(200, contest));
+  }
+  catch (e) {
+    throw new ApiError(500, "Internal Server Error", e);
+  }
 });
 
 export const addProblem = asyncHandler(async (req, res) => {
+  try{
   const { contestId } = req.params;
   const contest = await Contest.findById(contestId);
   if (!contest) throw new ApiError(404, "Contest not found");
@@ -72,9 +91,15 @@ export const addProblem = asyncHandler(async (req, res) => {
   contest.problems.push(problem._id);
   await contest.save();
   return res.status(201).json(new ApiResponse(201, problem, "Problem added"));
+}
+catch (e) {
+  throw new ApiError(500, "Internal Server Error", e);
+}
+
 });
 
 export const getProblem = asyncHandler(async (req, res) => {
+  try{
   const { contestId, problemId } = req.params;
   const contest = await Contest.findById(contestId);
   if (!contest) throw new ApiError(404, "Contest not found");
@@ -84,6 +109,53 @@ export const getProblem = asyncHandler(async (req, res) => {
   const problem = await Problem.findById(problemId).select("title statement inputFormat outputFormat constraints samples allowedLangs timeLimit memoryLimit");
   if (!problem) throw new ApiError(404, "Problem not found");
   return res.status(200).json(new ApiResponse(200, problem));
+}
+catch(e){
+  throw new ApiError(500,"Server Error", e)
+}
+});
+
+// Execute a custom test run (no persistence)
+export const runCustomTest = asyncHandler(async (req, res) => {
+  const { contestId, problemId } = req.params;
+  const { languageId, sourceCode, stdin = '', expectedOutput } = req.body || {};
+  if (!languageId || !sourceCode) throw new ApiError(400, "languageId and sourceCode required");
+
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, "Contest not found");
+  ensureWindow(contest);
+
+  const problem = await Problem.findById(problemId);
+  if (!problem) throw new ApiError(404, "Problem not found");
+  if (!contest.problems.some((p) => String(p) === String(problemId))) {
+    throw new ApiError(404, "Problem not part of this contest");
+  }
+  if (problem.allowedLangs?.length && !problem.allowedLangs.includes(Number(languageId))) {
+    throw new ApiError(400, "Language not allowed for this problem");
+  }
+
+  const exec = await runSingleTest({
+    sourceCode,
+    languageId: Number(languageId),
+    stdin,
+    expectedOutput,
+    cpuTimeLimit: problem.timeLimit,
+    memoryLimit: problem.memoryLimit
+  });
+  const statusId = exec?.status?.id;
+  const verdict = mapJudge0Status(statusId);
+  const t = parseFloat(exec?.time || "0") * 1000;
+  const timeMs = Number.isNaN(t) ? 0 : Math.round(t);
+  const stdout = exec?.stdout ? Buffer.from(exec.stdout, "base64").toString("utf-8") : "";
+  const stderr = exec?.stderr ? Buffer.from(exec.stderr, "base64").toString("utf-8") : "";
+
+  return res.status(200).json(new ApiResponse(200, {
+    verdict,
+    timeMs,
+    stdout: stdout.slice(0, 10000),
+    stderr: stderr.slice(0, 10000),
+    statusId
+  }));
 });
 
 export const listProblems = asyncHandler(async (req, res) => {
@@ -99,7 +171,35 @@ export const listProblems = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, problems));
 });
 
+
+export const getMyProblemStatus = asyncHandler(async (req, res) => {
+  try{
+  const { contestId, problemId } = req.params;
+  const contest = await Contest.findById(contestId);
+  if (!contest) throw new ApiError(404, 'Contest not found');
+  if (!contest.problems.some((p) => String(p) === String(problemId))) {
+    throw new ApiError(404, 'Problem not part of this contest');
+  }
+  const acc = await Submission.findOne({
+    user: req.user._id,
+    contest: contest._id,
+    problem: problemId,
+    verdict: 'Accepted'
+  })
+    .sort({ createdAt: 1 })
+    .select('createdAt');
+  return res.status(200).json(new ApiResponse(200, {
+    completed: !!acc,
+    acceptedAt: acc?.createdAt || null
+  }));
+}
+catch(e){
+  throw new ApiError(500, "Server error",e.message)
+}
+});
+
 export const attachExistingProblem = asyncHandler(async (req, res) => {
+  try {
   const { contestId, problemId } = req.params;
   const contest = await Contest.findById(contestId);
   if (!contest) throw new ApiError(404, 'Contest not found');
@@ -111,9 +211,14 @@ export const attachExistingProblem = asyncHandler(async (req, res) => {
     await contest.save();
   }
   return res.status(200).json(new ApiResponse(200, { attached: true, problemId: problem._id }, already ? 'Problem already attached' : 'Problem attached'));
+}
+catch(e){
+  throw new ApiError(500, "Server error", e.message)
+}
 });
 
 export const attachExistingProblemsBulk = asyncHandler(async (req, res) => {
+  try{
   const { contestId } = req.params;
   const { problemIds } = req.body || {};
   if (!Array.isArray(problemIds) || problemIds.length === 0) {
@@ -149,6 +254,10 @@ export const attachExistingProblemsBulk = asyncHandler(async (req, res) => {
       invalidIds,
     }, toAdd.length ? 'Problems attached' : 'No new problems attached')
   );
+}
+catch(e){
+  throw new ApiError(500,"Server error", e.message);
+}
 });
 
 function mapJudge0Status(statusId) {
@@ -183,6 +292,7 @@ function mapJudge0Status(statusId) {
 }
 
 export const submitSolution = asyncHandler(async (req, res) => {
+  try{
   const { contestId, problemId } = req.params;
   const { languageId, sourceCode } = req.body;
   if (!languageId || !sourceCode) throw new ApiError(400, "languageId and sourceCode required");
@@ -247,12 +357,17 @@ export const submitSolution = asyncHandler(async (req, res) => {
   });
 
   return res.status(201).json(new ApiResponse(201, submission, "Submission evaluated"));
+}
+catch(e){
+  throw new ApiError(500,"Server Error", e.message);
+}
 });
 
 export const getLeaderboard = asyncHandler(async (req, res) => {
+  try{
   const { contestId } = req.params;
-  const contest = await Contest.findById(contestId);
-  if (!contest) throw new ApiError(404, "Contest not found");
+  const contest = await Contest.findById(contestId)
+  if (!contest) throw new ApiError(404, "Contest not found")
 
   const agg = await Submission.aggregate([
     { $match: { contest: contest._id, verdict: "Accepted" } },
@@ -266,4 +381,8 @@ export const getLeaderboard = asyncHandler(async (req, res) => {
   ]);
 
   return res.status(200).json(new ApiResponse(200, agg));
+}
+catch(e){
+throw new ApiError(500,"Server error",e.message)
+}
 });

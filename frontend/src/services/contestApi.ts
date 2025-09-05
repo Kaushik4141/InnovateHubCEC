@@ -16,7 +16,7 @@ export type Problem = {
   inputFormat?: string;
   outputFormat?: string;
   constraints?: string;
-  samples?: Array<{ input: string; output: string }>;
+  samples?: Array<{ input: string; output: string; explanation?: string }>;
   allowedLangs?: number[];
   timeLimit?: number;
   memoryLimit?: number;
@@ -103,4 +103,24 @@ export async function attachProblemsBulk(contestId: string, problemIds: string[]
     alreadyAttached: string[];
     invalidIds: string[];
   };
+}
+
+export async function runCustomTest(
+  contestId: string,
+  problemId: string,
+  body: { languageId: number; sourceCode: string; stdin?: string; expectedOutput?: string }
+) {
+  const { data } = await api.post(`/api/v1/contests/${contestId}/problems/${problemId}/run`, body);
+  return data?.data as {
+    verdict: string;
+    timeMs: number;
+    stdout: string;
+    stderr: string;
+    statusId: number;
+  };
+}
+
+export async function getMyProblemStatus(contestId: string, problemId: string) {
+  const { data } = await api.get(`/api/v1/contests/${contestId}/problems/${problemId}/my-status`);
+  return data?.data as { completed: boolean; acceptedAt: string | null };
 }

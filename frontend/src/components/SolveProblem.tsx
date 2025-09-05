@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { getProblem, submitSolution, Problem, getContest, Contest } from '../services/contestApi';
+import { getProblem, submitSolution, Problem, getContest, Contest, runCustomTest, getMyProblemStatus } from '../services/contestApi';
 import { languageNameFromId } from '../services/judge0Langs';
 
 const SolveProblem: React.FC = () => {
@@ -25,6 +25,7 @@ const SolveProblem: React.FC = () => {
   const [runningCustomTest, setRunningCustomTest] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
+  const [myStatus, setMyStatus] = useState<{ completed: boolean; acceptedAt?: string | null } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -90,6 +91,30 @@ const SolveProblem: React.FC = () => {
     return () => { mounted = false; };
   }, [contestId]);
 
+  // Fetch my completion status for this problem
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        if (!contestId || !problemId) return;
+        const s = await getMyProblemStatus(contestId, problemId);
+        if (!mounted) return;
+        setMyStatus(s);
+      } catch (_) {
+        setMyStatus(null);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [contestId, problemId]);
+
+  const nextProblemId = useMemo(() => {
+    if (!contest?.problems || !problemId) return null;
+    const idx = contest.problems.findIndex(p => String(p._id) === String(problemId));
+    if (idx === -1) return null;
+    const next = contest.problems[idx + 1];
+    return next?._id || null;
+  }, [contest, problemId]);
+
   const showSaveNotification = (message: string) => {
     setNotificationMessage(message);
     setShowNotification(true);
@@ -108,6 +133,9 @@ const SolveProblem: React.FC = () => {
     try {
       const data = await submitSolution(contestId, problemId, { languageId, sourceCode });
       setResult(data);
+      if (data?.verdict === 'Accepted') {
+        setMyStatus({ completed: true, acceptedAt: new Date().toISOString() });
+      }
     } catch (e: any) {
       setResult({ error: e?.message || 'Submission failed' });
     } finally {
@@ -136,20 +164,22 @@ const SolveProblem: React.FC = () => {
     setRunningCustomTest(true);
     setCustomTestCaseResult(null);
     try {
-      // This would call a different API endpoint for custom test cases
-      // For now, we'll simulate it with a timeout
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulate result based on whether output matches expected
-      const simulatedOutput = "Simulated output based on code";
-      const isCorrect = simulatedOutput.trim() === testCaseOutput.trim();
-      
+      const data = await runCustomTest(
+        contestId,
+        problemId,
+        { languageId, sourceCode, stdin: testCaseInput, expectedOutput: testCaseOutput || undefined }
+      );
+
+      const passed = data.verdict === 'Accepted';
+      const actual = (data.stdout ?? '').trim();
       setCustomTestCaseResult({
-        passed: isCorrect,
+        passed,
         input: testCaseInput,
         expected: testCaseOutput,
-        actual: simulatedOutput,
-        error: isCorrect ? null : "Output doesn't match expected result"
+        actual,
+        verdict: data.verdict,
+        timeMs: data.timeMs,
+        stderr: data.stderr
       });
     } catch (e: any) {
       setCustomTestCaseResult({ error: e?.message || 'Test execution failed' });
@@ -206,6 +236,19 @@ const SolveProblem: React.FC = () => {
               <span className="px-3 py-1.5 rounded-full text-xs text-purple-200 border border-purple-500/50 bg-purple-900/20 shadow-sm shadow-purple-500/20 transition-all duration-500 hover:scale-105">
                 {timeLeft}
               </span>
+            )}
+            {myStatus?.completed && (
+              <span className="px-3 py-1.5 rounded-full text-xs font-medium text-green-300 border border-green-500/50 bg-green-900/20 shadow-sm shadow-green-500/20">
+                Completed
+              </span>
+            )}
+            {myStatus?.completed && nextProblemId && (
+              <button
+                onClick={() => navigate(`/contests/${contestId}/problems/${nextProblemId}`)}
+                className="ml-2 px-3 py-1.5 rounded-lg text-xs bg-blue-600 hover:bg-blue-700 text-white transition-all duration-300 hover:scale-105"
+              >
+                Next Problem
+              </button>
             )}
           </div>
         </div>
@@ -437,7 +480,7 @@ const SolveProblem: React.FC = () => {
                   ) : (
                     <>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM3.707 9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
                       Submit
                     </>
@@ -494,6 +537,12 @@ const SolveProblem: React.FC = () => {
                       <div className={`p-3 rounded-lg border ${customTestCaseResult.passed ? 'text-green-400 bg-green-900/20 border-green-800/50' : 'text-red-400 bg-red-900/20 border-red-800/50'}`}>
                         {customTestCaseResult.passed ? 'Test Passed' : 'Test Failed'}
                       </div>
+                      {customTestCaseResult.verdict && (
+                        <div className="text-sm text-gray-400">Verdict: {customTestCaseResult.verdict}</div>
+                      )}
+                      {typeof customTestCaseResult.timeMs === 'number' && (
+                        <div className="text-sm text-gray-400">Time: {customTestCaseResult.timeMs} ms</div>
+                      )}
                       {customTestCaseResult.input && (
                         <div className="mt-3">
                           <div className="text-xs text-gray-400">Input</div>
@@ -518,6 +567,14 @@ const SolveProblem: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      {customTestCaseResult.stderr && (
+                        <div className="mt-3">
+                          <div className="text-xs text-gray-400">Stderr</div>
+                          <div className="bg-gray-900/50 p-3 rounded-lg border border-gray-700 mt-1">
+                            <pre className="whitespace-pre-wrap text-gray-300">{customTestCaseResult.stderr}</pre>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )
                 ) : result?.error ? (
@@ -525,7 +582,7 @@ const SolveProblem: React.FC = () => {
                 ) : (
                   <div className="space-y-3">
                     <div className="text-gray-200 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-                      Verdict: <span className={result.verdict === 'AC' ? 'text-green-400' : 'text-red-400'}>{result.verdict}</span>
+                      Verdict: <span className={result.verdict === 'Accepted' ? 'text-green-400' : 'text-red-400'}>{result.verdict}</span>
                     </div>
                     <div className="text-sm text-gray-400">
                       Passed {result.passed}/{result.total}
