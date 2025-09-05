@@ -240,13 +240,13 @@ const SolveProblem: React.FC = () => {
                 <>
                   <div className="flex items-center gap-2 mb-4 flex-wrap">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${problem.difficulty === 'easy' ? 'text-green-300 bg-green-900/30' : problem.difficulty === 'medium' ? 'text-yellow-300 bg-yellow-900/30' : 'text-red-300 bg-red-900/30'}`}>
-                      {problem.difficulty?.charAt(0).toUpperCase() + problem.difficulty?.slice(1) || 'Unknown'}
+                      {problem.difficulty || "Easy".charAt(0).toUpperCase() + problem.difficulty?.slice(1) || 'Unknown'}
                     </span>
-                    {problem.tags && problem.tags.map((tag, index) => (
+                    {/* {problem.tags && problem.tags.map ((tag, index) => (
                       <span key={index} className="px-2 py-1 rounded-full text-xs text-blue-300 bg-blue-900/30 transition-all duration-300 hover:scale-105">
                         {tag}
                       </span>
-                    ))}
+                    ))} */}
                   </div>
                   
                   <div className="bg-gray-900/50 p-4 rounded-xl border border-gray-700 transition-all duration-300 hover:border-purple-500/30">

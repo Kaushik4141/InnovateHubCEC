@@ -11,6 +11,10 @@ import {
   getCombinedPosts,
   getPostByUserId,
   getSuggestedPosts,
+  toggleLike,
+  addComment,
+  getComments,
+  incrementViews,
 } from "../controllers/post.controller.js";
 import {
    linkpostUpload,
@@ -38,6 +42,11 @@ router.route("/linkedinPosts").get(verifyJWT, getlinkedinPosts);
 router.route("/user/:userId").get(verifyJWT, getPostByUserId);
 router.route("/linkedinPosts/:userId").get(verifyJWT, getlinkedinPostsByUser);
 router.route("/suggested").get(verifyJWT, getSuggestedPosts);
+router.route("/:postId/like").post(verifyJWT, toggleLike);
+router.route("/:postId/comments")
+  .get(getComments)
+  .post(verifyJWT, addComment);
+router.route("/:postId/view").post(incrementViews);
 
 
 export default router;

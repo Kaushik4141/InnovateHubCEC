@@ -20,6 +20,8 @@ export type Problem = {
   allowedLangs?: number[];
   timeLimit?: number;
   memoryLimit?: number;
+  difficulty?:string;
+  tags?:string;
 };
 
 export type ProblemSummary = Pick<Problem, '_id' | 'title' | 'allowedLangs' | 'timeLimit' | 'memoryLimit'> & {
