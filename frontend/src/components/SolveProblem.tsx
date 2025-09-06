@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getProblem, submitSolution, Problem, getContest, Contest, runCustomTest, getMyProblemStatus } from '../services/contestApi';
-import { languageNameFromId } from '../services/judge0Langs';
+import { languageNameFromId, getMonacoLanguage } from '../services/judge0Langs';
+import Editor from '@monaco-editor/react';
 
 const SolveProblem: React.FC = () => {
   const { contestId, problemId } = useParams<{ contestId: string; problemId: string }>();
@@ -434,11 +435,31 @@ const SolveProblem: React.FC = () => {
                 </div>
               </div>
               <div className="p-3">
-                <textarea
-                  className="w-full h-[300px] bg-gray-900 text-gray-200 border border-gray-700 rounded-lg p-4 font-mono text-sm transition-all duration-300 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/30 custom-scrollbar"
-                  placeholder="Write your solution here..."
+                <Editor
+                  height="300px"
+                  language={languageId ? getMonacoLanguage(languageId) : 'plaintext'}
+                  theme="vs-dark"
                   value={sourceCode}
-                  onChange={(e) => setSourceCode(e.target.value)}
+                  onChange={(value) => setSourceCode(value || '')}
+                  options={{
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    fontSize: 14,
+                    fontFamily: 'monospace',
+                    automaticLayout: true,
+                    tabSize: 2,
+                    wordWrap: 'on',
+                    suggestOnTriggerCharacters: true,
+                    quickSuggestions: true,
+                    acceptSuggestionOnEnter: 'on',
+                    cursorBlinking: 'smooth',
+                    lineNumbers: 'on',
+                    roundedSelection: true,
+                    autoIndent: 'full',
+                    formatOnPaste: true,
+                    formatOnType: true
+                  }}
+                  className="border border-gray-700 rounded-lg overflow-hidden"
                 />
               </div>
               <div className="px-4 py-3 border-t border-gray-700 flex justify-end gap-2">
