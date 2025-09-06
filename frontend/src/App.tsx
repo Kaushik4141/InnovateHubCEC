@@ -27,10 +27,10 @@ import Contests from './components/Contests';
 import ContestView from './components/ContestView';
 import SolveProblem from './components/SolveProblem';
 import ContestLeaderboard from './components/ContestLeaderboard';
-
 import AdminContests from './components/AdminContests';
 import AdminContestProblems from './components/AdminContestProblems';
-
+import Projects from './components/Projects'; // Import Projects from its correct location
+import Competitions from './components/Competitions';
 
 type Me = {
   _id: string;
@@ -95,13 +95,12 @@ const RequireAdmin = ({ children }: { children: JSX.Element }) => {
 };
 
 function AppRoutes() {
-
   return (
     <>
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/team" element={<Team />} />
-          <Route path="/Team" element={<Navigate to="/team" replace />} />
+        <Route path="/Team" element={<Navigate to="/team" replace />} />
         <Route path="/mentors" element={<Mentors />} />
         <Route path="/mentors/apply" element={<MentorApply />} />
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
@@ -127,10 +126,10 @@ function AppRoutes() {
         <Route path="/contests/:contestId" element={<RequireAuth><ContestView /></RequireAuth>} />
         <Route path="/contests/:contestId/problems/:problemId" element={<RequireAuth><SolveProblem /></RequireAuth>} />
         <Route path="/contests/:contestId/leaderboard" element={<RequireAuth><ContestLeaderboard /></RequireAuth>} />
-        
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/competitions" element={<RequireAuth><Competitions /></RequireAuth>} />
+        <Route path="/feedback" element={<FeedbackForm />} />
       </Routes>
-
-     
 
       {/* Floating Chatbot Button (self-contained) */}
       <ChatBotFab />
@@ -139,7 +138,6 @@ function AppRoutes() {
     </>
   );
 }
-
 
 function App() {
   return (

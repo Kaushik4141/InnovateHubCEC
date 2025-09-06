@@ -4,9 +4,10 @@ import {
   Search, Bell, MessageCircle, User, Home, Users, Briefcase,
   ChevronDown, Settings, LogOut, Plus,
   Trophy, Handshake, Menu, X, Group, Award, UserCheck, Folder,
-  Calendar, Map, Shield // Added icons for contests, roadmaps, and admin
+  Calendar, Map, Shield,MessageSquare// Added icons for contests, roadmaps, and admin
 } from 'lucide-react';
 import axios from 'axios';
+
 
 const Header = () => {
   const navigate = useNavigate();
@@ -753,21 +754,24 @@ const Header = () => {
                   <span className="font-medium">Contests</span>
                 </button>
                 
-                <button 
-                  onClick={() => { navigate('/roadmaps'); setMobileMenuOpen(false); }}
-                  className={`
-                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
-                    hover:bg-gradient-to-r hover:from-indigo-600/20 hover:to-indigo-500/20 
-                    rounded-xl transition-all duration-300 group border border-transparent hover:border-indigo-500/30
-                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-                  `}
-                  style={{ transitionDelay: '300ms' }}
-                >
-                  <div className="p-2 bg-indigo-600/20 rounded-lg group-hover:bg-indigo-600/30 transition-colors">
-                    <Map className="h-5 w-5 text-indigo-400" />
-                  </div>
-                  <span className="font-medium">Roadmaps</span>
-                </button>
+<button 
+  onClick={() => {
+    window.open('https://roadmap.sh', '_blank');
+    setMobileMenuOpen(false);
+  }}
+  className={`
+    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+    hover:bg-gradient-to-r hover:from-indigo-600/20 hover:to-indigo-500/20 
+    rounded-xl transition-all duration-300 group border border-transparent hover:border-indigo-500/30
+    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+  `}
+  style={{ transitionDelay: '300ms' }}
+>
+  <div className="p-2 bg-indigo-600/20 rounded-lg group-hover:bg-indigo-600/30 transition-colors">
+    <Map className="h-5 w-5 text-indigo-400" />
+  </div>
+  <span className="font-medium">Roadmaps</span>
+</button>
                 
                 <button 
                   onClick={() => { navigate('/mentors'); setMobileMenuOpen(false); }}
@@ -786,20 +790,20 @@ const Header = () => {
                 </button>
                 
                 <button 
-                  onClick={() => { navigate('/projects'); setMobileMenuOpen(false); }}
-                  className={`
-                    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
-                    hover:bg-gradient-to-r hover:from-blue-600/20 hover:to-blue-500/20 
-                    rounded-xl transition-all duration-300 group border border-transparent hover:border-blue-500/30
-                    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
-                  `}
-                  style={{ transitionDelay: '400ms' }}
-                >
-                  <div className="p-2 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
-                    <Folder className="h-5 w-5 text-blue-400" />
-                  </div>
-                  <span className="font-medium">Projects</span>
-                </button>
+  onClick={() => { navigate('/projects'); setMobileMenuOpen(false); }}
+  className={`
+    w-full flex items-center space-x-4 px-4 py-4 text-gray-300 hover:text-white 
+    hover:bg-gradient-to-r hover:from-blue-600/20 hover:to-blue-500/20 
+    rounded-xl transition-all duration-300 group border border-transparent hover:border-blue-500/30
+    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+  `}
+  style={{ transitionDelay: '400ms' }}
+>
+  <div className="p-2 bg-blue-600/20 rounded-lg group-hover:bg-blue-600/30 transition-colors">
+    <Folder className="h-5 w-5 text-blue-400" />
+  </div>
+  <span className="font-medium">Projects</span>
+</button>
                 
                 {/* Conditionally show Admin link for mobile */}
                 {user?.role === 'admin' && (
@@ -918,6 +922,19 @@ const Header = () => {
                 
                 <div className="border-t border-gray-700/50 my-4" />
                 
+                <button 
+  onClick={() => { navigate('/feedback'); setMobileMenuOpen(false); }}
+  className={`
+    w-full flex items-center space-x-4 px-4 py-3 text-gray-300 hover:text-white 
+    hover:bg-gray-700/50 rounded-lg transition-all duration-300
+    ${mobileMenuOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}
+  `}
+  style={{ transitionDelay: '900ms' }}
+>
+  <MessageSquare className="h-5 w-5" />
+  <span className="font-medium">Feedback</span>
+</button>
+
                 <button 
                   onClick={() => { navigate('/profile'); setMobileMenuOpen(false); }}
                   className={`
