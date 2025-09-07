@@ -5,11 +5,12 @@ import Header from './Header';
 import {
   Edit, Calendar, Mail, Github, Linkedin, Globe,
   Plus, Settings, Share2, ExternalLink,
-  Code, Loader as LoaderIcon, Check, X
+  Code, Loader as LoaderIcon, Check, X, Copy
 } from 'lucide-react';
 import EditProfileModal from './EditProfileModal';
 import Loader from './loading';
 import MediaLightbox, { LightboxMedia } from './MediaLightbox';
+import ShareModal from "./ShareModal";
 
 // Component for handling expandable text with read more/less functionality
 const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
@@ -271,7 +272,7 @@ interface User {
   achievements: Achievement[];
   otherLinks: OtherLink[];
   followers: Array<{ _id: string; fullname: string; avatar?: string }>;
-  following: Array<{ _id: string; fullname: string; avatar?: string }>;
+  following: Array<{ _id: string; fullname; string; avatar?: string }>;
   createdAt: string;
   stats?: {
     profileViews?: number;
@@ -319,6 +320,8 @@ const Profile: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false); // Added for ShareModal
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
 
@@ -510,6 +513,35 @@ const Profile: FC = () => {
     }
   };
 
+  // Function to handle sharing profile
+  const handleShareProfile = () => {
+    const profileUrl = window.location.href;
+    
+    // Using the Clipboard API
+    navigator.clipboard.writeText(profileUrl)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        // Fallback method for browsers that don't support Clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = profileUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          console.error('Fallback copy failed: ', err);
+          setError('Failed to copy link to clipboard');
+        }
+        document.body.removeChild(textArea);
+      });
+  };
+
   if (loading) return <Loader />;
   if (error) return <p className="text-center text-red-500">{error}</p>;
   if (!user) return <p className="text-center text-white">No user found.</p>;
@@ -565,7 +597,10 @@ const Profile: FC = () => {
               >
                 <Edit className="h-4 w-4 mr-2" /> Edit Profile
               </button>
-              <button className="bg-gray-700 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center">
+              <button
+                className="bg-gray-700 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center relative"
+                onClick={() => setShareOpen(true)}
+              >
                 <Share2 className="h-4 w-4 mr-2" /> Share
               </button>
               <button className="bg-gray-700 text-gray-300 p-2 rounded-lg hover:bg-gray-600 transition-colors">
@@ -788,6 +823,15 @@ const Profile: FC = () => {
         </div>
       </div>
       <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
+      
+      {/* Share Modal */}
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        profileUrl={window.location.href}
+        copied={copied}
+        onCopy={handleShareProfile}
+      />
     </div>
   );
 };

@@ -5,13 +5,15 @@ import Feed from './Feed';
 import Projects from './Projects';
 import Competitions from './Competitions';
 import MentorsList from './MentorsList';
-import FloatingDock from './FloatingDock'; // Import the FloatingDock
+import FloatingDock from './FloatingDock';
 import { networkApi, type ConnectionSuggestion } from '../services/networkApi';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, ArrowUp } from 'lucide-react';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('feed');
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  
   const renderContent = () => {
     switch (activeTab) {
       case 'feed':
@@ -46,6 +48,23 @@ const Dashboard = () => {
     };
     load();
   }, []);
+
+  // Scroll to top functionality
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
 
   const avatarUrl = (u: { _id?: string; fullname?: string; avatar?: string }) => (
     !u?.avatar || (u.avatar && u.avatar.includes('default_avatar'))
@@ -203,6 +222,17 @@ const Dashboard = () => {
       
       {/* Add FloatingDock at the bottom - it will only show on mobile */}
       <FloatingDock />
+      
+      {/* Back to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-6 right-6 z-50 w-12 h-12 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp className="w-6 h-6" />
+        </button>
+      )}
     </div>
   );
 };
