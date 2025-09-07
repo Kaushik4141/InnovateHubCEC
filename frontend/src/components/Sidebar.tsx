@@ -188,7 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   <h3 className="font-semibold mb-4 text-purple-400">Quick Actions</h3>
   <div className="space-y-2">
     <button 
-      onClick={() => navigate('/projects')}
+      onClick={() => navigate('/addpost')}
       className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/30"
     >
       Share Project
@@ -200,10 +200,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
       Find Mentor
     </button>
     <button 
-      onClick={() => navigate('/competitions')}
+      onClick={() => navigate('/chat')}
       className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-green-500/30"
     >
-      Join Competition
+      Chat
     </button>
   </div>
 </div>

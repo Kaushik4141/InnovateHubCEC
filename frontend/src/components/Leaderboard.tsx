@@ -149,38 +149,18 @@ const Leaderboard = () => {
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
       
-      
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="mt-4 mb-6">
-          {/* Mobile Tabs (Dropdown) */}
-          <div className="md:hidden relative">
-            <select
-              className="w-full bg-slate-800 text-white border border-purple-500/50 rounded-xl px-4 py-3 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none"
-              value={leaderboardType}
-              onChange={e => setLeaderboardType(e.target.value as 'github' | 'leetcode')}
-            >
-              {leaderboardTabs.map(tab => (
-                <option key={tab.id} value={tab.id}>
-                  {tab.name}
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-purple-300">
-              <ChevronDown className="w-5 h-5" />
-            </div>
-          </div>
-          
-          {/* Desktop Tabs */}
-          <div className="hidden md:flex gap-3 justify-center">
+          {/* Mobile Tabs - Now using the same style as desktop */}
+          <div className="flex flex-wrap gap-2 justify-center">
             {leaderboardTabs.map(tab => (
               <button
                 key={tab.id}
-                className={`shrink-0 flex items-center gap-2 px-6 py-2 rounded-full font-semibold transition-colors ${leaderboardType === tab.id ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
+                className={`shrink-0 flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-2 rounded-full font-semibold transition-colors ${leaderboardType === tab.id ? 'bg-purple-600 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}`}
                 onClick={() => setLeaderboardType(tab.id as 'github' | 'leetcode')}
               >
-                <tab.icon className="w-5 h-5" />
-                {tab.name}
+                <tab.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-sm sm:text-base">{tab.name}</span>
               </button>
             ))}
           </div>
@@ -200,8 +180,9 @@ const Leaderboard = () => {
           </p>
         </div>
 
-        <div className="relative mb-6">
-          <div className="w-full sm:w-64 mx-auto sm:ml-auto sm:mr-0">
+        {/* Time Period Dropdown - Centered on desktop */}
+        <div className="flex justify-center mb-6">
+          <div className="relative w-full sm:w-64">
             <select
               className="w-full bg-slate-900 text-white border border-purple-500/50 rounded-xl px-5 py-3 pl-16 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none cursor-pointer hover:border-purple-400 hover:bg-slate-800"
               value={contribType}
