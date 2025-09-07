@@ -178,30 +178,35 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
                 </button>
               </li>
             )}
-            <li>
-              <button className="w-full flex items-center px-3 py-2 rounded-lg text-gray-300 hover:bg-gray-700/50 hover:text-white transition-all duration-200 hover:scale-[1.01]">
-                <Bookmark className="h-5 w-5 mr-3" />
-                Saved
-              </button>
-            </li>
+            
           </ul>
         </nav>
 
         {/* Quick Actions */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30">
-          <h3 className="font-semibold mb-4 text-purple-400">Quick Actions</h3>
-          <div className="space-y-2">
-            <button className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/30">
-              Share Project
-            </button>
-            <button className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/30">
-              Find Mentor
-            </button>
-            <button className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-green-500/30">
-              Join Competition
-            </button>
-          </div>
-        </div>
+       
+<div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30">
+  <h3 className="font-semibold mb-4 text-purple-400">Quick Actions</h3>
+  <div className="space-y-2">
+    <button 
+      onClick={() => navigate('/projects')}
+      className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/30"
+    >
+      Share Project
+    </button>
+    <button 
+      onClick={() => navigate('/mentors')}
+      className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/30"
+    >
+      Find Mentor
+    </button>
+    <button 
+      onClick={() => navigate('/competitions')}
+      className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-green-500/30"
+    >
+      Join Competition
+    </button>
+  </div>
+</div>
       </div>
     </div>
   );
