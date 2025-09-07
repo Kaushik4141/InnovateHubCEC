@@ -590,8 +590,8 @@ const Profile: FC = () => {
       setError("User not loaded.");
       return;
     }
-    const profileUrl = `https://innovatehubcec.vercel.app/profile/c/${encodeURIComponent(
-      user.fullname
+    const profileUrl = `${apiBase}/profile/c/${encodeURIComponent(
+      user.fullname 
     )}`;
 
     // Using the Clipboard API
@@ -1036,7 +1036,7 @@ const Profile: FC = () => {
       <ShareModal
         open={shareOpen}
         onClose={() => setShareOpen(false)}
-        profileUrl={`https://innovatehubcec.vercel.app/profile/c/${encodeURIComponent(
+        profileUrl={`${apiBase}/profile/c/${encodeURIComponent(
           user.fullname
         )}`}
         copied={copied}

@@ -7,10 +7,13 @@ import {
   Linkedin,
   Settings,
   Globe,
+  Copy,
+  Share2,
 } from "lucide-react";
 import axios from "axios";
 import Loader from "./loading";
 import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
+import ShareModal from "./ShareModal";
 
 const UserProfileView = () => {
   const apiBase = import.meta.env.VITE_API_URL;
@@ -21,6 +24,8 @@ const UserProfileView = () => {
   // Lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const openLightbox = (m: LightboxMedia) => { setLightboxMedia(m); setLightboxOpen(true); };
 
   // Deterministic unique avatar when no uploaded avatar or default placeholder
@@ -335,7 +340,37 @@ const UserProfileView = () => {
           });
       }
     }, [user, apiBase]);
-
+const handleShareProfile = () => {
+  if(!user){
+      setError("User not loaded.");
+      return;
+  }
+    const profileUrl = `${apiBase}/profile/c/${encodeURIComponent(user.fullname)}`;
+    
+    // Using the Clipboard API
+    navigator.clipboard.writeText(profileUrl)
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(err => {
+        console.error('Failed to copy: ', err);
+        // Fallback method for browsers that don't support Clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = profileUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          console.error('Fallback copy failed: ', err);
+          setError('Failed to copy link to clipboard');
+        }
+        document.body.removeChild(textArea);
+      });
+  };
     useEffect(() => {
       if (user && user._id) {
         setProjectsLoading(true);
@@ -431,8 +466,11 @@ const UserProfileView = () => {
                 </div>
               </div>
               <div className="flex gap-2 mt-4 md:mt-0">
-                <button className="bg-gray-700 text-white px-4 py-1 rounded hover:bg-gray-600 text-sm">
-                  Share
+                 <button
+                className="bg-gray-700 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-600 transition-colors flex items-center relative"
+                onClick={() => setShareOpen(true)}
+              >
+                <Share2 className="h-4 w-4 mr-2" /> Share
                 </button>
 
                 <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
@@ -677,6 +715,15 @@ const UserProfileView = () => {
           </div>
         </div>
         <MediaLightbox open={lightboxOpen} media={lightboxMedia} onClose={() => setLightboxOpen(false)} />
+            <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        profileUrl={`${apiBase}/profile/c/${encodeURIComponent(
+          user.fullname
+        )}`}
+        copied={copied}
+        onCopy={handleShareProfile}
+      />
       </div>
     );
   }
