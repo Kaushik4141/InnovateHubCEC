@@ -334,7 +334,7 @@ const TeamEvent = () => {
             </h3>
             <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 shadow-inner">
               {userTeam.members.map((member: any, index: number) => {
-                const isLeaderMember = member._id === userTeam.leader._id ;
+                const isLeaderMember = (typeof member === 'object' && 'id' in member && member._id === userTeam.leader._id);
                 const memberId = member._id || member;
                 const memberName = member.fullname || `Member ${index + 1}`;
                 const isCurrentUser = memberId === userId;

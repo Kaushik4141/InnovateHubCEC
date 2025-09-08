@@ -289,8 +289,8 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
         document.querySelectorAll('.tour-highlight').forEach(el => {
           el.classList.remove('tour-highlight');
           if (el !== targetElement) {
-            el.style.zIndex = '';
-            el.style.position = '';
+            (el as HTMLElement).style.zIndex = '';
+            (el as HTMLElement).style.position = '';
           }
         });
       };
@@ -344,8 +344,8 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
     // Clean up highlights
     document.querySelectorAll('.tour-highlight').forEach(el => {
       el.classList.remove('tour-highlight');
-      el.style.zIndex = '';
-      el.style.position = '';
+      (el as HTMLElement).style.zIndex = '';
+      (el as HTMLElement).style.position = '';
     });
     onComplete();
   };
@@ -354,8 +354,8 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
     // Clean up highlights
     document.querySelectorAll('.tour-highlight').forEach(el => {
       el.classList.remove('tour-highlight');
-      el.style.zIndex = '';
-      el.style.position = '';
+       (el as HTMLElement).style.zIndex = '';
+      (el as HTMLElement).style.position = '';
     });
     onSkip();
   };
@@ -584,7 +584,7 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
       </div>
 
       {/* Tour Styles */}
-      <style jsx>{`
+      <style>{`
         .tour-highlight {
           animation: tourPulse 2s infinite;
           border-radius: 8px !important;
