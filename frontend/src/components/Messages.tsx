@@ -903,49 +903,7 @@ const Messages = () => {
                               <Pin className="h-3 w-3 sm:h-4 sm:w-4" />
                             </button>
                             
-                            <div className="relative" data-delete-menu>
-                              <button
-                                title="Delete message"
-                                onClick={() => setActiveDeleteMenu(activeDeleteMenu === mid ? null : mid)}
-                                className="text-gray-400 hover:text-white p-1"
-                              >
-                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                              </button>
-                              {activeDeleteMenu === mid && (
-                                <div className={`absolute z-20 ${isOwn ? 'right-0' : 'left-0'} bottom-full transform -translate-y-2 flex flex-col p-2 rounded-lg bg-gray-900 shadow-lg border border-gray-700 min-w-[160px] sm:min-w-[180px]`}>
-                                  <h4 className="text-xs text-gray-400 px-3 py-1 border-b border-gray-700 mb-1">Delete message</h4>
-                                  {isOwn ? (
-                                    <>
-                                      <button
-                                        onClick={() => handleDeleteMessage(mid, false)}
-                                        className="text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md"
-                                      >
-                                        Delete for me
-                                      </button>
-                                      <button
-                                        onClick={() => handleDeleteMessage(mid, true)}
-                                        className="text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md"
-                                      >
-                                        Delete for everyone
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <button
-                                      onClick={() => handleDeleteMessage(mid, false)}
-                                      className="text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-md"
-                                    >
-                                      Delete for me
-                                    </button>
-                                  )}
-                                  <button
-                                    onClick={() => setActiveDeleteMenu(null)}
-                                    className="text-left px-3 py-2 mt-1 text-sm text-gray-400 hover:bg-gray-700 rounded-md border-t border-gray-700"
-                                  >
-                                    Cancel
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                            
                           </div>
                         </div>
                       </div>

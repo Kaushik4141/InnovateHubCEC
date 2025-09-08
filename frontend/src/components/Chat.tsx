@@ -71,6 +71,9 @@ const Chat: React.FC = () => {
   const apiBase = import.meta.env.VITE_API_URL;
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   
+  // Track if we've auto-opened the general room on desktop
+  const hasAutoOpenedGeneral = useRef(false);
+  
   // helpers
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
     const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
@@ -123,10 +126,49 @@ const Chat: React.FC = () => {
 
   // --- Load lists & current user ---
   useEffect(() => {
-    listRooms().then(setRooms).catch(() => { });
-    listContacts().then(setContacts).catch(() => { });
-    getCurrentUser().then(setCurrentUser).catch(() => { });
+    const loadData = async () => {
+      try {
+        const [roomsData, contactsData, userData] = await Promise.all([
+          listRooms(),
+          listContacts(),
+          getCurrentUser()
+        ]);
+        
+        setRooms(roomsData);
+        setContacts(contactsData);
+        setCurrentUser(userData);
+        
+        // Auto-open General room on desktop
+        const isMobile = window.innerWidth < 768;
+        if (!isMobile && !hasAutoOpenedGeneral.current) {
+          const generalRoom = roomsData.find(r => r.name.toLowerCase() === 'general');
+          if (generalRoom) {
+            hasAutoOpenedGeneral.current = true;
+            openRoom(generalRoom._id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+      }
+    };
+    
+    loadData();
   }, []);
+
+  // Handle window resize to show appropriate view
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth < 768;
+      if (isMobile && activeId) {
+        // On mobile, we want to show the conversation list by default
+        setShowWelcomeScreen(false);
+        setMobileSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeId]);
   
   useEffect(() => {
     const to = searchParams.get('to');
@@ -526,6 +568,14 @@ const Chat: React.FC = () => {
     
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // On mobile, show conversation list by default
+  useEffect(() => {
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) {
+      setMobileSidebarOpen(true);
+    }
   }, []);
 
   return (
@@ -1108,7 +1158,7 @@ const Chat: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        
+                      
                         {/* Mobile message actions - Long press or tap menu */}
                         <div className="md:hidden absolute inset-0 group/mobile">
                           <button
@@ -1121,114 +1171,114 @@ const Chat: React.FC = () => {
                             <Menu className="h-4 w-4 text-gray-300" />
                           </button>
                         </div>
-                        
-                        {/* Mobile action menu overlay */}
-                        {activeDeleteMenu === messageId && (
-                          <div className="md:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                            <div className="bg-gray-800 rounded-lg border border-gray-700 mx-4 w-full max-w-xs">
-                              <div className="p-4 border-b border-gray-700">
-                                <h3 className="font-semibold">Message Options</h3>
-                              </div>
-                              <div className="p-2 space-y-1">
+                      </div>
+                      
+                      {/* Mobile action menu overlay */}
+                      {activeDeleteMenu === messageId && (
+                        <div className="md:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                          <div className="bg-gray-800 rounded-lg border border-gray-700 mx-4 w-full max-w-xs">
+                            <div className="p-4 border-b border-gray-700">
+                              <h3 className="font-semibold">Message Options</h3>
+                            </div>
+                            <div className="p-2 space-y-1">
+                              <button
+                                onClick={() => {
+                                  setReplyTo(msg);
+                                  setActiveDeleteMenu(null);
+                                }}
+                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                              >
+                                <ReplyIcon className="h-4 w-4" />
+                                Reply
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setReactionPicker(messageId);
+                                  setActiveDeleteMenu(null);
+                                }}
+                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                              >
+                                <Smile className="h-4 w-4" />
+                                React
+                              </button>
+                              <button
+                                onClick={() => {
+                                  copyMessage(msg.type === 'text' ? msg.content : msg.content);
+                                  setActiveDeleteMenu(null);
+                                }}
+                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg"
+                              >
+                                Copy
+                              </button>
+                              <button
+                                onClick={() => {
+                                  handlePinMessage(msg);
+                                  setActiveDeleteMenu(null);
+                                }}
+                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                              >
+                                <Pin className="h-4 w-4" />
+                                {(msg as any).pinned ? 'Unpin' : 'Pin'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
+                                className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                              </button>
+                              {isMe && (
                                 <button
-                                  onClick={() => {
-                                    setReplyTo(msg);
-                                    setActiveDeleteMenu(null);
-                                  }}
-                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
+                                  onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, true)}
+                                  className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg"
                                 >
-                                  <ReplyIcon className="h-4 w-4" />
-                                  Reply
+                                  Delete for everyone
                                 </button>
-                                <button
-                                  onClick={() => {
-                                    setReactionPicker(messageId);
-                                    setActiveDeleteMenu(null);
-                                  }}
-                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
-                                >
-                                  <Smile className="h-4 w-4" />
-                                  React
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    copyMessage(msg.type === 'text' ? msg.content : msg.content);
-                                    setActiveDeleteMenu(null);
-                                  }}
-                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg"
-                                >
-                                  Copy
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    handlePinMessage(msg);
-                                    setActiveDeleteMenu(null);
-                                  }}
-                                  className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
-                                >
-                                  <Pin className="h-4 w-4" />
-                                  {(msg as any).pinned ? 'Unpin' : 'Pin'}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
-                                  className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg flex items-center gap-3"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
-                                </button>
-                                {isMe && (
-                                  <button
-                                    onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, true)}
-                                    className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg"
-                                  >
-                                    Delete for everyone
-                                  </button>
-                                )}
-                              </div>
-                              <div className="p-2 border-t border-gray-700">
-                                <button
-                                  onClick={() => setActiveDeleteMenu(null)}
-                                  className="w-full px-3 py-2 text-center hover:bg-gray-700 rounded-lg"
-                                >
-                                  Cancel
-                                </button>
-                              </div>
+                              )}
+                            </div>
+                            <div className="p-2 border-t border-gray-700">
+                              <button
+                                onClick={() => setActiveDeleteMenu(null)}
+                                className="w-full px-3 py-2 text-center hover:bg-gray-700 rounded-lg"
+                              >
+                                Cancel
+                              </button>
                             </div>
                           </div>
-                        )}
-                        
-                        {/* Reaction picker */}
-                        {reactionPicker === messageId && (
-                          <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 flex gap-2 z-30">
-                            {emojis.map(emoji => (
-                              <button
-                                key={emoji}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReact(messageId, emoji);
-                                }}
-                                className="p-2 hover:bg-gray-700 rounded transition-transform hover:scale-125 touch-target"
-                              >
-                                <span className="text-lg">{emoji}</span>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Reactions display */}
-                        {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                          <div className="absolute bottom-0 translate-y-full mt-1 flex gap-1 flex-wrap">
-                            {Object.entries(msg.reactions).map(([emoji, users]) => (
-                              users.length > 0 && (
-                                <div key={emoji} className="bg-gray-800/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
-                                  <span>{emoji}</span>
-                                  <span className="text-gray-300">{users.length}</span>
-                                </div>
-                              )
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
+                      
+                      {/* Reaction picker */}
+                      {reactionPicker === messageId && (
+                        <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 flex gap-2 z-30">
+                          {emojis.map(emoji => (
+                            <button
+                              key={emoji}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleReact(messageId, emoji);
+                              }}
+                              className="p-2 hover:bg-gray-700 rounded transition-transform hover:scale-125 touch-target"
+                            >
+                              <span className="text-lg">{emoji}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Reactions display */}
+                      {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                        <div className="absolute bottom-0 translate-y-full mt-1 flex gap-1 flex-wrap">
+                          {Object.entries(msg.reactions).map(([emoji, users]) => (
+                            users.length > 0 && (
+                              <div key={emoji} className="bg-gray-800/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
+                                <span>{emoji}</span>
+                                <span className="text-gray-300">{users.length}</span>
+                              </div>
+                            )
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
