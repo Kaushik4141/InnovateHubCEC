@@ -78,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         `}
       >
         {/* Profile Card */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 mb-6 border border-gray-700/30 transition-all duration-200 hover:bg-gray-800/70">
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-6 mb-6 border border-gray-700/30 transition-all duration-200 hover:bg-gray-800/70" data-tour="sidebar-profile">
           <div className="text-center mb-4">
             <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mx-auto mb-3 transition-transform duration-200 hover:scale-105"> 
               {user && (
@@ -126,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 mb-6 border border-gray-700/30">
+        <nav className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 mb-6 border border-gray-700/30" data-tour="navigation">
           <ul className="space-y-2">
             {tabs.map((tab) => {
               const Icon = tab.icon;
@@ -183,30 +183,29 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
         </nav>
 
         {/* Quick Actions */}
-       
-<div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30">
-  <h3 className="font-semibold mb-4 text-purple-400">Quick Actions</h3>
-  <div className="space-y-2">
-    <button 
-      onClick={() => navigate('/addpost')}
-      className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/30"
-    >
-      Share Project
-    </button>
-    <button 
-      onClick={() => navigate('/mentors')}
-      className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/30"
-    >
-      Find Mentor
-    </button>
-    <button 
-      onClick={() => navigate('/chat')}
-      className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-green-500/30"
-    >
-      Chat
-    </button>
-  </div>
-</div>
+        <div className="bg-gray-800/50 backdrop-blur-sm rounded-xl p-4 border border-gray-700/30" data-tour="quick-actions">
+          <h3 className="font-semibold mb-4 text-purple-400">Quick Actions</h3>
+          <div className="space-y-2">
+            <button 
+              onClick={() => navigate('/addpost')}
+              className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-purple-500/30"
+            >
+              Share Project
+            </button>
+            <button 
+              onClick={() => navigate('/mentors')}
+              className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-blue-500/30"
+            >
+              Find Mentor
+            </button>
+            <button 
+              onClick={() => navigate('/chat')}
+              className="w-full bg-green-600 text-white py-2 rounded-lg font-medium hover:bg-green-700 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] hover:shadow-lg hover:shadow-green-500/30"
+            >
+              Chat
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,29 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
-  Home, Users, Briefcase, MessageCircle, Trophy, Group, Handshake, Menu
+  Home, Users, Briefcase, MessageCircle, Trophy, Plus, User, Handshake, Group 
 } from 'lucide-react';
 
 interface DockItem {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   path: string;
-  color: string;
+  color?: string;
 }
 
-const dockItems: DockItem[] = [
-  { icon: Home, label: 'Home', path: '/dashboard', color: 'from-purple-500 to-purple-600' },
-  { icon: Handshake, label: 'Chat', path: '/chat', color: 'from-blue-500 to-blue-600' },
-  { icon: Briefcase, label: 'Jobs', path: '/jobs', color: 'from-orange-500 to-orange-600' },
-  { icon: MessageCircle, label: 'competitions', path: '/competitions', color: 'from-teal-500 to-teal-600' },
-  { icon: Trophy, label: 'Leaderboard', path: '/Leaderboard', color: 'from-yellow-500 to-yellow-600' },
-];
-
-const FloatingDock: React.FC = () => {
+const FloatingDock = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [visible, setVisible] = useState(true);
 
   // Check if we're on a mobile device
   useEffect(() => {
@@ -41,13 +34,30 @@ const FloatingDock: React.FC = () => {
     return () => window.removeEventListener('resize', checkIfMobile);
   }, []);
 
-  // Don't render on desktop
-  if (!isMobile) {
+  // Hide on certain pages
+  useEffect(() => {
+    const hiddenRoutes = ['/login', '/register', '/', '/team'];
+    setVisible(!hiddenRoutes.some(route => 
+      location.pathname === route || location.pathname.startsWith(route)
+    ));
+  }, [location.pathname]);
+
+  const dockItems: DockItem[] = [
+    { icon: Home, label: 'Home', path: '/dashboard', color: 'from-purple-500 to-purple-600' },
+    { icon: Handshake, label: 'Network', path: '/network', color: 'from-blue-500 to-blue-600' },
+    { icon: Briefcase, label: 'Jobs', path: '/jobs', color: 'from-orange-500 to-orange-600' },
+    { icon: MessageCircle, label: 'Chat', path: '/chat', color: 'from-teal-500 to-teal-600' },
+    { icon: Trophy, label: 'Leaderboard', path: '/leaderboard', color: 'from-yellow-500 to-yellow-600' },
+    { icon: User, label: 'Profile', path: '/profile', color: 'from-pink-500 to-pink-600' },
+  ];
+
+  // Don't render on desktop or if not visible
+  if (!isMobile || !visible) {
     return null;
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden"> 
+    <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden" data-tour="floating-dock">
       <div className="bg-gray-900/95 backdrop-blur-xl border-t border-gray-700/50 px-3 py-2 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between overflow-x-auto hide-scrollbar">
           {dockItems.map((item) => {
@@ -93,13 +103,35 @@ const FloatingDock: React.FC = () => {
               </div>
             );
           })}
+          
+          {/* Add Post Button */}
+          <div className="relative flex-shrink-0 flex-1 flex justify-center">
+            <button
+              onClick={() => navigate('/addpost')}
+              onMouseEnter={() => setHoveredItem('addpost')}
+              onMouseLeave={() => setHoveredItem(null)}
+              className="group relative flex flex-col items-center justify-center rounded-xl p-1.5
+                transition-all duration-300 ease-out w-full max-w-[60px]"
+            >
+              <div className={`
+                p-2 rounded-lg mb-1 transition-all duration-300
+                bg-gradient-to-r from-purple-600 to-blue-600
+                ${hoveredItem === 'addpost' ? 'shadow-md shadow-purple-500/30 scale-110' : ''}
+              `}>
+                <Plus className="h-4 w-4 text-white" />
+              </div>
+              <span className="text-xs font-medium text-gray-400 group-hover:text-white transition-all duration-300 truncate w-full text-center">
+                Add Post
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Add safe area padding for iOS devices */}
       <div className="pb-safe-bottom bg-gray-900/95" />
       
-      <style >{`
+      <style>{`
         .hide-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;

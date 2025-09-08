@@ -4,10 +4,9 @@ import {
   Search, Bell, MessageCircle, User, Home, Users, Briefcase,
   ChevronDown, Settings, LogOut, Plus,
   Trophy, Handshake, Menu, X, Group, Award, UserCheck, Folder,
-  Calendar, Map, Shield,MessageSquare// Added icons for contests, roadmaps, and admin
+  Calendar, Map, Shield, MessageSquare
 } from 'lucide-react';
 import axios from 'axios';
-
 
 const Header = () => {
   const navigate = useNavigate();
@@ -182,7 +181,7 @@ const Header = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <button onClick={() => navigate('/')} className="flex items-center">
+              <button onClick={() => navigate('/')} className="flex items-center" data-tour="logo">
                 <img src="/logo1.png" alt="InnovateHubCEC" className="h-8 w-8" />
                 <span className="ml-2 text-xl font-bold text-white hidden sm:block">InnovateHubCEC</span>
                 <span className="ml-2 text-xl font-bold text-white sm:hidden">InnovateHubCEC</span>
@@ -191,7 +190,7 @@ const Header = () => {
 
             {/* Desktop Search Bar */}
             <div className="flex-1 max-w-2xl mx-8 hidden md:block">
-              <div className="relative search-container">
+              <div className="relative search-container" data-tour="search">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
@@ -270,6 +269,7 @@ const Header = () => {
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="p-2 text-gray-300 hover:text-white transition-colors"
+                  data-tour="notifications"
                 >
                   <Bell className="h-6 w-6" />
                   {notifications.length > 0 && (
@@ -346,6 +346,7 @@ const Header = () => {
                 <button 
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="flex flex-col items-center text-gray-400 hover:text-purple-400 transition-colors"
+                  data-tour="notifications"
                 >
                   <Bell className="h-5 w-5" />
                   <span className="text-xs mt-1">Notifications</span>
@@ -423,6 +424,7 @@ const Header = () => {
                 <button 
                   onClick={() => setShowProfileMenu(!showProfileMenu)}
                   className="flex items-center text-gray-400 hover:text-purple-400 transition-colors"
+                  data-tour="profile-menu"
                 >
                   {user ? (
                     <img
@@ -503,6 +505,7 @@ const Header = () => {
                 className="bg-purple-600 text-white p-2 rounded-lg hover:bg-purple-700 transition-colors"
                 aria-label="Add Project"
                 title="Add Project"
+                data-tour="add-post"
               >
                 <Plus className="h-5 w-5" />
               </button>

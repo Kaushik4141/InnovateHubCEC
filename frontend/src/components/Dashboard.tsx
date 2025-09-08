@@ -6,6 +6,8 @@ import Projects from './Projects';
 import Competitions from './Competitions';
 import MentorsList from './MentorsList';
 import FloatingDock from './FloatingDock';
+import TourGuide from './TourGuide';
+import { useTour } from '../hooks/useTour';
 import { networkApi, type ConnectionSuggestion } from '../services/networkApi';
 import { useNavigate } from 'react-router-dom';
 import { UserPlus, ArrowUp } from 'lucide-react';
@@ -13,6 +15,7 @@ import { UserPlus, ArrowUp } from 'lucide-react';
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('feed');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const { showTour, completeTour, skipTour } = useTour();
   
   const renderContent = () => {
     switch (activeTab) {
@@ -87,14 +90,13 @@ const Dashboard = () => {
           <div className="order-2 lg:order-1">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
-          <div className="order-1 lg:order-2 lg:col-span-2">
+          <div className="order-1 lg:order-2 lg:col-span-2" data-tour="main-feed">
             {renderContent()}
           </div>
           <div className="hidden lg:block lg:order-3 lg:col-span-1">
-            {/* Your right sidebar content remains the same */}
             <div className="space-y-6">
               {/* Developer Roadmaps */}
-              <div className="bg-gray-800 rounded-xl p-6">
+              <div className="bg-gray-800 rounded-xl p-6" data-tour="roadmaps">
                 <h3 className="font-semibold mb-4 text-purple-400">Developer Roadmaps</h3>
                 <div className="space-y-3">
                   {[
@@ -118,7 +120,7 @@ const Dashboard = () => {
               </div>
 
               {/* Upcoming Events */}
-              <div className="bg-gray-800 rounded-xl p-6">
+              <div className="bg-gray-800 rounded-xl p-6" data-tour="events">
                 <h3 className="font-semibold mb-4 text-purple-400">Upcoming Events</h3>
                 <div className="space-y-4">
                   <div className="border-l-4 border-purple-500 pl-4">
@@ -137,7 +139,7 @@ const Dashboard = () => {
               </div>
 
               {/* Quick Stats */}
-              <div className="bg-gray-800 rounded-xl p-6">
+              <div className="bg-gray-800 rounded-xl p-6" data-tour="progress">
                 <h3 className="font-semibold mb-4 text-purple-400">Your Progress</h3>
                 <div className="space-y-4">
                   <div>
@@ -170,8 +172,8 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* People You May Know (live) */}
-              <div className="bg-gray-800 rounded-xl p-6">
+              {/* People You May Know */}
+              <div className="bg-gray-800 rounded-xl p-6" data-tour="suggestions">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-purple-400">People You May Know</h3>
                   <button className="text-xs text-gray-400 hover:text-white" onClick={() => navigate('/network')}>
@@ -230,6 +232,13 @@ const Dashboard = () => {
       )}
       
       <FloatingDock />
+      
+      {/* Tour Guide */}
+      <TourGuide 
+        isVisible={showTour}
+        onComplete={completeTour}
+        onSkip={skipTour}
+      />
     </div>
   );
 };
