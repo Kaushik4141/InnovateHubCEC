@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, ChevronLeft, ChevronRight, Play, Sparkles, 
   ArrowRight, Home, Users, Trophy, Code, MessageCircle,
-  User, Bell, Search, Plus, Briefcase, Handshake
+  User, Bell, Search, Plus, Briefcase, Handshake, Menu, Settings
 } from 'lucide-react';
 
 interface TourStep {
@@ -38,6 +38,7 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="logo"]',
     position: 'bottom',
     icon: <Home className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'search',
@@ -46,6 +47,7 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="search"]',
     position: 'bottom',
     icon: <Search className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'notifications',
@@ -64,14 +66,6 @@ const tourSteps: TourStep[] = [
     icon: <User className="h-5 w-5" />,
   },
   {
-    id: 'add-post',
-    title: 'Share Your Innovation 💡',
-    description: 'Ready to showcase your projects? Click here to share your innovations, get feedback, and inspire others!',
-    target: '[data-tour="add-post"]',
-    position: 'left',
-    icon: <Plus className="h-5 w-5" />,
-  },
-  {
     id: 'sidebar-profile',
     title: 'Your Digital Identity',
     description: 'This is your profile card showing your progress and achievements. Watch your stats grow as you engage with the community!',
@@ -87,6 +81,7 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="navigation"]',
     position: 'right',
     icon: <Code className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'quick-actions',
@@ -95,6 +90,16 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="quick-actions"]',
     position: 'right',
     icon: <ArrowRight className="h-5 w-5" />,
+    scrollTo: true,
+  },
+  {
+    id: 'add-post',
+    title: 'Share Your Innovation 💡',
+    description: 'Ready to showcase your projects? Click here to share your innovations, get feedback, and inspire others!',
+    target: '[data-tour="add-post"]',
+    position: 'left',
+    icon: <Plus className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'main-feed',
@@ -112,6 +117,7 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="roadmaps"]',
     position: 'left',
     icon: <Trophy className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'events',
@@ -120,6 +126,7 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="events"]',
     position: 'left',
     icon: <Trophy className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'progress',
@@ -128,6 +135,7 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="progress"]',
     position: 'left',
     icon: <Trophy className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'suggestions',
@@ -136,6 +144,7 @@ const tourSteps: TourStep[] = [
     target: '[data-tour="suggestions"]',
     position: 'left',
     icon: <Users className="h-5 w-5" />,
+    scrollTo: true,
   },
   {
     id: 'floating-dock',
@@ -153,6 +162,25 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  
+  // Check device type on mount and window resize
+  useEffect(() => {
+    const checkDeviceType = () => {
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+    
+    // Initial check
+    checkDeviceType();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkDeviceType);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', checkDeviceType);
+    };
+  }, []);
 
   const currentTourStep = tourSteps[currentStep];
   const progress = ((currentStep + 1) / tourSteps.length) * 100;
@@ -162,6 +190,7 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
     if (!isVisible || !currentTourStep) return;
 
     const targetElement = document.querySelector(currentTourStep.target) as HTMLElement;
+    const overlay = overlayRef.current;
     
     if (targetElement && currentTourStep.target !== 'body') {
       // Scroll to element if needed
@@ -173,57 +202,123 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
         });
       }
 
-      // Add highlight class
+      // Store original styles to restore later
+      const originalPosition = targetElement.style.position;
+      const originalZIndex = targetElement.style.zIndex;
+      
+      // Add highlight class and adjust styles for proper highlighting
       targetElement.classList.add('tour-highlight');
+      
+      // Only change position if it's static to avoid layout shifts
+      if (window.getComputedStyle(targetElement).position === 'static') {
+        targetElement.style.position = 'relative';
+      }
       targetElement.style.zIndex = '60';
-      targetElement.style.position = 'relative';
 
-      // Position tooltip
-      setTimeout(() => {
+      // Position tooltip and update overlay highlight position
+      const updatePositions = () => {
         const rect = targetElement.getBoundingClientRect();
         const tooltip = tooltipRef.current;
+        
+        // Update the overlay highlight position
+        if (overlay) {
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const highlightSize = Math.max(rect.width, rect.height) * 1.5; // Make highlight larger than element
+          
+          // Set CSS variables for the radial gradient
+          overlay.style.setProperty('--highlight-x', `${centerX}px`);
+          overlay.style.setProperty('--highlight-y', `${centerY}px`);
+          overlay.style.setProperty('--highlight-size', `${highlightSize}px`);
+          overlay.style.background = `radial-gradient(circle at var(--highlight-x) var(--highlight-y), transparent ${highlightSize / 2}px, rgba(0, 0, 0, 0.7) ${highlightSize}px)`;
+        }
         
         if (tooltip) {
           const tooltipRect = tooltip.getBoundingClientRect();
           let left, top;
+          const isMobile = window.innerWidth < 640;
 
-          switch (currentTourStep.position) {
-            case 'top':
-              left = rect.left + rect.width / 2 - tooltipRect.width / 2;
-              top = rect.top - tooltipRect.height - 20;
-              break;
-            case 'bottom':
-              left = rect.left + rect.width / 2 - tooltipRect.width / 2;
-              top = rect.bottom + 20;
-              break;
-            case 'left':
-              left = rect.left - tooltipRect.width - 20;
-              top = rect.top + rect.height / 2 - tooltipRect.height / 2;
-              break;
-            case 'right':
-              left = rect.right + 20;
-              top = rect.top + rect.height / 2 - tooltipRect.height / 2;
-              break;
+          // For mobile, position tooltip at the bottom of the screen
+          if (isMobile) {
+            left = window.innerWidth / 2 - tooltipRect.width / 2;
+            top = window.innerHeight - tooltipRect.height - 20;
+          } else {
+            // Calculate position based on the specified position
+            switch (currentTourStep.position) {
+              case 'top':
+                left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+                top = rect.top - tooltipRect.height - 16;
+                break;
+              case 'bottom':
+                left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+                top = rect.bottom + 16;
+                break;
+              case 'left':
+                left = rect.left - tooltipRect.width - 16;
+                top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+                break;
+              case 'right':
+                left = rect.right + 16;
+                top = rect.top + rect.height / 2 - tooltipRect.height / 2;
+                break;
+            }
+
+            // Ensure tooltip stays within viewport with padding
+            const padding = 16;
+            left = Math.max(padding, Math.min(left, window.innerWidth - tooltipRect.width - padding));
+            top = Math.max(padding, Math.min(top, window.innerHeight - tooltipRect.height - padding));
           }
 
-          // Ensure tooltip stays within viewport
-          left = Math.max(20, Math.min(left, window.innerWidth - tooltipRect.width - 20));
-          top = Math.max(20, Math.min(top, window.innerHeight - tooltipRect.height - 20));
-
+          // Apply position with smooth transition
           tooltip.style.left = `${left}px`;
           tooltip.style.top = `${top}px`;
+          tooltip.style.opacity = '1';
+          tooltip.style.transform = 'scale(1)';
+          
+          // Add mobile class for styling
+          if (isMobile) {
+            tooltip.classList.add('tour-mobile-tooltip');
+          } else {
+            tooltip.classList.remove('tour-mobile-tooltip');
+          }
         }
-      }, 100);
-    }
+      };
 
-    return () => {
-      // Remove highlight from previous element
-      document.querySelectorAll('.tour-highlight').forEach(el => {
-        el.classList.remove('tour-highlight');
-        el.style.zIndex = '';
-        el.style.position = '';
-      });
-    };
+      // Initial positioning with a slight delay to ensure DOM is ready
+      setTimeout(updatePositions, 50);
+      
+      // Update positions on scroll and resize for responsiveness
+      window.addEventListener('resize', updatePositions);
+      window.addEventListener('scroll', updatePositions, { passive: true });
+
+      return () => {
+        // Remove highlight from previous element
+        targetElement.classList.remove('tour-highlight');
+        targetElement.style.zIndex = originalZIndex;
+        targetElement.style.position = originalPosition;
+        
+        // Remove event listeners
+        window.removeEventListener('resize', updatePositions);
+        window.removeEventListener('scroll', updatePositions);
+        
+        // Reset overlay
+        if (overlay) {
+          overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+        }
+        
+        // Clean up any other elements that might have highlight class
+        document.querySelectorAll('.tour-highlight').forEach(el => {
+          el.classList.remove('tour-highlight');
+          if (el !== targetElement) {
+            el.style.zIndex = '';
+            el.style.position = '';
+          }
+        });
+      };
+    } else if (overlay && currentTourStep.target === 'body') {
+      // Reset overlay for body target
+      overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+    }
   }, [currentStep, isVisible, currentTourStep]);
 
   const nextStep = async () => {
@@ -233,6 +328,12 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
 
     setIsAnimating(true);
     
+    // Remove highlight from current element before moving to next step
+    const currentTarget = document.querySelector(currentTourStep.target) as HTMLElement;
+    if (currentTarget && currentTourStep.target !== 'body') {
+      currentTarget.classList.remove('tour-highlight');
+    }
+    
     setTimeout(() => {
       if (currentStep < tourSteps.length - 1) {
         setCurrentStep(currentStep + 1);
@@ -240,16 +341,23 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
         handleComplete();
       }
       setIsAnimating(false);
-    }, 300);
+    }, 400); // Slightly longer delay for smoother transition
   };
 
   const prevStep = () => {
     if (currentStep > 0) {
       setIsAnimating(true);
+      
+      // Remove highlight from current element before moving to previous step
+      const currentTarget = document.querySelector(currentTourStep.target) as HTMLElement;
+      if (currentTarget && currentTourStep.target !== 'body') {
+        currentTarget.classList.remove('tour-highlight');
+      }
+      
       setTimeout(() => {
         setCurrentStep(currentStep - 1);
         setIsAnimating(false);
-      }, 300);
+      }, 400); // Slightly longer delay for smoother transition
     }
   };
 
@@ -275,14 +383,51 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
 
   if (!isVisible) return null;
 
+  // Don't render tour guide on mobile or tablet
+  if (isMobileOrTablet) {
+    return null;
+  }
+  
   return (
     <>
+      {/* Floating Tour Menu - Only visible on desktop */}
+      {currentStep > 0 && (
+        <div className="fixed top-4 right-4 z-70">
+          <div className="bg-gradient-to-r from-gray-800/95 to-gray-900/95 backdrop-blur-xl rounded-full shadow-lg border border-blue-500/30 p-2 flex items-center">
+            <span className="text-white text-sm font-medium mx-2">Tour: {currentStep}/{tourSteps.length}</span>
+            <div className="flex space-x-1">
+              <button 
+                onClick={prevStep} 
+                disabled={currentStep <= 1}
+                className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white disabled:opacity-50"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <button 
+                onClick={nextStep}
+                className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white"
+              >
+                {currentStep === tourSteps.length - 1 ? <Play className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </button>
+              <button 
+                onClick={handleSkip}
+                className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Overlay */}
       <div 
         ref={overlayRef}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 transition-all duration-500"
+        className="fixed inset-0 bg-black/60 z-50 transition-all duration-500"
         style={{
-          background: `radial-gradient(circle at 50% 50%, transparent 100px, rgba(0, 0, 0, 0.7) 200px)`
+          background: currentTourStep.target === 'body' ? 
+            'rgba(0, 0, 0, 0.7)' : 
+            'radial-gradient(circle at var(--highlight-x, 50%) var(--highlight-y, 50%), transparent 100px, rgba(0, 0, 0, 0.7) 200px)'
         }}
       >
         {/* Progress Bar */}
@@ -351,17 +496,18 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
             ref={tooltipRef}
             className={`
               fixed z-60 bg-gradient-to-br from-gray-800/95 to-gray-900/95 backdrop-blur-xl rounded-2xl p-6 max-w-sm
-              shadow-2xl border border-gray-600/50 transform transition-all duration-500
+              shadow-2xl border border-blue-500/50 transform transition-all duration-700 ease-in-out
               ${isAnimating ? 'scale-95 opacity-0' : 'scale-100 opacity-100'}
+              sm:max-w-sm max-w-[90%] tour-mobile-tooltip
             `}
             style={{ 
               transformOrigin: 'center',
             }}
           >
-            {/* Arrow pointing to target */}
+            {/* Arrow pointing to target - hidden on mobile */}
             <div 
               className={`
-                absolute w-0 h-0 border-8
+                absolute w-0 h-0 border-8 hidden sm:block
                 ${currentTourStep.position === 'top' && 'border-transparent border-t-gray-800/95 top-full left-1/2 transform -translate-x-1/2'}
                 ${currentTourStep.position === 'bottom' && 'border-transparent border-b-gray-800/95 bottom-full left-1/2 transform -translate-x-1/2'}
                 ${currentTourStep.position === 'left' && 'border-transparent border-l-gray-800/95 left-full top-1/2 transform -translate-y-1/2'}
@@ -379,7 +525,8 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            {/* Desktop Navigation */}
+            <div className="hidden sm:flex items-center justify-between">
               <button
                 onClick={prevStep}
                 disabled={currentStep === 0}
@@ -405,6 +552,38 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
+            
+            {/* Mobile Navigation */}
+            <div className="flex sm:hidden items-center justify-between mt-4 pt-4 border-t border-gray-700">
+              <div className="flex space-x-2">
+                <button
+                  onClick={prevStep}
+                  disabled={currentStep === 0}
+                  className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center text-white disabled:opacity-50 disabled:bg-gray-800"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                
+                <button
+                  onClick={nextStep}
+                  className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white"
+                >
+                  {currentStep === tourSteps.length - 1 ? 
+                    <Play className="h-5 w-5" /> : 
+                    <ChevronRight className="h-5 w-5" />}
+                </button>
+              </div>
+              
+              <div className="flex items-center">
+                <span className="text-sm text-gray-400 mr-2">{currentStep + 1}/{tourSteps.length}</span>
+                <button
+                  onClick={handleSkip}
+                  className="px-3 py-1 bg-gray-700 text-white text-sm rounded-md"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -414,21 +593,55 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
         .tour-highlight {
           animation: tourPulse 2s infinite;
           border-radius: 8px !important;
-          box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.3), 0 0 20px rgba(147, 51, 234, 0.2) !important;
+          box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.5) !important;
+          outline: 2px solid rgba(59, 130, 246, 0.9) !important;
+          transition: all 0.3s ease-in-out !important;
+          backdrop-filter: none !important;
+          -webkit-backdrop-filter: none !important;
+          filter: none !important;
+          background-color: transparent !important;
         }
         
         @keyframes tourPulse {
           0%, 100% {
-            box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.3), 0 0 20px rgba(147, 51, 234, 0.2);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.5);
           }
           50% {
-            box-shadow: 0 0 0 8px rgba(147, 51, 234, 0.5), 0 0 30px rgba(147, 51, 234, 0.3);
+            box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.6), 0 0 30px rgba(59, 130, 246, 0.7);
           }
         }
         
         .backdrop-blur-xl {
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
+        }
+
+        /* Mobile styles */
+        @media (max-width: 640px) {
+          .tour-mobile-menu {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            z-index: 100;
+            background: transparent;
+          }
+          
+          .tour-mobile-tooltip {
+            position: fixed !important;
+            bottom: 80px !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            max-width: 90% !important;
+            width: 90% !important;
+            top: auto !important;
+          }
+            padding: 12px;
+            border-top: 1px solid rgba(75, 85, 99, 0.4);
+            z-index: 70;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
         }
       `}</style>
     </>

@@ -90,7 +90,7 @@ const Dashboard = () => {
           <div className="order-2 lg:order-1">
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
           </div>
-          <div className="order-1 lg:order-2 lg:col-span-2" data-tour="main-feed">
+          <div className="order-1 lg:order-2 lg:col-span-2 relative" data-tour="main-feed">
             {renderContent()}
           </div>
           <div className="hidden lg:block lg:order-3 lg:col-span-1">
