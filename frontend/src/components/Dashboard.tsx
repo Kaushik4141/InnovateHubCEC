@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Feed from './Feed';
 import Projects from './Projects';
 import Competitions from './Competitions';
 import MentorsList from './MentorsList';
-import FloatingDock from './FloatingDock'; // Import the FloatingDock
+import FloatingDock from './FloatingDock';
 import { networkApi, type ConnectionSuggestion } from '../services/networkApi';
 import { useNavigate } from 'react-router-dom';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, ArrowUp } from 'lucide-react';
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('feed');
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  
   const renderContent = () => {
     switch (activeTab) {
       case 'feed':
@@ -45,6 +47,21 @@ const Dashboard = () => {
       }
     };
     load();
+  }, []);
+
+  // Scroll to top function
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Show/hide scroll to top button based on scroll position
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const avatarUrl = (u: { _id?: string; fullname?: string; avatar?: string }) => (
@@ -201,7 +218,17 @@ const Dashboard = () => {
         </div>
       </div>
       
-     
+      {/* Scroll to top button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-24 right-6 z-50 p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110"
+          aria-label="Scroll to top"
+        >
+          <ArrowUp size={24} />
+        </button>
+      )}
+      
       <FloatingDock />
     </div>
   );
