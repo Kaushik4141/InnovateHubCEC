@@ -8,6 +8,11 @@ export interface Competition {
   endDate: string;
   link: string;
   coverImage?: string;
+  teamsize?: string;
+  Prize?: string;
+  Tag?: string;
+  Reqirements?: string;
+  isTeamEvent?: boolean;
   aplliedBy?: string[];
   applicationCount: number;
   createdAt: string;

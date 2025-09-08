@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 import { 
   Trophy, Calendar, Award, Clock, Target, Search, Plus,
-  ExternalLink, Zap, Code, Brain, Palette, Loader
+  ExternalLink, Zap, Code, Brain, Palette, Loader, Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { competitionApi, Competition as CompetitionType } from '../services/competitionApi';
@@ -40,7 +40,18 @@ const Competitions = () => {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', startDate: '', endDate: '', link: '' });
+  const [form, setForm] = useState({ 
+    title: '', 
+    description: '', 
+    startDate: '', 
+    endDate: '', 
+    link: '', 
+    teamsize: '1-4 members',
+    Prize: '₹25,000',
+    Tag: 'Web Development',
+    Reqirements: 'Web development skills, Team registration',
+    isTeamEvent: false
+  });
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const navigate = useNavigate();
 
@@ -57,15 +68,15 @@ const Competitions = () => {
           deadline: comp.endDate, 
           participants: comp.applicationCount || 0,
           maxParticipants: 100, 
-          prize: '₹25,000',   
+          prize: comp.Prize || '₹25,000',   
           difficulty: 'Intermediate', 
-          category: 'Web Development', 
-          tags: ['Web', 'Development', 'Hackathon'], 
+          category: comp.Tag || 'Web Development', 
+          tags: comp.Tag ? comp.Tag.split(',').map(tag => tag.trim()) : ['Web', 'Development', 'Hackathon'], 
           status: new Date(comp.endDate) > new Date() ? 'Open' : 'Closed',
           featured: false,
           location: 'Online',
-          teamSize: '1-4 members',
-          requirements: ['Web development skills', 'Team registration'],
+          teamSize: comp.teamsize || '1-4 members',
+          requirements: comp.Reqirements ? comp.Reqirements.split(',').map(req => req.trim()) : ['Web development skills', 'Team registration'],
           image: comp.coverImage || 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=600',
           icon: Code,
           description: comp.description,
@@ -190,15 +201,15 @@ const Competitions = () => {
         deadline: comp.endDate,
         participants: comp.applicationCount || 0,
         maxParticipants: 100,
-        prize: '₹25,000',
+        prize: comp.Prize || '₹25,000',
         difficulty: 'Intermediate',
-        category: 'Web Development',
-        tags: ['Web', 'Development', 'Hackathon'],
+        category: comp.Tag || 'Web Development',
+        tags: comp.Tag ? comp.Tag.split(',').map(tag => tag.trim()) : ['Web', 'Development', 'Hackathon'],
         status: new Date(comp.endDate) > new Date() ? 'Open' : 'Closed',
         featured: false,
         location: 'Online',
-        teamSize: '1-4 members',
-        requirements: ['Web development skills', 'Team registration'],
+        teamSize: comp.teamsize || '1-4 members',
+        requirements: comp.Reqirements ? comp.Reqirements.split(',').map(req => req.trim()) : ['Web development skills', 'Team registration'],
         image: comp.coverImage || 'https://images.pexels.com/photos/1181675/pexels-photo-1181675.jpeg?auto=compress&cs=tinysrgb&w=600',
         icon: Code,
         description: comp.description,
@@ -221,10 +232,26 @@ const Competitions = () => {
       fd.append('startDate', form.startDate);
       fd.append('endDate', form.endDate);
       fd.append('link', form.link);
+      fd.append('teamsize', form.teamsize);
+      fd.append('Prize', form.Prize);
+      fd.append('Tag', form.Tag);
+      fd.append('Reqirements', form.Reqirements);
+      fd.append('isTeamEvent', form.isTeamEvent.toString());
       if (coverFile) fd.append('coverImage', coverFile);
       await competitionApi.createCompetition(fd);
       setShowCreate(false);
-      setForm({ title: '', description: '', startDate: '', endDate: '', link: '' });
+      setForm({ 
+        title: '', 
+        description: '', 
+        startDate: '', 
+        endDate: '', 
+        link: '', 
+        teamsize: '1-4 members',
+        Prize: '₹25,000',
+        Tag: 'Web Development',
+        Reqirements: 'Web development skills, Team registration',
+        isTeamEvent: false
+      });
       setCoverFile(null);
       await reloadCompetitions();
     } catch (err) {
@@ -327,6 +354,32 @@ const Competitions = () => {
                 <input type="url" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} placeholder="https://..." className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
               </div>
               <div>
+                <label className="block text-sm text-gray-400 mb-1">Team Size</label>
+                <input type="text" value={form.teamsize} onChange={(e) => setForm({ ...form, teamsize: e.target.value })} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Prize</label>
+                <input type="text" value={form.Prize} onChange={(e) => setForm({ ...form, Prize: e.target.value })} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Category/Tag</label>
+                <input type="text" value={form.Tag} onChange={(e) => setForm({ ...form, Tag: e.target.value })} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Requirements</label>
+                <textarea value={form.Reqirements} onChange={(e) => setForm({ ...form, Reqirements: e.target.value })} className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded text-white" />
+              </div>
+              <div className="flex items-center">
+                <input 
+                  type="checkbox" 
+                  id="isTeamEvent" 
+                  checked={form.isTeamEvent} 
+                  onChange={(e) => setForm({ ...form, isTeamEvent: e.target.checked })} 
+                  className="h-4 w-4 text-purple-600 bg-gray-800 border-gray-700 rounded focus:ring-purple-500 focus:ring-offset-gray-800" 
+                />
+                <label htmlFor="isTeamEvent" className="ml-2 text-sm text-gray-400">This is a team event</label>
+              </div>
+              <div>
                 <label className="block text-sm text-gray-400 mb-1">Cover Image</label>
                 <input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] || null)} className="w-full text-gray-300" />
               </div>
@@ -378,6 +431,11 @@ const Competitions = () => {
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(competition?.difficulty || 'Unknown')}`}>
                     {competition.difficulty}
                   </span>
+                  {competition.isTeamEvent && (
+                    <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-600/70 text-white border border-blue-500">
+                      <Users className="h-3 w-3 inline mr-1" /> Team
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -538,7 +596,24 @@ const Competitions = () => {
                 <div className="flex items-center"><Clock className="h-4 w-4 mr-2" /> End: {new Date(selectedCompetition.endDate).toLocaleDateString()}</div>
                 <div className="flex items-center"><Target className="h-4 w-4 mr-2" /> Team Size: {selectedCompetition.teamSize}</div>
                 <div className="flex items-center"><Award className="h-4 w-4 mr-2" /> Prize: {selectedCompetition.prize}</div>
+                {selectedCompetition.isTeamEvent && (
+                  <div className="flex items-center"><Users className="h-4 w-4 mr-2" /> <span className="text-blue-400">Team Event</span></div>
+                )}
               </div>
+              
+              {/* Team Event Link - Only show for team events */}
+              {selectedCompetition.isTeamEvent && (
+                <div className="mt-4">
+                  <a 
+                    href={`/competitions/${selectedCompetition._id}/team`}
+                    className="inline-flex items-center bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors text-sm"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Team
+                  </a>
+                  <p className="text-sm text-gray-400 mt-2">Create or join a team for this competition</p>
+                </div>
+              )}
               <div>
                 <h4 className="text-sm font-medium text-gray-400 mb-2">Tags</h4>
                 <div className="flex flex-wrap gap-2">

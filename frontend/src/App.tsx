@@ -31,6 +31,7 @@ import AdminContests from './components/AdminContests';
 import AdminContestProblems from './components/AdminContestProblems';
 import Projects from './components/Projects'; // Import Projects from its correct location
 import Competitions from './components/Competitions';
+import TeamEvent from './components/TeamEvent';
 
 type Me = {
   _id: string;
@@ -128,6 +129,7 @@ function AppRoutes() {
         <Route path="/contests/:contestId/leaderboard" element={<RequireAuth><ContestLeaderboard /></RequireAuth>} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/competitions" element={<RequireAuth><Competitions /></RequireAuth>} />
+        <Route path="/competitions/:competitionId/team" element={<RequireAuth><TeamEvent /></RequireAuth>} />
         <Route path="/feedback" element={<FeedbackForm />} />
       </Routes>
 
