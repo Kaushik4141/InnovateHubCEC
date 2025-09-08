@@ -162,30 +162,10 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
   const [isAnimating, setIsAnimating] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
-  
-  // Check device type on mount and window resize
-  useEffect(() => {
-    const checkDeviceType = () => {
-      setIsMobileOrTablet(window.innerWidth < 1024);
-    };
-    
-    // Initial check
-    checkDeviceType();
-    
-    // Add resize listener
-    window.addEventListener('resize', checkDeviceType);
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('resize', checkDeviceType);
-    };
-  }, []);
 
   const currentTourStep = tourSteps[currentStep];
   const progress = ((currentStep + 1) / tourSteps.length) * 100;
 
-  // Calculate tooltip position and highlight target element
   useEffect(() => {
     if (!isVisible || !currentTourStep) return;
 
@@ -193,7 +173,6 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
     const overlay = overlayRef.current;
     
     if (targetElement && currentTourStep.target !== 'body') {
-      // Scroll to element if needed
       if (currentTourStep.scrollTo) {
         targetElement.scrollIntoView({ 
           behavior: 'smooth', 
@@ -381,20 +360,36 @@ const TourGuide: React.FC<TourGuideProps> = ({ isVisible, onComplete, onSkip }) 
     onSkip();
   };
 
-  if (!isVisible) return null;
-
-  // Don't render tour guide on mobile or tablet
-  if (isMobileOrTablet) {
-    return null;
-  }
+  // Check if device is mobile or tablet (screen width less than 1024px)
+  const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
   
+  useEffect(() => {
+    const checkDeviceType = () => {
+      setIsMobileOrTablet(window.innerWidth < 1024);
+    };
+    
+    // Initial check
+    checkDeviceType();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkDeviceType);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', checkDeviceType);
+    };
+  }, []);
+  
+  // Don't show tour guide on mobile/tablet or when not visible
+  if (!isVisible || isMobileOrTablet) return null;
+
   return (
     <>
-      {/* Floating Tour Menu - Only visible on desktop */}
+      {/* Floating Tour Menu - Fixed at bottom on mobile, top on desktop */}
       {currentStep > 0 && (
-        <div className="fixed top-4 right-4 z-70">
+        <div className="fixed bottom-4 right-4 sm:top-4 sm:right-4 z-70">
           <div className="bg-gradient-to-r from-gray-800/95 to-gray-900/95 backdrop-blur-xl rounded-full shadow-lg border border-blue-500/30 p-2 flex items-center">
-            <span className="text-white text-sm font-medium mx-2">Tour: {currentStep}/{tourSteps.length}</span>
+            <span className="hidden sm:inline-block text-white text-sm font-medium mx-2">Tour: {currentStep}/{tourSteps.length}</span>
             <div className="flex space-x-1">
               <button 
                 onClick={prevStep} 
