@@ -9,10 +9,26 @@ const CompetitionSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    teamsize: {
+        type : String
+    },
+    Prize:{
+        type: String,
+        default:0
+    },
     startDate: {
         type: String,
         required: true
     },
+    Tag:{
+        type: String,
+        required:true
+    },
+    Reqirements:{
+        type:String,
+        required:true
+   },
+   
     endDate: {
         type: String,
         required: true
@@ -23,6 +39,10 @@ const CompetitionSchema = new mongoose.Schema({
     },
     coverImage: {
         type: String
+    },
+    isTeamEvent: {
+        type: Boolean,
+        default: false
     },
     aplliedBy: [{
         type: mongoose.Schema.Types.ObjectId,

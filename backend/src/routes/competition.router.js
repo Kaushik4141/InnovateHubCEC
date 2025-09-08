@@ -14,7 +14,7 @@ router.route("/create").post(
     verifyJWT, requireAdmin, createCompetition);
 router.get("/", listCompetitions);
 
-router.patch("/:id/details", verifyJWT, getCompetitionDetails);
+router.get("/:id/details", verifyJWT, getCompetitionDetails);
 router.delete("/:id/delete", verifyJWT, requireAdmin, deleteCompetition);
 router.post("/:id/apply", verifyJWT, applyToCompetition);
 

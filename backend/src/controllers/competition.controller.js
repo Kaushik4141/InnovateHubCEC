@@ -11,16 +11,16 @@ export const createCompetition = async (req, res, next) => {
   
   } else {
     try {
-      const { title, description, startDate, endDate, link } = req.body;
+      const { title, description, startDate, endDate, link, teamsize, Prize, Tag, Reqirements, isTeamEvent } = req.body;
 
-      if (!title || !description || !startDate || !endDate || !link) {
+      if (!title || !description || !startDate || !endDate || !link || !Tag || !Reqirements) {
         return res
           .status(400)
           .json(
             new ApiResponse(
               400,
               null,
-              "All fields except coverImage are required"
+              "All required fields must be provided"
             )
           );
       }
@@ -40,6 +40,11 @@ export const createCompetition = async (req, res, next) => {
         startDate,
         endDate,
         link,
+        teamsize,
+        Prize,
+        Tag,
+        Reqirements,
+        isTeamEvent: isTeamEvent === 'true',
         ...(coverimageUrl && { coverImage: coverimageUrl }),
       });
 
