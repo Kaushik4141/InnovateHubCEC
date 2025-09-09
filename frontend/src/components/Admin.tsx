@@ -60,10 +60,16 @@ const Admin = () => {
       <div className="max-w-5xl mx-auto p-6">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-semibold">Admin • Mentor Applications</h1>
-          <button
-            onClick={() => navigate('/admin/contests')}
-            className="px-3 py-1.5 text-sm rounded bg-indigo-600 hover:bg-indigo-700"
-          >Contests Admin</button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/admin/competitions')}
+              className="px-3 py-1.5 text-sm rounded bg-purple-600 hover:bg-purple-700"
+            >Competitions Admin</button>
+            <button
+              onClick={() => navigate('/admin/contests')}
+              className="px-3 py-1.5 text-sm rounded bg-indigo-600 hover:bg-indigo-700"
+            >Contests Admin</button>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 mb-4">

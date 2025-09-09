@@ -29,6 +29,8 @@ import SolveProblem from './components/SolveProblem';
 import ContestLeaderboard from './components/ContestLeaderboard';
 import AdminContests from './components/AdminContests';
 import AdminContestProblems from './components/AdminContestProblems';
+import AdminCompetitions from './components/AdminCompetitions';
+import CompetitionParticipants from './components/CompetitionParticipants';
 import Projects from './components/Projects'; // Import Projects from its correct location
 import Competitions from './components/Competitions';
 import TeamEvent from './components/TeamEvent';
@@ -107,6 +109,8 @@ function AppRoutes() {
         <Route path="/admin" element={<RequireAdmin><Admin /></RequireAdmin>} />
         <Route path="/admin/contests" element={<RequireAdmin><AdminContests /></RequireAdmin>} />
         <Route path="/admin/contests/:contestId/problems" element={<RequireAdmin><AdminContestProblems /></RequireAdmin>} />
+        <Route path="/admin/competitions" element={<RequireAdmin><AdminCompetitions /></RequireAdmin>} />
+        <Route path="/admin/competitions/:competitionId/participants" element={<RequireAdmin><CompetitionParticipants /></RequireAdmin>} />
         <Route path="/dashboard" element={<RequireOnboardingComplete><Dashboard /></RequireOnboardingComplete>} />
         <Route path="/profile" element={<RequireOnboardingComplete><Profile /></RequireOnboardingComplete>} />
         <Route path="/messages" element={<RequireOnboardingComplete><Messages /></RequireOnboardingComplete>} />

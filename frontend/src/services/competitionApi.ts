@@ -49,4 +49,36 @@ export const competitionApi = {
     const response = await api.delete(`api/v1/competitions/${id}/delete`);
     return response.data;
   },
+  
+  getCompetitionParticipants: async (id: string) => {
+    const response = await api.get(`api/v1/competitions/${id}/details`);
+    return response.data;
+  },
 };
+
+export const teamApi = {
+  searchTeams: async (competitionId: string) => {
+    const response = await api.get(`api/v1/teams/search?competition=${competitionId}`);
+    return response.data;
+  },
+  
+  getTeamDetails: async (teamId: string) => {
+    const response = await api.get(`api/v1/teams/details/${teamId}`);
+    return response.data;
+  }
+};
+
+// Mock team data for testing
+export const mockTeamData = [
+  {
+    _id: 'team1',
+    name: 'Team Alpha',
+    members: [
+      { _id: 'user1', fullname: 'Kaushik H S', email: 'kaushik0r0s@gmail.com' },
+      { _id: 'user2', fullname: 'test kaush', email: 'k92032398@gmail.com' },
+      { _id: 'user3', fullname: 'Chaithra S', email: 'schaithra2006@gmail.com' }
+    ],
+    leader: { _id: 'user1', fullname: 'Kaushik H S', email: 'kaushik0r0s@gmail.com' },
+    competition: 'comp1'
+  }
+];

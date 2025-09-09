@@ -617,7 +617,7 @@ const Competitions = () => {
               <div>
                 <h4 className="text-sm font-medium text-gray-400 mb-2">Tags</h4>
                 <div className="flex flex-wrap gap-2">
-                  {selectedCompetition.tags || [].map((t) => (
+                  {(selectedCompetition.tags || []).map((t) => (
                     <span key={t} className="px-2 py-1 bg-gray-700 text-gray-300 rounded-md text-xs">{t}</span>
                   ))}
                 </div>
@@ -625,7 +625,7 @@ const Competitions = () => {
               <div>
                 <h4 className="text-sm font-medium text-gray-400 mb-2">Requirements</h4>
                 <ul className="text-xs text-gray-500 space-y-1">
-                  {selectedCompetition.requirements || [].map((req, idx) => (
+                  {(selectedCompetition.requirements || []).map((req, idx) => (
                     <li key={idx} className="flex items-center"><div className="w-1 h-1 bg-purple-400 rounded-full mr-2"></div>{req}</li>
                   ))}
                 </ul>
