@@ -11,6 +11,9 @@ import {
   Calendar,
   Award,
   Code,
+  ChevronDown,
+  ChevronUp,
+  X,
 } from "lucide-react";
 import {
   NetworkStats,
@@ -29,6 +32,8 @@ const Network = () => {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [invitations, setInvitations] = useState<ConnectionRequest[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
 
@@ -36,11 +41,7 @@ const Network = () => {
     loadNetworkData();
   }, []);
 
-  const avatarUrlFrom = (
-    id: string,
-    name: string,
-    avatar?: string
-  ) => {
+  const avatarUrlFrom = (id: string, name: string, avatar?: string) => {
     const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
     const isDefault = avatar && avatar.includes('default_avatar');
     if (!isUsable || isDefault) {
@@ -145,104 +146,135 @@ const Network = () => {
     }
   };
 
+  const clearSearch = () => {
+    setSearchTerm("");
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">My Network</h1>
-          <p className="text-gray-400">
-            Manage your connections and discover new people to connect with
+        <div className="mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">My Network</h1>
+          <p className="text-gray-400 text-sm md:text-base">
+            Manage your connections and discover new people
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-400 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-white">
-                  {stats?.connections || 0}
-                </p>
-                <p className="text-sm text-gray-400">Connections</p>
+        {/* Stats - Horizontal scroll on mobile */}
+        <div className="overflow-x-auto pb-2 mb-6 hide-scrollbar">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 min-w-max">
+            <div className="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700 min-w-[150px]">
+              <div className="flex items-center">
+                <Users className="h-6 w-6 md:h-8 md:w-8 text-blue-400 mr-2 md:mr-3" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-white">
+                    {stats?.connections || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-400">Connections</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center">
-              <UserPlus className="h-8 w-8 text-green-400 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-white">
-                  {stats?.pendingInvitations || 0}
-                </p>
-                <p className="text-sm text-gray-400">Pending Invitations</p>
+            <div className="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700 min-w-[150px]">
+              <div className="flex items-center">
+                <UserPlus className="h-6 w-6 md:h-8 md:w-8 text-green-400 mr-2 md:mr-3" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-white">
+                    {stats?.pendingInvitations || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-400">Pending</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center">
-              <Star className="h-8 w-8 text-yellow-400 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-white">
-                  {stats?.followers || 0}
-                </p>
-                <p className="text-sm text-gray-400">Followers</p>
+            <div className="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700 min-w-[150px]">
+              <div className="flex items-center">
+                <Star className="h-6 w-6 md:h-8 md:w-8 text-yellow-400 mr-2 md:mr-3" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-white">
+                    {stats?.followers || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-400">Followers</p>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-            <div className="flex items-center">
-              <Award className="h-8 w-8 text-purple-400 mr-3" />
-              <div>
-                <p className="text-2xl font-bold text-white">
-                  {stats?.following || 0}
-                </p>
-                <p className="text-sm text-gray-400">Following</p>
+            <div className="bg-gray-800 rounded-xl p-4 md:p-6 border border-gray-700 min-w-[150px]">
+              <div className="flex items-center">
+                <Award className="h-6 w-6 md:h-8 md:w-8 text-purple-400 mr-2 md:mr-3" />
+                <div>
+                  <p className="text-xl md:text-2xl font-bold text-white">
+                    {stats?.following || 0}
+                  </p>
+                  <p className="text-xs md:text-sm text-gray-400">Following</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         {/* Search and Filter */}
-        <div className="bg-gray-800 rounded-xl p-6 mb-8 border border-gray-700">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search your network..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
-                />
-              </div>
+        <div className="bg-gray-800 rounded-xl p-4 md:p-6 mb-6 border border-gray-700">
+          <div className="flex flex-col gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search your network..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setIsSearchFocused(false)}
+                className="w-full pl-10 pr-10 py-3 md:py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+              />
+              {searchTerm && (
+                <button 
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              )}
             </div>
-            <button className="flex items-center px-4 py-2 bg-gray-700 rounded-lg text-gray-300 hover:bg-gray-600 transition-colors">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </button>
+            
+            <div className="w-full">
+              <button 
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center justify-center w-full px-4 py-3 bg-gray-700 rounded-lg text-gray-300 hover:bg-gray-600 transition-colors"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filter
+                {showFilters ? (
+                  <ChevronUp className="h-4 w-4 ml-2" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                )}
+              </button>
+              
+              {showFilters && (
+                <div className="mt-4 p-4 bg-gray-700 rounded-lg">
+                  <p className="text-gray-300 text-sm text-center">Filter options coming soon</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs - Improved mobile scrolling */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 mb-8">
-          <div className="flex border-b border-gray-700 overflow-x-auto whitespace-nowrap">
+          <div className="flex border-b border-gray-700 overflow-x-auto hide-scrollbar">
             <button
               onClick={() => setActiveTab("suggestions")}
-              className={`px-6 py-4 font-medium transition-colors ${activeTab === "suggestions"
+              className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === "suggestions"
                   ? "text-purple-400 border-b-2 border-purple-400"
                   : "text-gray-400 hover:text-white"
                 }`}
             >
-              People You May Know ({suggestions.length})
+              Suggestions ({suggestions.length})
             </button>
             <button
               onClick={() => setActiveTab("connections")}
-              className={`px-6 py-4 font-medium transition-colors ${activeTab === "connections"
+              className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === "connections"
                   ? "text-purple-400 border-b-2 border-purple-400"
                   : "text-gray-400 hover:text-white"
                 }`}
@@ -251,7 +283,7 @@ const Network = () => {
             </button>
             <button
               onClick={() => setActiveTab("invitations")}
-              className={`px-6 py-4 font-medium transition-colors ${activeTab === "invitations"
+              className={`px-4 py-3 font-medium transition-colors whitespace-nowrap ${activeTab === "invitations"
                   ? "text-purple-400 border-b-2 border-purple-400"
                   : "text-gray-400 hover:text-white"
                 }`}
@@ -260,26 +292,26 @@ const Network = () => {
             </button>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             {activeTab === "connections" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {loading ? (
                   <div className="col-span-full flex justify-center py-8">
                     <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : connections.length === 0 ? (
                   <div className="col-span-full text-center py-8 text-gray-400">
-                    No connections found
+                    {searchTerm ? "No connections match your search" : "No connections yet"}
                   </div>
                 ) : (
                   connections.map((person) => (
                     <div
                       key={person._id}
-                      className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
+                      className="bg-gray-700 rounded-xl p-4 md:p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
                     >
                       <div className="flex items-center mb-4">
                         <div className="relative" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
-                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden">
+                          <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3 md:mr-4 overflow-hidden">
                             <img
                               src={avatarUrlFrom(person._id, person.fullname, person.avatar)}
                               alt={person.fullname}
@@ -288,29 +320,29 @@ const Network = () => {
                             />
                           </div>
                           {person.isOnline && (
-                            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-700"></div>
+                            <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-green-400 rounded-full border-2 border-gray-700"></div>
                           )}
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-white cursor-pointer hover:underline truncate" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
                             {person.fullname}
                           </h3>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-xs md:text-sm text-gray-400">
                             Year {person.year}
                           </p>
-                          <p className="text-sm text-purple-400 line-clamp-2">
+                          <p className="text-xs md:text-sm text-purple-400 line-clamp-2">
                             {person.bio || "Student"}
                           </p>
                         </div>
-                        <Code className="h-5 w-5 text-gray-400" />
+                        <Code className="h-4 w-4 md:h-5 md:w-5 text-gray-400 flex-shrink-0" />
                       </div>
 
-                      <div className="space-y-2 mb-4 text-sm text-gray-400">
+                      <div className="space-y-2 mb-4 text-xs md:text-sm text-gray-400">
                         <div className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-2" />
+                          <Calendar className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                           {person.isOnline
                             ? "Online now"
-                            : `Last active ${person.lastActive
+                            : `Active ${person.lastActive
                               ? new Date(
                                 person.lastActive
                               ).toLocaleDateString()
@@ -320,7 +352,7 @@ const Network = () => {
                       </div>
 
                       <div className="mb-4">
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1 md:gap-2">
                           {person.skills?.slice(0, 3).map((skill) => (
                             <span
                               key={skill}
@@ -332,12 +364,12 @@ const Network = () => {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <button className="w-full sm:flex-1 bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center" onClick={() => navigate(`/messages?to=${person._id}`)}>
-                          <MessageCircle className="h-4 w-4 mr-2" />
+                      <div className="flex gap-2">
+                        <button className="flex-1 bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center text-sm" onClick={() => navigate(`/messages?to=${person._id}`)}>
+                          <MessageCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                           Message
                         </button>
-                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors">
+                        <button className="w-10 bg-gray-600 text-gray-300 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center justify-center">
                           <UserCheck className="h-4 w-4" />
                         </button>
                       </div>
@@ -348,23 +380,23 @@ const Network = () => {
             )}
 
             {activeTab === "suggestions" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {loading ? (
                   <div className="col-span-full flex justify-center py-8">
                     <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                 ) : suggestions.length === 0 ? (
                   <div className="col-span-full text-center py-8 text-gray-400">
-                    No suggestions found
+                    {searchTerm ? "No suggestions match your search" : "No suggestions available"}
                   </div>
                 ) : (
                   suggestions.map((person) => (
                     <div
                       key={person._id}
-                      className="bg-gray-700 rounded-xl p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
+                      className="bg-gray-700 rounded-xl p-4 md:p-6 border border-gray-600 hover:border-purple-500 transition-all duration-300"
                     >
                       <div className="flex items-center mb-4">
-                        <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
+                        <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3 md:mr-4 overflow-hidden" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
                           <img
                             src={avatarUrlFrom(person._id, person.fullname, person.avatar)}
                             alt={person.fullname}
@@ -372,30 +404,30 @@ const Network = () => {
                             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
                           />
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-white cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-white cursor-pointer hover:underline truncate" onClick={() => navigate(`/profile/c/${encodeURIComponent(person.fullname)}`)}>
                             {person.fullname}
                           </h3>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-xs md:text-sm text-gray-400">
                             Year {person.year}
                           </p>
-                          <p className="text-sm text-purple-400 line-clamp-2">
+                          <p className="text-xs md:text-sm text-purple-400 line-clamp-2">
                             {person.bio || "Student"}
                           </p>
                         </div>
-                        <Code className="h-5 w-5 text-gray-400" />
+                        <Code className="h-4 w-4 md:h-5 md:w-5 text-gray-400 flex-shrink-0" />
                       </div>
 
-                      <div className="space-y-2 mb-4 text-sm text-gray-400">
+                      <div className="space-y-2 mb-4 text-xs md:text-sm text-gray-400">
                         <div className="flex items-center">
-                          <Users className="h-4 w-4 mr-2" />
+                          <Users className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                           {person.mutualConnections} mutual connections
                         </div>
-                        <p className="text-blue-400">{person.reason}</p>
+                        <p className="text-blue-400 text-xs md:text-sm">{person.reason}</p>
                       </div>
 
                       <div className="mb-4">
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap gap-1 md:gap-2">
                           {person.skills?.slice(0, 3).map((skill) => (
                             <span
                               key={skill}
@@ -409,9 +441,9 @@ const Network = () => {
 
                       <button
                         onClick={() => handleConnect(person._id)}
-                        className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center"
+                        className="w-full bg-purple-600 text-white py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors flex items-center justify-center text-sm"
                       >
-                        <UserPlus className="h-4 w-4 mr-2" />
+                        <UserPlus className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                         Connect
                       </button>
                     </div>
@@ -421,7 +453,7 @@ const Network = () => {
             )}
 
             {activeTab === "invitations" && (
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 {loading ? (
                   <div className="flex justify-center py-8">
                     <div className="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
@@ -434,11 +466,11 @@ const Network = () => {
                   invitations.map((invitation) => (
                     <div
                       key={invitation._id}
-                      className="bg-gray-700 rounded-xl p-6 border border-gray-600"
+                      className="bg-gray-700 rounded-xl p-4 md:p-6 border border-gray-600"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-center">
-                          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-4 overflow-hidden" onClick={() => navigate(`/profile/c/${encodeURIComponent(invitation.from.fullname)}`)}>
+                          <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3 md:mr-4 overflow-hidden" onClick={() => navigate(`/profile/c/${encodeURIComponent(invitation.from.fullname)}`)}>
                             <img
                               src={avatarUrlFrom(invitation.from._id, invitation.from.fullname, invitation.from.avatar)}
                               alt={invitation.from.fullname}
@@ -446,35 +478,35 @@ const Network = () => {
                               onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); }}
                             />
                           </div>
-                          <div className="flex-1">
-                            <h3 className="font-semibold text-white cursor-pointer hover:underline" onClick={() => navigate(`/profile/c/${encodeURIComponent(invitation.from.fullname)}`)}>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-white cursor-pointer hover:underline truncate" onClick={() => navigate(`/profile/c/${encodeURIComponent(invitation.from.fullname)}`)}>
                               {invitation.from.fullname}
                             </h3>
-                            <p className="text-sm text-gray-400">
+                            <p className="text-xs md:text-sm text-gray-400">
                               Year {invitation.from.year}
                             </p>
-                            <p className="text-sm text-purple-400 line-clamp-2">
+                            <p className="text-xs md:text-sm text-purple-400 line-clamp-2">
                               {invitation.from.bio || "Student"}
                             </p>
                           </div>
                         </div>
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
                           {new Date(invitation.date).toLocaleDateString()}
                         </span>
                       </div>
 
-                      <div className="mt-4 p-4 bg-gray-600 rounded-lg">
-                        <p className="text-gray-300 text-sm italic">
+                      <div className="mt-4 p-3 md:p-4 bg-gray-600 rounded-lg">
+                        <p className="text-gray-300 text-xs md:text-sm italic">
                           "Hi! I'd like to connect with you."
                         </p>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                      <div className="flex flex-col sm:flex-row gap-2 mt-4">
                         <button
                           onClick={() =>
                             handleAcceptInvitation(invitation.from._id)
                           }
-                          className="w-full sm:w-auto bg-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors"
+                          className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-purple-700 transition-colors text-sm"
                         >
                           Accept
                         </button>
@@ -482,12 +514,12 @@ const Network = () => {
                           onClick={() =>
                             handleDeclineInvitation(invitation.from._id)
                           }
-                          className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors"
+                          className="flex-1 bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors text-sm"
                         >
                           Decline
                         </button>
-                        <button className="w-full sm:w-auto bg-gray-600 text-gray-300 px-6 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center" onClick={() => navigate(`/messages?to=${invitation.from._id}`)}>
-                          <MessageCircle className="h-4 w-4 mr-2" />
+                        <button className="flex-1 bg-gray-600 text-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors flex items-center justify-center text-sm" onClick={() => navigate(`/messages?to=${invitation.from._id}`)}>
+                          <MessageCircle className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
                           Message
                         </button>
                       </div>
@@ -499,6 +531,16 @@ const Network = () => {
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </div>
   );
 };
