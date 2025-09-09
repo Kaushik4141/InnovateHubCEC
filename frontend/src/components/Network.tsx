@@ -4,15 +4,12 @@ import {
   Users,
   UserPlus,
   Search,
-  Filter,
   MessageCircle,
   UserCheck,
   Star,
   Calendar,
   Award,
   Code,
-  ChevronDown,
-  ChevronUp,
   X,
 } from "lucide-react";
 import {
@@ -32,7 +29,6 @@ const Network = () => {
   const [connections, setConnections] = useState<Connection[]>([]);
   const [suggestions, setSuggestions] = useState<ConnectionSuggestion[]>([]);
   const [invitations, setInvitations] = useState<ConnectionRequest[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL;
   const navigate = useNavigate();
@@ -213,53 +209,6 @@ const Network = () => {
           </div>
         </div>
 
-        {/* Search and Filter */}
-        <div className="bg-gray-800 rounded-xl p-4 md:p-6 mb-6 border border-gray-700">
-          <div className="flex flex-col gap-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search your network..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setIsSearchFocused(false)}
-                className="w-full pl-10 pr-10 py-3 md:py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
-              />
-              {searchTerm && (
-                <button 
-                  onClick={clearSearch}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              )}
-            </div>
-            
-            <div className="w-full">
-              <button 
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center justify-center w-full px-4 py-3 bg-gray-700 rounded-lg text-gray-300 hover:bg-gray-600 transition-colors"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-                {showFilters ? (
-                  <ChevronUp className="h-4 w-4 ml-2" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 ml-2" />
-                )}
-              </button>
-              
-              {showFilters && (
-                <div className="mt-4 p-4 bg-gray-700 rounded-lg">
-                  <p className="text-gray-300 text-sm text-center">Filter options coming soon</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
         {/* Tabs - Improved mobile scrolling */}
         <div className="bg-gray-800 rounded-xl border border-gray-700 mb-8">
           <div className="flex border-b border-gray-700 overflow-x-auto hide-scrollbar">
@@ -293,6 +242,30 @@ const Network = () => {
           </div>
 
           <div className="p-4 md:p-6">
+            {/* Search bar for Suggestions and Connections tabs */}
+            {(activeTab === "suggestions" || activeTab === "connections") && (
+              <div className="relative mb-6">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={`Search ${activeTab}...`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  className="w-full pl-10 pr-10 py-3 md:py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                />
+                {searchTerm && (
+                  <button 
+                    onClick={clearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
+            )}
+
             {activeTab === "connections" && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {loading ? (

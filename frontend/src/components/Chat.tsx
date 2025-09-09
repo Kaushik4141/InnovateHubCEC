@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import Header from './Header';
 import {
   Search, Plus, Reply as ReplyIcon, X, Menu, Paperclip, Send, Users,
-  Pin, Trash2, Smile, ChevronUp, ChevronDown
+  Pin, Trash2, Smile, ChevronUp, ChevronDown, ArrowLeft
 } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import {
@@ -24,23 +24,19 @@ import { getCurrentUser, type CurrentUser, type UserMin } from '../services/user
 import MediaLightbox, { type LightboxMedia } from './MediaLightbox';
 import UserSearchModal from './UserSearchModal';
 
-// --- Mock small server-like API placeholders (replace with your real APIs) ---
 const deleteMessageApi = async (messageId: string, forEveryone: boolean) => {
-  // Replace with your real API call
   console.log('deleteMessageApi', messageId, forEveryone);
   return new Promise((r) => setTimeout(r, 400));
 };
-// -------------------------------------------------------------------------
+
 const Chat: React.FC = () => {
   const { socket, onlineUsers, sendPrivateMessage, sendRoomMessage, joinRoom, leaveRoom } = useChat();
-  // lists + selection
   const [rooms, setRooms] = useState<Room[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [scope, setScope] = useState<'room' | 'dm'>('room');
-  const [activeId, setActiveId] = useState<string | null>(null); // roomId or userId
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [pinnedMessage, setPinnedMessage] = useState<Msg | null>(null);
-  // UI state
   const [input, setInput] = useState('');
   const [replyTo, setReplyTo] = useState<Msg | null>(null);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -49,15 +45,12 @@ const Chat: React.FC = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const [highlightId, setHighlightId] = useState<string | null>(null);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [onlineUsersOpen, setOnlineUsersOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);
   const [openNewModal, setOpenNewModal] = useState(false);
-  // extra features
-  const [reactionPicker, setReactionPicker] = useState<string | null>(null); 
+  const [reactionPicker, setReactionPicker] = useState<string | null>(null);
   const [activeDeleteMenu, setActiveDeleteMenu] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [searchParams] = useSearchParams();
-  // Search functionality
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Msg[]>([]);
   const [currentSearchIndex, setCurrentSearchIndex] = useState(-1);
@@ -67,14 +60,14 @@ const Chat: React.FC = () => {
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
-  const [showWelcomeScreen, setShowWelcomeScreen] = useState(true);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const apiBase = import.meta.env.VITE_API_URL;
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  
-  // Track if we've auto-opened the general room on desktop
   const hasAutoOpenedGeneral = useRef(false);
-  
-  // helpers
+
+  // Detect mobile device
+  const isMobile = window.innerWidth < 768;
+
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
     const isUsable = avatar && (avatar.startsWith('http') || avatar.startsWith('/'));
     const isDefault = avatar && avatar.includes('default_avatar');
@@ -84,7 +77,7 @@ const Chat: React.FC = () => {
     }
     return (avatar as string) || '';
   };
-  
+
   const normalizeMediaUrl = (url: string) => {
     if (!url) return url;
     try {
@@ -98,33 +91,27 @@ const Chat: React.FC = () => {
       return url.startsWith('http://res.cloudinary.com') ? url.replace(/^http:/, 'https:') : url;
     }
   };
-  
+
   const initials = (name?: string) => {
     if (!name) return '?';
     const parts = name.trim().split(' ');
     return (parts[0]?.[0] || '') + (parts[1]?.[0] || '');
   };
-  
-  // message unique DOM id: prefer _id (DB id), fallback to clientId, fallback to index
+
   const messageDomId = (m: Msg, idx: number) => String((m as any)?._id || (m as any)?.clientId || `idx-${idx}`);
-  
-  // Smart text truncation that handles long words
+
   const truncateText = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text;
-    // Check if it's a long word/URL without spaces
     if (text.indexOf(' ') === -1 && text.length > maxLength) {
       return text.substring(0, maxLength - 3) + '...';
     }
-    // Normal truncation for sentences
     const truncated = text.substring(0, maxLength);
     const lastSpace = truncated.lastIndexOf(' ');
     return (lastSpace > maxLength * 0.7 ? truncated.substring(0, lastSpace) : truncated) + '...';
   };
 
-  // Escape user input for safe regex usage
   const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  // --- Load lists & current user ---
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -138,8 +125,6 @@ const Chat: React.FC = () => {
         setContacts(contactsData);
         setCurrentUser(userData);
         
-        // Auto-open General room on desktop
-        const isMobile = window.innerWidth < 768;
         if (!isMobile && !hasAutoOpenedGeneral.current) {
           const generalRoom = roomsData.find(r => r.name.toLowerCase() === 'general');
           if (generalRoom) {
@@ -155,28 +140,13 @@ const Chat: React.FC = () => {
     loadData();
   }, []);
 
-  // Handle window resize to show appropriate view
-  useEffect(() => {
-    const handleResize = () => {
-      const isMobile = window.innerWidth < 768;
-      if (isMobile && activeId) {
-        // On mobile, we want to show the conversation list by default
-        setShowWelcomeScreen(false);
-        setMobileSidebarOpen(true);
-      }
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [activeId]);
-  
   useEffect(() => {
     const to = searchParams.get('to');
     if (!to) return;
     if (contacts.some(c => c.user._id === to)) {
       setScope('dm');
       setActiveId(to);
-      setShowWelcomeScreen(false);
+      setMobileSidebarOpen(false);
       return;
     }
     (async () => {
@@ -194,33 +164,28 @@ const Chat: React.FC = () => {
         setContacts(prev => [newContact, ...prev]);
         setScope('dm');
         setActiveId(chatThread.user._id);
-        setShowWelcomeScreen(false);
+        setMobileSidebarOpen(false);
       } catch (e) {
         console.warn('deep link chat thread creation failed', e);
       }
     })();
   }, [searchParams, contacts, onlineUsers]);
   
-  // Scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
   
-  // focus input when chat opens
   useEffect(() => {
     if (activeId && inputRef.current) {
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [activeId]);
   
-  // socket listeners for real-time messages (merge of both snippets)
   useEffect(() => {
     if (!socket) return;
     const onRoom = (msg: Msg) => {
-      // incoming room message
       if (!(scope === 'room' && msg.roomId === activeId)) return;
       setMessages(prev => {
-        // if clientId present, merge update
         if ((msg as any).clientId) {
           const idx = prev.findIndex(p => (p as any).clientId === (msg as any).clientId);
           if (idx !== -1) {
@@ -234,7 +199,6 @@ const Chat: React.FC = () => {
       });
     };
     const onDM = (msg: Msg) => {
-      // incoming private message
       const target = typeof msg.sender === 'string' ? msg.sender : (msg.sender as any)?._id;
       if (!(scope === 'dm' && (msg.receiverUser === activeId || target === activeId))) return;
       setMessages(prev => {
@@ -264,7 +228,7 @@ const Chat: React.FC = () => {
       if (!payload || !(payload as any)._id) return;
       setMessages(prev => {
         const idx = prev.findIndex(m => (m as any)._id === (payload as any)._id);
-        if (idx === -1) return prev; // ignore updates not in current view
+        if (idx === -1) return prev;
         const next = prev.slice();
         next[idx] = { ...next[idx], ...(payload as any) } as any;
         if (Object.prototype.hasOwnProperty.call(payload, 'pinned')) {
@@ -288,7 +252,7 @@ const Chat: React.FC = () => {
     if (activeId && scope === 'room') leaveRoom(activeId);
     setScope('room');
     setActiveId(id);
-    setShowWelcomeScreen(false);
+    setMobileSidebarOpen(false);
     joinRoom(id);
     setLoadingMessages(true);
     try {
@@ -305,7 +269,7 @@ const Chat: React.FC = () => {
     if (activeId && scope === 'room') leaveRoom(activeId);
     setScope('dm');
     setActiveId(id);
-    setShowWelcomeScreen(false);
+    setMobileSidebarOpen(false);
     setLoadingMessages(true);
     try {
       const hist = await getPrivateMessages(id);
@@ -317,7 +281,6 @@ const Chat: React.FC = () => {
     }
   }
   
-  // send message (room or dm) with optimistic UI
   async function handleSend() {
     if (!input.trim() || !activeId || sendingMessage) return;
     setSendingMessage(true);
@@ -365,7 +328,6 @@ const Chat: React.FC = () => {
     }
   }
   
-  // handle file upload and optimistic send
   async function handleFile(e: React.ChangeEvent<HTMLInputElement> | File | undefined) {
     const file = (e && (e as React.ChangeEvent<HTMLInputElement>).target) ? (e as React.ChangeEvent<HTMLInputElement>).target.files?.[0] : (e as File | undefined);
     if (!file || !activeId || uploadingFile) return;
@@ -410,29 +372,23 @@ const Chat: React.FC = () => {
     }
   }
   
-  // delete message (optimistic)
   const handleDeleteMessage = async (messageId: string | undefined, forEveryone: boolean) => {
     if (!messageId) return;
-    // optimistic remove: matches _id or clientId
     setMessages(prev => prev.filter(m => !((m as any)._id === messageId || (m as any).clientId === messageId)));
     try {
       await deleteMessageApi(messageId, forEveryone);
     } catch (err) {
       console.error('delete failed', err);
-      // - optionally you could refetch messages to restore
     } finally {
       setActiveDeleteMenu(null);
     }
   };
   
-  // Pin message for current conversation
   const handlePinMessage = async (message: Msg) => {
     try {
-      // Unpin previous pinned message locally
       if (pinnedMessage) {
         setMessages(prev => prev.map(m => ((m as any)._id === (pinnedMessage as any)._id ? { ...m, pinned: false } : m)));
       }
-      // Pin selected message locally
       setMessages(prev => prev.map(m => ((m as any)._id === (message as any)._id ? { ...m, pinned: true } : m)));
       setPinnedMessage({ ...message, pinned: true } as Msg);
       await pinMessageApi((message as any)._id);
@@ -441,7 +397,6 @@ const Chat: React.FC = () => {
     }
   };
   
-  // jump to message in DOM, highlight momentarily
   const jumpToMessage = (id?: string) => {
     if (!id) return;
     const container = messagesRef.current;
@@ -454,7 +409,6 @@ const Chat: React.FC = () => {
     }
   };
   
-  // reaction handling (local only)
   const emojis = ['👍', '❤', '😂', '😮', '😢', '🔥', '👏'];
   const handleReact = (messageId: string, emoji: string) => {
     setMessages(prev => prev.map(msg => {
@@ -477,14 +431,12 @@ const Chat: React.FC = () => {
     }
   };
   
-  // filtered contacts search
   const filteredContacts = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return contacts;
     return contacts.filter(c => c.user.fullname.toLowerCase().includes(q));
   }, [contacts, search]);
   
-  // selectedConversation meta (for header)
   const selectedConversation = useMemo(() => {
     if (!activeId) return null;
     if (scope === 'room') {
@@ -496,14 +448,12 @@ const Chat: React.FC = () => {
     }
   }, [activeId, scope, rooms, contacts, onlineUsers]);
   
-  // when messages loaded we optionally scroll to bottom (some places also set pinned message earlier)
   useEffect(() => {
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, [messages]);
   
-  // Search functionality
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       setIsSearchActive(false);
@@ -549,17 +499,14 @@ const Chat: React.FC = () => {
     setCurrentSearchIndex(-1);
   };
 
-  // Copy message to clipboard
   const copyMessage = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      // You could add a toast notification here
     } catch (err) {
       console.error('Failed to copy message:', err);
     }
   };
 
-  // Close any open overlays when touching outside
   useEffect(() => {
     const handleClickOutside = () => {
       setReactionPicker(null);
@@ -570,48 +517,46 @@ const Chat: React.FC = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, []);
 
-  // On mobile, show conversation list by default
-  useEffect(() => {
-    const isMobile = window.innerWidth < 768;
-    if (isMobile) {
-      setMobileSidebarOpen(true);
-    }
-  }, []);
+  const handleBackToConversations = () => {
+    setActiveId(null);
+    setMobileSidebarOpen(true);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white overflow-hidden">
       <Header />
-      <div className="h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] bg-gray-900 text-white flex overflow-hidden">
-        {/* Mobile Drawer Overlay */}
-        {mobileSidebarOpen && (
-          <div className="fixed inset-0 z-50 md:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
-            <div className="absolute left-0 top-0 h-full w-full max-w-[280px] xs:max-w-[320px] bg-gray-900 border-r border-gray-800 safe-area-inset overflow-y-auto">
-              {/* Mobile sidebar header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
-                <h2 className="text-lg font-semibold">Chats</h2>
-                <button 
-                  onClick={() => setMobileSidebarOpen(false)} 
-                  className="touch-target text-gray-400 hover:text-white p-2 rounded-full bg-gray-800/50"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <div className="p-4 space-y-4">
-                {/* Search conversations input */}
+      <div className="h-[calc(100vh-64px)] bg-gray-900 text-white flex overflow-hidden">
+        {/* Mobile Conversations List (WhatsApp style) */}
+        {(!activeId || mobileSidebarOpen) && isMobile && (
+          <div className="fixed inset-0 z-50 bg-gray-900 lg:hidden">
+            <div className="h-full flex flex-col">
+              {/* Header */}
+              <div className="p-4 border-b border-gray-700 bg-gray-900">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-white">Chats</h2>
+                  <button 
+                    onClick={() => setOpenNewModal(true)}
+                    className="text-gray-400 hover:text-white"
+                  >
+                    <Plus className="h-6 w-6" />
+                  </button>
+                </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input 
-                    value={search} 
-                    onChange={(e) => setSearch(e.target.value)} 
-                    className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-base" 
-                    placeholder="Search conversations..." 
+                  <input
+                    type="text"
+                    placeholder="Search conversations..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
                   />
                 </div>
-                
+              </div>
+              
+              {/* Conversations List */}
+              <div className="flex-1 overflow-y-auto">
                 {/* Rooms section */}
-                <div>
+                <div className="p-4 border-b border-gray-700">
                   <h3 className="text-sm uppercase text-gray-400 mb-3 font-medium">Rooms</h3>
                   <ul className="space-y-1">
                     {rooms.map(r => (
@@ -621,7 +566,7 @@ const Chat: React.FC = () => {
                             openRoom(r._id); 
                             setMobileSidebarOpen(false); 
                           }} 
-                          className={`w-full text-left px-3 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center touch-target ${scope === 'room' && activeId === r._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}
+                          className="w-full text-left px-3 py-3 rounded-lg hover:bg-gray-800 transition-colors flex items-center"
                         >
                           <span className="text-purple-400 mr-3 flex-shrink-0">#</span>
                           <span className="truncate text-base">{r.name}</span>
@@ -632,7 +577,7 @@ const Chat: React.FC = () => {
                 </div>
                 
                 {/* Direct Messages section */}
-                <div>
+                <div className="p-4">
                   <h3 className="text-sm uppercase text-gray-400 mb-3 font-medium">Direct Messages</h3>
                   <ul className="space-y-1">
                     {filteredContacts.map(c => (
@@ -642,7 +587,7 @@ const Chat: React.FC = () => {
                             openDM(c.user._id); 
                             setMobileSidebarOpen(false); 
                           }} 
-                          className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-800 transition-colors touch-target ${scope === 'dm' && activeId === c.user._id ? 'bg-gray-800 ring-1 ring-purple-500/50' : ''}`}
+                          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-gray-800 transition-colors"
                         >
                           <div className="relative flex-shrink-0">
                             <span className={`absolute -top-1 -right-1 h-3 w-3 rounded-full ${c.online ? 'bg-green-400 ring-2 ring-gray-900' : 'bg-gray-500'}`}></span>
@@ -667,53 +612,8 @@ const Chat: React.FC = () => {
           </div>
         )}
 
-        {/* Online Users Mobile Drawer */}
-        {onlineUsersOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setOnlineUsersOpen(false)} />
-            <div className="absolute right-0 top-0 h-full w-full max-w-[280px] bg-gray-900 border-l border-gray-800 safe-area-inset overflow-y-auto">
-              {/* Mobile online users header */}
-              <div className="flex items-center justify-between p-4 border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
-                <h2 className="text-lg font-semibold">Online Users</h2>
-                <button 
-                  onClick={() => setOnlineUsersOpen(false)} 
-                  className="touch-target text-gray-400 hover:text-white p-2 rounded-full bg-gray-800/50"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              
-              <div className="p-4">
-                <ul className="space-y-3">
-                  {Array.from(onlineUsers).map(id => {
-                    const contact = contacts.find(c => c.user._id === id);
-                    return (
-                      <li key={id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-800/50">
-                        <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0"></span>
-                        {contact ? (
-                          <>
-                            <img 
-                              src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} 
-                              alt={contact.user.fullname} 
-                              className="h-8 w-8 rounded-full object-cover flex-shrink-0" 
-                            />
-                            <span className="text-gray-300 truncate min-w-0">{contact.user.fullname}</span>
-                          </>
-                        ) : (
-                          <span className="text-gray-300 truncate min-w-0">{id}</span>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Sidebar - Desktop */}
+        {/* Desktop Sidebar */}
         <aside className="hidden md:block w-72 border-r border-gray-800 pt-16 px-4 pb-4 space-y-6 h-full overflow-y-auto">
-          {/* Search conversations input */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input 
@@ -785,621 +685,488 @@ const Chat: React.FC = () => {
           </div>
         </aside>
 
-        {/* Main Chat Area */}
+        {/* Chat Area */}
         <main className="flex-1 flex flex-col h-full overflow-hidden bg-gray-900">
-          {/* Chat Header */}
-          <header className="min-h-[56px] flex items-center justify-between px-3 sm:px-4 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm sticky top-0 z-20">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <button 
-                className="md:hidden touch-target text-gray-300 hover:text-white p-2 rounded-md hover:bg-gray-800 flex-shrink-0" 
-                onClick={() => setMobileSidebarOpen(true)} 
-                aria-label="Open chats"
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-base sm:text-lg font-semibold truncate">
-                  {showWelcomeScreen ? 'Chat' : (selectedConversation?.name || 'Select a chat')}
-                </h1>
-                {selectedConversation?.online && (
-                  <span className="text-xs text-green-400 block sm:hidden">Active now</span>
-                )}
-              </div>
-              {selectedConversation?.online && (
-                <span className="text-xs text-green-400 hidden sm:block">Active now</span>
-              )}
-            </div>
-            
-            {/* Search Navigation in Header */}
-            {!showWelcomeScreen && (
-              <div className="flex items-center gap-2">
-                {isSearchActive ? (
-                  <div className="flex items-center bg-gray-800 rounded-lg px-2 py-1">
+          {selectedConversation ? (
+            <>
+              {/* Chat Header */}
+              <header className="min-h-[56px] flex items-center justify-between px-3 sm:px-4 border-b border-gray-800 bg-gray-900/95 backdrop-blur-sm sticky top-0 z-20">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {isMobile && (
                     <button 
-                      onClick={() => navigateSearchResults('prev')} 
-                      disabled={searchResults.length === 0}
-                      className="touch-target p-1 text-gray-400 hover:text-white disabled:opacity-30"
+                      className="text-gray-300 hover:text-white p-2 rounded-md hover:bg-gray-800 flex-shrink-0" 
+                      onClick={handleBackToConversations}
+                      aria-label="Back to conversations"
                     >
-                      <ChevronUp className="h-4 w-4" />
+                      <ArrowLeft className="h-5 w-5" />
                     </button>
-                    
-                    <div className="mx-1 text-xs text-gray-300 min-w-[60px] text-center">
-                      {searchResults.length > 0 
-                        ? `${currentSearchIndex + 1}/${searchResults.length}`
-                        : '0 results'}
-                    </div>
-                    
-                    <button 
-                      onClick={() => navigateSearchResults('next')} 
-                      disabled={searchResults.length === 0}
-                      className="touch-target p-1 text-gray-400 hover:text-white disabled:opacity-30"
-                    >
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                    
-                    <button 
-                      onClick={closeSearch}
-                      className="touch-target p-1 text-gray-400 hover:text-white ml-2"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-base sm:text-lg font-semibold truncate">
+                      {selectedConversation.name}
+                    </h1>
+                    {selectedConversation.online && (
+                      <span className="text-xs text-green-400">Active now</span>
+                    )}
                   </div>
-                ) : (
-                  <button 
-                    onClick={() => setIsSearchActive(true)}
-                    className="touch-target text-gray-400 hover:text-white p-2 rounded-md hover:bg-gray-800"
-                    aria-label="Search messages"
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {pinnedMessage && (
+                    <button 
+                      className="text-gray-400 hover:text-white"
+                      onClick={() => jumpToMessage((pinnedMessage as any)._id)}
+                      title="Jump to pinned message"
+                    >
+                      <Pin className="h-4 w-4 sm:h-5 sm:w-5 fill-current text-purple-500" />
+                    </button>
+                  )}
+                  
+                  {/* Desktop Search */}
+                  <div className="hidden lg:block relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search messages..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSearch();
+                        if (e.key === 'Escape') closeSearch();
+                      }}
+                      className="w-40 xl:w-48 pl-8 pr-16 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                    />
+                    {searchResults.length > 0 && (
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                        <button
+                          onClick={() => navigateSearchResults('prev')}
+                          className="p-1 hover:bg-gray-600 rounded"
+                          title="Previous match"
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                        </button>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">{currentSearchIndex + 1}/{searchResults.length}</span>
+                        <button
+                          onClick={() => navigateSearchResults('next')}
+                          className="p-1 hover:bg-gray-600 rounded"
+                          title="Next match"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile Search Toggle */}
+                  <button
+                    className="lg:hidden text-gray-400 hover:text-white"
+                    onClick={() => setShowMobileSearch(!showMobileSearch)}
                   >
                     <Search className="h-5 w-5" />
                   </button>
-                )}
-                
-                <button 
-                  className="lg:hidden touch-target text-gray-400 hover:text-white p-2 rounded-md hover:bg-gray-800" 
-                  onClick={() => setOnlineUsersOpen(true)} 
-                  aria-label="Online users"
-                >
-                  <Users className="h-5 w-5" />
-                </button>
-              </div>
-            )}
-          </header>
-          
-          {/* Search Input (appears below header when active) */}
-          {isSearchActive && (
-            <div className="bg-gray-800 p-3 border-b border-gray-700">
-              <div className="flex items-center gap-2">
-                <Search className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSearch();
-                    if (e.key === 'Escape') closeSearch();
-                  }}
-                  placeholder="Search messages..."
-                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-base focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  autoFocus
-                />
-                {searchQuery && (
-                  <button 
-                    onClick={handleSearch}
-                    className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-lg flex-shrink-0 touch-target"
-                  >
-                    <Search className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {/* Messages Area */}
-          <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 safe-area-bottom space-y-3 bg-gray-900 relative">
-            {/* Fixed pinned message banner */}
-            {pinnedMessage && (
-              <div className="sticky top-0 z-10 bg-yellow-900/30 border border-yellow-700/50 rounded-lg p-3 mb-3 backdrop-blur-sm flex items-center justify-between">
-                <div 
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => jumpToMessage((pinnedMessage as any)._id)}
-                >
-                  <div className="flex items-center gap-2 text-yellow-300 text-sm mb-1">
-                    <Pin className="h-4 w-4 flex-shrink-0" />
-                    <span className="font-medium">Pinned Message</span>
-                  </div>
-                  <div className="text-white text-sm truncate">
-                    {pinnedMessage.type === 'text' 
-                      ? pinnedMessage.content 
-                      : pinnedMessage.type === 'image' 
-                        ? '📷 Image' 
-                        : pinnedMessage.type === 'video' 
-                          ? '🎥 Video' 
-                          : pinnedMessage.type === 'file' 
-                            ? '📄 File' 
-                            : 'Media'}
-                  </div>
                 </div>
-                <button 
-                  onClick={async () => {
-                    const id = (pinnedMessage as any)?._id as string | undefined;
-                    setPinnedMessage(null);
-                    setMessages(prev => prev.map(m => 
-                      (m as any)._id === (pinnedMessage as any)._id ? { ...m, pinned: false } : m
-                    ));
-                    if (id) {
-                      try { await unpinMessageApi(id); } catch {}
-                    }
-                  }}
-                  className="text-yellow-300 hover:text-yellow-200 ml-2 flex-shrink-0 touch-target p-1"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            )}
+              </header>
 
-            {showWelcomeScreen ? (
-              <div className="h-full flex items-center justify-center p-4">
-                <div className="text-center max-w-sm">
-                  <div className="bg-purple-900/20 p-6 rounded-full inline-flex mb-4">
-                    <Users className="h-10 w-10 text-purple-400" />
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2">Welcome to Chat</h2>
-                  <p className="text-gray-400">Select a conversation or create a new one to start messaging</p>
-                </div>
-              </div>
-            ) : loadingMessages ? (
-              <div className="h-full flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="h-full flex items-center justify-center p-4">
-                <div className="text-center max-w-sm">
-                  <div className="bg-gray-800 p-6 rounded-full inline-flex mb-4">
-                    <Send className="h-10 w-10 text-gray-400" />
-                  </div>
-                  <h2 className="text-xl font-semibold mb-2">No messages yet</h2>
-                  <p className="text-gray-400">Send a message to start the conversation</p>
-                </div>
-              </div>
-            ) : (
-              messages.map((msg, idx) => {
-                const isMe = typeof msg.sender === 'string' ? msg.sender === 'me' : (msg.sender as UserMin)?._id === currentUser?._id;
-                const senderName = typeof msg.sender === 'string' ? 'Me' : (msg.sender as UserMin)?.fullname || 'Unknown';
-                const senderAvatar = typeof msg.sender === 'string' ? currentUser?.avatar : (msg.sender as UserMin)?.avatar;
-                const messageId = messageDomId(msg, idx);
-                const isHighlighted = highlightId === ((msg as any)._id || (msg as any).clientId);
-                const isSearchResult = searchResults.some(result => 
-                  (result as any)._id === (msg as any)._id || 
-                  (result as any).clientId === (msg as any).clientId
-                );
-                const isCurrentSearchResult = currentSearchIndex !== -1 && 
-                  searchResults[currentSearchIndex] && 
-                  ((searchResults[currentSearchIndex] as any)._id === (msg as any)._id || 
-                   (searchResults[currentSearchIndex] as any).clientId === (msg as any).clientId);
-
-                return (
-                  <div
-                    key={messageId}
-                    data-mid={messageId}
-                    className={`flex gap-2 sm:gap-3 group px-1 py-2 ${isMe ? 'justify-end' : 'justify-start'} ${isHighlighted ? 'animate-pulse bg-purple-900/20 rounded-lg' : ''} ${isSearchResult ? 'bg-gray-800/30' : ''} ${isCurrentSearchResult ? 'ring-2 ring-purple-500' : ''}`}
-                  >
-                    {!isMe && (
-                      <img
-                        src={avatarUrlFrom(
-                          typeof msg.sender === 'string' ? undefined : (msg.sender as UserMin)?._id,
-                          senderName,
-                          senderAvatar
-                        )}
-                        alt={senderName}
-                        className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1"
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).onerror = null;
-                          (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png');
-                        }}
-                      />
-                    )}
-                    <div className={`max-w-[85%] sm:max-w-[70%] ${isMe ? 'flex flex-col items-end' : ''}`}>
-                      {!isMe && <span className="text-xs text-gray-400 mb-1 px-2">{senderName}</span>}
-                      
-                      {/* Reply context */}
-                      {msg.replyTo && (
-                        <div className={`bg-gray-800/50 border-l-2 border-purple-500 rounded-tr-lg rounded-br-lg p-2 mb-1 text-sm max-w-full ${isMe ? 'rounded-tl-lg' : 'rounded-tl-lg'}`}>
-                          <div className="text-purple-400 text-xs">
-                            {typeof msg.replyTo.sender === 'string' 
-                              ? 'Me' 
-                              : (msg.replyTo.sender as UserMin)?.fullname || 'Unknown'}
-                          </div>
-                          <div className="text-gray-300 truncate">
-                            {msg.replyTo.type === 'text' 
-                              ? msg.replyTo.content 
-                              : msg.replyTo.type === 'image' 
-                                ? '📷 Image' 
-                                : msg.replyTo.type === 'video' 
-                                  ? '🎥 Video' 
-                                  : msg.replyTo.type === 'file' 
-                                    ? '📄 File' 
-                                    : 'Media'}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className={`relative group/message ${isMe ? 'bg-purple-600' : 'bg-gray-800'} rounded-2xl px-3 sm:px-4 py-2`}>
-                        {/* Message content */}
-                        {msg.type === 'text' ? (
-                          <div className="text-white break-words text-sm sm:text-base leading-relaxed">
-                            {msg.content.split(' ').map((word, i) => {
-                              // Highlight search matches in message text
-                              if (isSearchActive && searchQuery) {
-                                const regex = new RegExp(`(${escapeRegExp(searchQuery)})`, 'gi');
-                                const parts = word.split(regex);
-                                
-                                return (
-                                  <span key={i}>
-                                    {parts.map((part, j) => 
-                                      part.toLowerCase() === searchQuery.toLowerCase() 
-                                        ? <span key={j} className="bg-yellow-500/30 text-yellow-200">{part}</span>
-                                        : part
-                                    )}{' '}
-                                  </span>
-                                );
-                              }
-                              return <span key={i}>{word} </span>;
-                            })}
-                          </div>
-                        ) : msg.type === 'image' ? (
-                          <img
-                            src={normalizeMediaUrl(msg.content)}
-                            alt="Shared image"
-                            className="max-w-full max-h-48 sm:max-h-64 rounded-lg cursor-pointer"
-                            onClick={() => {
-                              setLightboxMedia({ type: 'image', url: normalizeMediaUrl(msg.content) });
-                              setLightboxOpen(true);
-                            }}
-                            onError={(e) => {
-                              (e.currentTarget as HTMLImageElement).onerror = null;
-                              (e.currentTarget as HTMLImageElement).src = '/image-placeholder.png';
-                            }}
-                          />
-                        ) : msg.type === 'video' ? (
-                          <video
-                            src={normalizeMediaUrl(msg.content)}
-                            className="max-w-full max-h-48 sm:max-h-64 rounded-lg"
-                            controls
-                            preload="metadata"
-                          />
-                        ) : (
-                          <a
-                            href={normalizeMediaUrl(msg.content)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-blue-300 hover:text-blue-200 touch-target"
-                          >
-                            <Paperclip className="h-4 w-4" />
-                            <span className="text-sm">Download file</span>
-                          </a>
-                        )}
-                        
-                        {/* Message time and status */}
-                        <div className={`text-xs mt-1 ${isMe ? 'text-purple-200' : 'text-gray-400'} flex items-center justify-end gap-1`}>
-                          {msg.createdAt && new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          {isMe && (msg as any).status === 'sending' && (
-                            <span className="h-2 w-2 rounded-full bg-gray-400 animate-pulse"></span>
-                          )}
-                          {isMe && (msg as any).status === 'sent' && (
-                            <span className="h-2 w-2 rounded-full bg-green-400"></span>
-                          )}
-                        </div>
-                        
-                        {/* Message actions hover menu - Desktop */}
-                        <div className="absolute -top-10 right-2 z-20 opacity-0 group-hover/message:opacity-100 transition-opacity bg-gray-800 rounded-lg shadow-lg border border-gray-700 hidden md:flex">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setReplyTo(msg);
-                            }}
-                            className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-l-lg"
-                            title="Reply"
-                          >
-                            <ReplyIcon className="h-4 w-4" />
-                          </button>
-                          
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setReactionPicker(reactionPicker === messageId ? null : messageId);
-                            }}
-                            className="p-2 text-gray-300 hover:text-white hover:bg-gray-700"
-                            title="React"
-                          >
-                            <Smile className="h-4 w-4" />
-                          </button>
-                          
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveDeleteMenu(activeDeleteMenu === messageId ? null : messageId);
-                              }}
-                              className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-r-lg"
-                              title="More options"
-                            >
-                              <Menu className="h-4 w-4" />
-                            </button>
-                            
-                            {activeDeleteMenu === messageId && (
-                              <div className="absolute left-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 w-40">
-                                <button
-                                  onClick={() => copyMessage(msg.type === 'text' ? msg.content : msg.content)}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-t-lg"
-                                >
-                                  Copy
-                                </button>
-                                <button
-                                  onClick={() => handlePinMessage(msg)}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700"
-                                >
-                                  {(msg as any).pinned ? 'Unpin' : 'Pin'}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
-                                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700"
-                                >
-                                  Delete
-                                </button>
-                                {isMe && (
-                                  <button
-                                    onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, true)}
-                                    className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-b-lg"
-                                  >
-                                    Delete for everyone
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      
-                        {/* Mobile message actions - Long press or tap menu */}
-                        <div className="md:hidden absolute inset-0 group/mobile">
-                          <button
-                            className="absolute top-1 right-1 opacity-0 group-hover/mobile:opacity-100 bg-gray-700/80 rounded-full p-1"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveDeleteMenu(activeDeleteMenu === messageId ? null : messageId);
-                            }}
-                          >
-                            <Menu className="h-4 w-4 text-gray-300" />
-                          </button>
-                        </div>
+              {/* Mobile Search Bar */}
+              {showMobileSearch && (
+                <div className="lg:hidden relative z-10 bg-gray-800 p-3 border-b border-gray-700">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Search messages..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSearch();
+                        if (e.key === 'Escape') closeSearch();
+                      }}
+                      className="w-full pl-10 pr-20 py-2 text-sm bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                    />
+                    {searchResults.length > 0 && (
+                      <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+                        <button
+                          onClick={() => navigateSearchResults('prev')}
+                          className="p-1 hover:bg-gray-600 rounded"
+                          title="Previous match"
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                        </button>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">{currentSearchIndex + 1}/{searchResults.length}</span>
+                        <button
+                          onClick={() => navigateSearchResults('next')}
+                          className="p-1 hover:bg-gray-600 rounded"
+                          title="Next match"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
                       </div>
-                      
-                      {/* Mobile action menu overlay */}
-                      {activeDeleteMenu === messageId && (
-                        <div className="md:hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-                          <div className="bg-gray-800 rounded-lg border border-gray-700 mx-4 w-full max-w-xs">
-                            <div className="p-4 border-b border-gray-700">
-                              <h3 className="font-semibold">Message Options</h3>
-                            </div>
-                            <div className="p-2 space-y-1">
-                              <button
-                                onClick={() => {
-                                  setReplyTo(msg);
-                                  setActiveDeleteMenu(null);
-                                }}
-                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
-                              >
-                                <ReplyIcon className="h-4 w-4" />
-                                Reply
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setReactionPicker(messageId);
-                                  setActiveDeleteMenu(null);
-                                }}
-                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
-                              >
-                                <Smile className="h-4 w-4" />
-                                React
-                              </button>
-                              <button
-                                onClick={() => {
-                                  copyMessage(msg.type === 'text' ? msg.content : msg.content);
-                                  setActiveDeleteMenu(null);
-                                }}
-                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg"
-                              >
-                                Copy
-                              </button>
-                              <button
-                                onClick={() => {
-                                  handlePinMessage(msg);
-                                  setActiveDeleteMenu(null);
-                                }}
-                                className="w-full text-left px-3 py-3 hover:bg-gray-700 rounded-lg flex items-center gap-3"
-                              >
-                                <Pin className="h-4 w-4" />
-                                {(msg as any).pinned ? 'Unpin' : 'Pin'}
-                              </button>
-                              <button
-                                onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
-                                className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg flex items-center gap-3"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                              </button>
-                              {isMe && (
-                                <button
-                                  onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, true)}
-                                  className="w-full text-left px-3 py-3 text-red-400 hover:bg-gray-700 rounded-lg"
-                                >
-                                  Delete for everyone
-                                </button>
-                              )}
-                            </div>
-                            <div className="p-2 border-t border-gray-700">
-                              <button
-                                onClick={() => setActiveDeleteMenu(null)}
-                                className="w-full px-3 py-2 text-center hover:bg-gray-700 rounded-lg"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Reaction picker */}
-                      {reactionPicker === messageId && (
-                        <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 flex gap-2 z-30">
-                          {emojis.map(emoji => (
-                            <button
-                              key={emoji}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReact(messageId, emoji);
-                              }}
-                              className="p-2 hover:bg-gray-700 rounded transition-transform hover:scale-125 touch-target"
-                            >
-                              <span className="text-lg">{emoji}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Reactions display */}
-                      {msg.reactions && Object.keys(msg.reactions).length > 0 && (
-                        <div className="absolute bottom-0 translate-y-full mt-1 flex gap-1 flex-wrap">
-                          {Object.entries(msg.reactions).map(([emoji, users]) => (
-                            users.length > 0 && (
-                              <div key={emoji} className="bg-gray-800/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
-                                <span>{emoji}</span>
-                                <span className="text-gray-300">{users.length}</span>
-                              </div>
-                            )
-                          ))}
-                        </div>
-                      )}
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Pinned Message */}
+              {pinnedMessage && (
+                <div className="p-3 sm:p-4 bg-gray-700 border-b border-gray-600 flex items-center justify-between text-sm text-gray-300 relative z-10">
+                  <div 
+                    className="flex items-center flex-1 min-w-0 cursor-pointer"
+                    onClick={() => jumpToMessage((pinnedMessage as any)._id)}
+                  >
+                    <Pin className="h-4 w-4 mr-2 flex-shrink-0 text-purple-400" />
+                    <p className="truncate">
+                      {pinnedMessage.type === 'text' 
+                        ? pinnedMessage.content 
+                        : `Media: ${pinnedMessage.type}`
+                      }
+                    </p>
+                  </div>
+                  <button 
+                    onClick={async () => {
+                      const id = (pinnedMessage as any)?._id as string | undefined;
+                      setPinnedMessage(null);
+                      setMessages(prev => prev.map(m => 
+                        (m as any)._id === (pinnedMessage as any)._id ? { ...m, pinned: false } : m
+                      ));
+                      if (id) {
+                        try { await unpinMessageApi(id); } catch {}
+                      }
+                    }} 
+                    className="text-gray-400 hover:text-white ml-2 flex-shrink-0"
+                    title="Unpin message"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Messages Area */}
+              <section ref={messagesRef} className="flex-1 overflow-y-auto p-2 sm:p-4 safe-area-bottom space-y-3 bg-gray-900 relative">
+                {loadingMessages ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                  </div>
+                ) : messages.length === 0 ? (
+                  <div className="h-full flex items-center justify-center p-4">
+                    <div className="text-center max-w-sm">
+                      <div className="bg-gray-800 p-6 rounded-full inline-flex mb-4">
+                        <Send className="h-10 w-10 text-gray-400" />
+                      </div>
+                      <h2 className="text-xl font-semibold mb-2">No messages yet</h2>
+                      <p className="text-gray-400">Send a message to start the conversation</p>
                     </div>
                   </div>
-                );
-              })
-            )}
-            <div ref={bottomRef} className="pb-4" />
-          </section>
-          
-          {/* Reply preview */}
-          {replyTo && (
-            <div className="sticky bottom-16 sm:bottom-20 bg-gray-800 border-t border-gray-700 p-3 flex justify-between items-center mx-2 sm:mx-4 rounded-t-lg">
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-purple-400">
-                  Replying to {typeof replyTo.sender === 'string' ? 'yourself' : (replyTo.sender as UserMin)?.fullname}
+                ) : (
+                  messages.map((msg, idx) => {
+                    const isMe = typeof msg.sender === 'string' ? msg.sender === 'me' : (msg.sender as UserMin)?._id === currentUser?._id;
+                    const senderName = typeof msg.sender === 'string' ? 'Me' : (msg.sender as UserMin)?.fullname || 'Unknown';
+                    const senderAvatar = typeof msg.sender === 'string' ? currentUser?.avatar : (msg.sender as UserMin)?.avatar;
+                    const messageId = messageDomId(msg, idx);
+                    const isHighlighted = highlightId === ((msg as any)._id || (msg as any).clientId);
+                    
+                    return (
+                      <div
+                        key={messageId}
+                        data-mid={messageId}
+                        className={`flex gap-2 sm:gap-3 group px-1 py-2 ${isMe ? 'justify-end' : 'justify-start'} ${isHighlighted ? 'animate-pulse bg-purple-900/20 rounded-lg' : ''}`}
+                      >
+                        {!isMe && (
+                          <img
+                            src={avatarUrlFrom(
+                              typeof msg.sender === 'string' ? undefined : (msg.sender as UserMin)?._id,
+                              senderName,
+                              senderAvatar
+                            )}
+                            alt={senderName}
+                            className="h-8 w-8 rounded-full object-cover flex-shrink-0 mt-1"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).onerror = null;
+                              (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png');
+                            }}
+                          />
+                        )}
+                        <div className={`max-w-[85%] sm:max-w-[70%] ${isMe ? 'flex flex-col items-end' : ''}`}>
+                          {!isMe && <span className="text-xs text-gray-400 mb-1 px-2">{senderName}</span>}
+                          
+                          {/* Reply context */}
+                          {msg.replyTo && (
+                            <div className={`bg-gray-800/50 border-l-2 border-purple-500 rounded-tr-lg rounded-br-lg p-2 mb-1 text-sm max-w-full ${isMe ? 'rounded-tl-lg' : 'rounded-tl-lg'}`}>
+                              <div className="text-purple-400 text-xs">
+                                {typeof msg.replyTo.sender === 'string' 
+                                  ? 'Me' 
+                                  : (msg.replyTo.sender as UserMin)?.fullname || 'Unknown'}
+                              </div>
+                              <div className="text-gray-300 truncate">
+                                {msg.replyTo.type === 'text' 
+                                  ? msg.replyTo.content 
+                                  : msg.replyTo.type === 'image' 
+                                    ? '📷 Image' 
+                                    : msg.replyTo.type === 'video' 
+                                      ? '🎥 Video' 
+                                      : msg.replyTo.type === 'file' 
+                                        ? '📄 File' 
+                                        : 'Media'}
+                              </div>
+                            </div>
+                          )}
+                          
+                          <div className={`relative group/message ${isMe ? 'bg-purple-600' : 'bg-gray-800'} rounded-2xl px-3 sm:px-4 py-2`}>
+                            {/* Message content */}
+                            {msg.type === 'text' ? (
+                              <div className="text-white break-words text-sm sm:text-base leading-relaxed">
+                                {msg.content}
+                              </div>
+                            ) : msg.type === 'image' ? (
+                              <img
+                                src={normalizeMediaUrl(msg.content)}
+                                alt="Shared image"
+                                className="max-w-full max-h-48 sm:max-h-64 rounded-lg cursor-pointer"
+                                onClick={() => {
+                                  setLightboxMedia({ type: 'image', url: normalizeMediaUrl(msg.content) });
+                                  setLightboxOpen(true);
+                                }}
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).onerror = null;
+                                  (e.currentTarget as HTMLImageElement).src = '/image-placeholder.png';
+                                }}
+                              />
+                            ) : msg.type === 'video' ? (
+                              <video
+                                src={normalizeMediaUrl(msg.content)}
+                                className="max-w-full max-h-48 sm:max-h-64 rounded-lg"
+                                controls
+                                preload="metadata"
+                              />
+                            ) : (
+                              <a
+                                href={normalizeMediaUrl(msg.content)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 text-blue-300 hover:text-blue-200"
+                              >
+                                <Paperclip className="h-4 w-4" />
+                                <span className="text-sm">Download file</span>
+                              </a>
+                            )}
+                            
+                            {/* Message time and status */}
+                            <div className={`text-xs mt-1 ${isMe ? 'text-purple-200' : 'text-gray-400'} flex items-center justify-end gap-1`}>
+                              {msg.createdAt && new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {isMe && (msg as any).status === 'sending' && (
+                                <span className="h-2 w-2 rounded-full bg-gray-400 animate-pulse"></span>
+                              )}
+                              {isMe && (msg as any).status === 'sent' && (
+                                <span className="h-2 w-2 rounded-full bg-green-400"></span>
+                              )}
+                            </div>
+                            
+                            {/* Message actions hover menu - Desktop */}
+                            <div className="absolute -top-10 right-2 z-20 opacity-0 group-hover/message:opacity-100 transition-opacity bg-gray-800 rounded-lg shadow-lg border border-gray-700 hidden md:flex">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReplyTo(msg);
+                                }}
+                                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-l-lg"
+                                title="Reply"
+                              >
+                                <ReplyIcon className="h-4 w-4" />
+                              </button>
+                              
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReactionPicker(reactionPicker === messageId ? null : messageId);
+                                }}
+                                className="p-2 text-gray-300 hover:text-white hover:bg-gray-700"
+                                title="React"
+                              >
+                                <Smile className="h-4 w-4" />
+                              </button>
+                              
+                              <div className="relative">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDeleteMenu(activeDeleteMenu === messageId ? null : messageId);
+                                  }}
+                                  className="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-r-lg"
+                                  title="More options"
+                                >
+                                  <Menu className="h-4 w-4" />
+                                </button>
+                                
+                                {activeDeleteMenu === messageId && (
+                                  <div className="absolute left-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-30 w-40">
+                                    <button
+                                      onClick={() => copyMessage(msg.type === 'text' ? msg.content : msg.content)}
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700 rounded-t-lg"
+                                    >
+                                      Copy
+                                    </button>
+                                    <button
+                                      onClick={() => handlePinMessage(msg)}
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-700"
+                                    >
+                                      {(msg as any).pinned ? 'Unpin' : 'Pin'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, false)}
+                                      className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700"
+                                    >
+                                      Delete
+                                    </button>
+                                    {isMe && (
+                                      <button
+                                        onClick={() => handleDeleteMessage((msg as any)._id || (msg as any).clientId, true)}
+                                        className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-700 rounded-b-lg"
+                                      >
+                                        Delete for everyone
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Reaction picker */}
+                          {reactionPicker === messageId && (
+                            <div className="absolute bottom-full left-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-2 flex gap-2 z-30">
+                              {emojis.map(emoji => (
+                                <button
+                                  key={emoji}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReact(messageId, emoji);
+                                  }}
+                                  className="p-2 hover:bg-gray-700 rounded transition-transform hover:scale-125"
+                                >
+                                  <span className="text-lg">{emoji}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Reactions display */}
+                          {msg.reactions && Object.keys(msg.reactions).length > 0 && (
+                            <div className="absolute bottom-0 translate-y-full mt-1 flex gap-1 flex-wrap">
+                              {Object.entries(msg.reactions).map(([emoji, users]) => (
+                                users.length > 0 && (
+                                  <div key={emoji} className="bg-gray-800/80 rounded-full px-2 py-1 text-xs flex items-center gap-1">
+                                    <span>{emoji}</span>
+                                    <span className="text-gray-300">{users.length}</span>
+                                  </div>
+                                )
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={bottomRef} className="pb-4" />
+              </section>
+              
+              {/* Reply preview */}
+              {replyTo && (
+                <div className="sticky bottom-16 sm:bottom-20 bg-gray-800 border-t border-gray-700 p-3 flex justify-between items-center mx-2 sm:mx-4 rounded-t-lg">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-purple-400">
+                      Replying to {typeof replyTo.sender === 'string' ? 'yourself' : (replyTo.sender as UserMin)?.fullname}
+                    </div>
+                    <div className="text-sm text-gray-300 truncate">
+                      {replyTo.type === 'text' 
+                        ? replyTo.content 
+                        : replyTo.type === 'image' 
+                          ? '📷 Image' 
+                          : replyTo.type === 'video' 
+                            ? '🎥 Video' 
+                            : replyTo.type === 'file' 
+                              ? '📄 File' 
+                              : 'Media'}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setReplyTo(null)} 
+                    className="text-gray-400 hover:text-white ml-2 p-1"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
                 </div>
-                <div className="text-sm text-gray-300 truncate">
-                  {replyTo.type === 'text' 
-                    ? replyTo.content 
-                    : replyTo.type === 'image' 
-                      ? '📷 Image' 
-                      : replyTo.type === 'video' 
-                        ? '🎥 Video' 
-                        : replyTo.type === 'file' 
-                          ? '📄 File' 
-                          : 'Media'}
+              )}
+              
+              {/* Message input */}
+              <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-3 sm:p-4 safe-area-bottom">
+                <div className="flex items-end gap-2">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    onChange={handleFile}
+                    accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFile}
+                    className="text-gray-400 hover:text-white p-2 sm:p-3 rounded-full hover:bg-gray-800 flex-shrink-0"
+                    title="Attach file"
+                  >
+                    {uploadingFile ? (
+                      <div className="h-5 w-5 border-t-2 border-purple-500 rounded-full animate-spin"></div>
+                    ) : (
+                      <Paperclip className="h-5 w-5" />
+                    )}
+                  </button>
+                  
+                  <textarea
+                    ref={inputRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    placeholder="Type a message..."
+                    className="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white text-base resize-none max-h-32 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    rows={1}
+                    style={{
+                      minHeight: '44px',
+                    }}
+                  />
+                  
+                  <button
+                    onClick={handleSend}
+                    disabled={sendingMessage || !input.trim()}
+                    className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-400 text-white p-2 sm:p-3 rounded-full flex-shrink-0 transition-colors"
+                    title="Send message"
+                  >
+                    {sendingMessage ? (
+                      <div className="h-5 w-5 border-t-2 border-white rounded-full animate-spin"></div>
+                    ) : (
+                      <Send className="h-5 w-5" />
+                    )}
+                  </button>
                 </div>
               </div>
-              <button 
-                onClick={() => setReplyTo(null)} 
-                className="text-gray-400 hover:text-white ml-2 touch-target p-1"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          )}
-          
-          {/* Message input */}
-          {!showWelcomeScreen && (
-            <div className="sticky bottom-0 bg-gray-900 border-t border-gray-800 p-3 sm:p-4 safe-area-bottom">
-              <div className="flex items-end gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  className="hidden"
-                  onChange={handleFile}
-                  accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingFile}
-                  className="text-gray-400 hover:text-white p-2 sm:p-3 rounded-full hover:bg-gray-800 flex-shrink-0 touch-target"
-                  title="Attach file"
-                >
-                  {uploadingFile ? (
-                    <div className="h-5 w-5 border-t-2 border-purple-500 rounded-full animate-spin"></div>
-                  ) : (
-                    <Paperclip className="h-5 w-5" />
-                  )}
-                </button>
-                
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSend();
-                    }
-                  }}
-                  placeholder="Type a message..."
-                  className="flex-1 bg-gray-800 border border-gray-700 rounded-2xl px-4 py-3 text-white text-base resize-none max-h-32 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  rows={1}
-                  style={{
-                    minHeight: '44px', // Ensure minimum touch target size
-                  }}
-                />
-                
-                <button
-                  onClick={handleSend}
-                  disabled={sendingMessage || !input.trim()}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 disabled:text-gray-400 text-white p-2 sm:p-3 rounded-full flex-shrink-0 transition-colors touch-target"
-                  title="Send message"
-                >
-                  {sendingMessage ? (
-                    <div className="h-5 w-5 border-t-2 border-white rounded-full animate-spin"></div>
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center p-4 overflow-hidden bg-gray-900">
+              {!isMobile && (
+                <div className="text-center max-w-md mx-auto">
+                  <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a conversation</h3>
+                  <p className="text-gray-500 mb-4 text-sm sm:text-base">Choose a conversation from the sidebar to start messaging</p>
+                </div>
+              )}
             </div>
           )}
         </main>
-        
-        {/* Online Users Sidebar - Desktop */}
-        <aside className="hidden lg:block w-64 border-l border-gray-800 pt-16 px-4 pb-4 h-full overflow-y-auto">
-          <h2 className="text-sm uppercase text-gray-400 mb-4">Online Users</h2>
-          <ul className="space-y-2">
-            {Array.from(onlineUsers).map(id => {
-              const contact = contacts.find(c => c.user._id === id);
-              return (
-                <li key={id} className="flex items-center gap-3 p-2 rounded-lg bg-gray-800/50">
-                  <span className="h-2 w-2 rounded-full bg-green-400 flex-shrink-0"></span>
-                  {contact ? (
-                    <>
-                      <img 
-                        src={avatarUrlFrom(contact.user._id, contact.user.fullname, contact.user.avatar)} 
-                        alt={contact.user.fullname} 
-                        className="h-8 w-8 rounded-full object-cover flex-shrink-0" 
-                      />
-                      <span className="text-sm text-gray-300 truncate min-w-0">{contact.user.fullname}</span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-gray-300 truncate min-w-0">{id}</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </aside>
       </div>
       
       {/* Media Lightbox */}
@@ -1426,7 +1193,7 @@ const Chat: React.FC = () => {
             setContacts(prev => [newContact, ...prev]);
             setScope('dm');
             setActiveId(user._id);
-            setShowWelcomeScreen(false);
+            setMobileSidebarOpen(false);
           }
           setOpenNewModal(false);
         }}
