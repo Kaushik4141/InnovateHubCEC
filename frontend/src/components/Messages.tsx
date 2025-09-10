@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import Header from './Header';
 import { 
   Search, Plus, Reply as ReplyIcon, X, Menu, Paperclip, 
-  Smile, Users, Send, Pin, Trash2, ChevronDown, ChevronUp
+  Smile, Users, Send, Pin, Trash2, ChevronDown, ChevronUp,
+  ArrowLeft
 } from 'lucide-react';
 import { useChat } from '../context/ChatContext';
 import { listContacts, getPrivateMessages, uploadChatFile, getOrCreateChatThread, reactToMessage as reactToMessageApi, pinMessage as pinMessageApi, unpinMessage as unpinMessageApi, type Message as ChatMsg, type Contact } from '../services/chatApi';
@@ -27,7 +28,7 @@ const Messages = () => {
   const [search, setSearch] = useState('');
   const [messageSearch, setMessageSearch] = useState('');
   const [openNewModal, setOpenNewModal] = useState(false);
-    const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const [replyTo, setReplyTo] = useState<ChatMsg | null>(null);
@@ -35,11 +36,14 @@ const Messages = () => {
   const [pinnedMessage, setPinnedMessage] = useState<ChatMsg | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const genClientId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true); // Show sidebar by default on mobile
   const [activeDeleteMenu, setActiveDeleteMenu] = useState<string | null>(null);
   const [searchMatches, setSearchMatches] = useState<string[]>([]);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+  // Detect mobile device
+  const isMobile = window.innerWidth < 768;
 
   const apiBase = import.meta.env.VITE_API_URL;
   const avatarUrlFrom = (id?: string, name?: string, avatar?: string) => {
@@ -57,7 +61,7 @@ const Messages = () => {
       try {
         const list = await listContacts();
         setContacts(list || []);
-         setContacts((prev) => {
+        setContacts((prev) => {
           const merged = new Map<string, Contact>();
           prev.forEach((c) => merged.set(c.user._id, c));
           (list || []).forEach((c) => {
@@ -85,7 +89,7 @@ const Messages = () => {
               }
             }
           });
-            const uniq: Contact[] = [];
+          const uniq: Contact[] = [];
           const seen = new Set<string>();
           for (const c of ordered) {
             const id = c.user._id;
@@ -109,6 +113,7 @@ const Messages = () => {
     const existing = contacts.find(c => c.user._id === to);
     if (existing) {
       setSelectedChat(to);
+      setMobileSidebarOpen(false); // Close sidebar when opening a chat
       return;
     }
     const fetchChatThread = async () => {
@@ -123,12 +128,13 @@ const Messages = () => {
           lastMessage: undefined,
           online: onlineUsers.has(chatThread.user._id),
         } as any;
- setContacts(prev => (
+        setContacts(prev => (
           prev.some(p => p.user._id === newContact.user._id)
             ? prev
             : [newContact, ...prev]
         ));
         setSelectedChat(chatThread.user._id);
+        setMobileSidebarOpen(false); // Close sidebar when opening a chat
       } catch (e) {
         console.error('Failed to get or create chat thread for deep-link', e);
       }
@@ -424,22 +430,32 @@ const Messages = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [activeDeleteMenu, reactionPicker]);
 
+  // WhatsApp-like mobile navigation
+  const handleBackToConversations = () => {
+    setSelectedChat(null);
+    setMobileSidebarOpen(true);
+    setSearchParams({});
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col overflow-x-hidden">
       <Header />
       
       <div className="h-[calc(100vh-64px)] overflow-hidden">
         <div className="flex h-full relative overflow-x-hidden">
-          {/* Mobile Overlay */}
-          {mobileSidebarOpen && (
-            <div className="fixed inset-0 z-50 lg:hidden">
-              <div className="absolute inset-0 bg-black/50" onClick={() => setMobileSidebarOpen(false)} />
-              <div className="absolute left-0 top-0 h-full w-full max-w-sm bg-gray-900 border-r border-gray-800 flex flex-col overflow-hidden">
-                <div className="p-4 border-b border-gray-700">
+          {/* Mobile Conversations List (WhatsApp style) */}
+          {(!selectedChat || mobileSidebarOpen) && isMobile && (
+            <div className="fixed inset-0 z-50 bg-gray-900 lg:hidden">
+              <div className="h-full flex flex-col">
+                {/* Header */}
+                <div className="p-4 border-b border-gray-700 bg-gray-900">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-white">Messages</h2>
-                    <button onClick={() => setMobileSidebarOpen(false)} className="text-gray-400 hover:text-white">
-                      <X className="h-5 w-5" />
+                    <h2 className="text-lg font-semibold text-white">Chats</h2>
+                    <button 
+                      onClick={() => setOpenNewModal(true)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <Plus className="h-6 w-6" />
                     </button>
                   </div>
                   <div className="relative">
@@ -449,22 +465,13 @@ const Messages = () => {
                       placeholder="Search conversations..."
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-white placeholder-gray-400"
+                      className="w-full pl-10 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400"
                     />
                   </div>
                 </div>
                 
-                <div className="p-2">
-                  <button
-                    onClick={() => setOpenNewModal(true)}
-                    className="w-full flex items-center justify-center space-x-2 p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors mb-4"
-                  >
-                    <Plus className="h-5 w-5" />
-                    <span>New Conversation</span>
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto pb-4">
+                {/* Conversations List */}
+                <div className="flex-1 overflow-y-auto">
                   {filteredContacts.map((c) => {
                     const id = c.user._id;
                     const convo = {
@@ -479,33 +486,33 @@ const Messages = () => {
                     return (
                       <div
                         key={id}
-                        onClick={() => {setSelectedChat(id);setSearchParams({ to: id }); setMobileSidebarOpen(false);}}
-                       
-                        className={`mx-2 mb-1 p-3 rounded-lg cursor-pointer hover:bg-gray-800 transition-colors ${
-                          selectedChat === id ? 'bg-gray-800 border-l-4 border-l-purple-500' : ''
-                        }`}
+                        onClick={() => {
+                          setSelectedChat(id);
+                          setSearchParams({ to: id });
+                          setMobileSidebarOpen(false);
+                        }}
+                        className="p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-800 transition-colors"
                       >
                         <div className="flex items-center min-w-0">
                           <div className="relative flex-shrink-0">
                             <img
                               src={avatarUrlFrom(c.user._id, c.user.fullname, c.user.avatar)}
                               alt={c.user.fullname}
-                              className="w-10 h-10 rounded-full object-cover mr-3"
+                              className="w-12 h-12 rounded-full object-cover mr-3"
                               onError={(e) => { 
                                 (e.currentTarget as HTMLImageElement).onerror = null; 
                                 (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); 
                               }}
                             />
                             {convo.online && (
-                              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-gray-900"></div>
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-800"></div>
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <h3 className="font-medium text-white truncate flex-1 min-w-0">{convo.name}</h3>
+                              <h3 className="font-semibold text-white truncate flex-1 min-w-0">{convo.name}</h3>
                               <span className="text-xs text-gray-400 flex-shrink-0 ml-2">{convo.timestamp}</span>
                             </div>
-                            <p className="text-xs text-blue-400 mb-1 truncate">{convo.role}</p>
                             <p className="text-sm text-gray-400 truncate">{convo.lastMessage}</p>
                           </div>
                         </div>
@@ -516,17 +523,6 @@ const Messages = () => {
               </div>
             </div>
           )}
-
-          {/* Floating Action Buttons */}
-          {/* <div className="lg:hidden fixed right-4 bottom-4 z-40 flex flex-col space-y-3">
-            <button 
-              className="w-12 h-12 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg transition-colors flex items-center justify-center"
-              onClick={() => setOpenNewModal(true)}
-              title="New conversation"
-            >
-              <Plus className="h-6 w-6" />
-            </button>
-          </div> */}
 
           {/* Desktop Sidebar */}
           <div className="hidden lg:flex lg:w-80 xl:w-96 border-r border-gray-700 flex-col overflow-hidden">
@@ -566,7 +562,7 @@ const Messages = () => {
                 return (
                   <div
                     key={id}
-                   onClick={() => { setSelectedChat(id); setSearchParams({ to: id }); }}
+                    onClick={() => { setSelectedChat(id); setSearchParams({ to: id }); }}
                     className={`p-4 border-b border-gray-700 cursor-pointer hover:bg-gray-700 transition-colors ${
                       selectedChat === id ? 'bg-gray-700 border-l-4 border-l-purple-500' : ''
                     }`}
@@ -606,16 +602,18 @@ const Messages = () => {
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-700 flex-shrink-0 relative z-20">
+                <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-700 flex-shrink-0 relative z-20 bg-gray-900">
                   <div className="flex items-center justify-between min-w-0">
                     <div className="flex items-center flex-1 min-w-0 mr-2 sm:mr-4">
-                      <button 
-                        className="lg:hidden mr-2 sm:mr-3 text-gray-300 hover:text-white flex-shrink-0" 
-                        onClick={() => setMobileSidebarOpen(true)} 
-                        aria-label="Open conversations"
-                      >
-                        <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
-                      </button>
+                      {isMobile && (
+                        <button 
+                          className="mr-2 sm:mr-3 text-gray-300 hover:text-white flex-shrink-0" 
+                          onClick={handleBackToConversations}
+                          aria-label="Back to conversations"
+                        >
+                          <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                        </button>
+                      )}
                       <div className="relative flex-shrink-0">
                         <img
                           src={avatarUrlFrom(
@@ -777,7 +775,7 @@ const Messages = () => {
                 )}
                
                 {/* Messages */}
-                <div ref={messagesRef} className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 pb-20 sm:pb-24 lg:pb-28 space-y-3 sm:space-y-4 min-h-0">
+                <div ref={messagesRef} className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 pb-20 sm:pb-24 lg:pb-28 space-y-3 sm:space-y-4 min-h-0 bg-gray-900">
                   {filteredMessages.map((m, idx) => {
                     const senderId = typeof m.sender === 'string' ? m.sender : m.sender?._id;
                     const isOwn = senderId !== selectedChat;
@@ -791,7 +789,7 @@ const Messages = () => {
                     return (
                       <div key={mid} data-mid={mid} className={`flex ${isOwn ? 'justify-end' : 'justify-start'} group overflow-hidden`}>
                         <div className={`flex items-end space-x-2 w-full max-w-[85%] sm:max-w-[75%] lg:max-w-md ${isOwn ? 'flex-row-reverse space-x-reverse' : ''} min-w-0`}>
-                          {avatarUrl ? (
+                          {!isOwn && avatarUrl ? (
                             <img
                               src={avatarUrl}
                               alt="avatar"
@@ -801,11 +799,11 @@ const Messages = () => {
                                 (e.currentTarget as HTMLImageElement).src = ((apiBase ? apiBase.replace(/\/$/, '') : '') + '/default_avatar.png'); 
                               }}
                             />
-                          ) : (
+                          ) : !isOwn ? (
                             <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                               {avatar?.toString().slice(0, 2) || 'U'}
                             </div>
-                          )}
+                          ) : null}
                           
                           <div className={`w-full max-w-full px-3 sm:px-4 py-2 sm:py-3 rounded-xl sm:rounded-2xl shadow transition-transform duration-150 ${isOwn ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'} hover:scale-[1.02] ${highlightId === mid ? 'ring-2 ring-purple-400' : ''} min-w-0 overflow-hidden`}>
                             {m.replyTo && (
@@ -902,8 +900,6 @@ const Messages = () => {
                             >
                               <Pin className="h-3 w-3 sm:h-4 sm:w-4" />
                             </button>
-                            
-                            
                           </div>
                         </div>
                       </div>
@@ -985,20 +981,16 @@ const Messages = () => {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
-                <div className="text-center max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="h-8 w-8 text-gray-400" />
+              <div className="flex-1 flex items-center justify-center p-4 overflow-hidden bg-gray-900">
+                {!isMobile && (
+                  <div className="text-center max-w-md mx-auto">
+                    <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Users className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a conversation</h3>
+                    <p className="text-gray-500 mb-4 text-sm sm:text-base">Choose a conversation from the sidebar to start messaging</p>
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-400 mb-2">Select a conversation</h3>
-                  <p className="text-gray-500 mb-4 text-sm sm:text-base">Choose a conversation from the sidebar to start messaging</p>
-                  <button 
-                    className="lg:hidden bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors" 
-                    onClick={() => setMobileSidebarOpen(true)}
-                  >
-                    Open conversations
-                  </button>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -1019,6 +1011,7 @@ const Messages = () => {
             setContacts(prev => [newContact, ...prev]);
           }
           setSelectedChat(u._id);
+          setMobileSidebarOpen(false); // Close sidebar when opening a chat
         }}
       />
       
