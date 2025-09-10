@@ -23,6 +23,16 @@ const leetcodeStatsSchema = new mongoose.Schema({
   contributionPoints: Number,
   reputation: Number,
   submissionCalendar: Object,
+  languages: {
+    type: Object,
+    default: {},
+    description: "Object containing language names as keys and submission counts as values"
+  },
+  topLanguage: {
+    type: String,
+    default: "",
+    description: "Most used language by the user for solving problems"
+  },
   lastUpdated: {
     type: Date,
     default: Date.now

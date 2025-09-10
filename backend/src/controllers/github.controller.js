@@ -18,6 +18,50 @@ const fetchContributionData = async (username) => {
     return null;
   }
 };
+
+const fetchLanguagesData = async (username) => {
+  try {
+    const reposUrl = `https://api.github.com/users/${username}/repos?per_page=100`;
+    const reposResponse = await axios.get(reposUrl);
+    const repos = reposResponse.data;
+    
+    if (!Array.isArray(repos) || repos.length === 0) {
+      return { languages: {}, topLanguage: "" };
+    }
+    
+    const languageTotals = {};
+    
+    for (const repo of repos) {
+      if (repo.fork) continue; 
+      
+      const languagesUrl = `https://api.github.com/repos/${username}/${repo.name}/languages`;
+      const languagesResponse = await axios.get(languagesUrl);
+      const repoLanguages = languagesResponse.data;
+      
+      for (const [language, bytes] of Object.entries(repoLanguages)) {
+        languageTotals[language] = (languageTotals[language] || 0) + bytes;
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    let topLanguage = "";
+    let maxBytes = 0;
+    
+    for (const [language, bytes] of Object.entries(languageTotals)) {
+      if (bytes > maxBytes) {
+        maxBytes = bytes;
+        topLanguage = language;
+      }
+    }
+    
+    return { languages: languageTotals, topLanguage };
+  } catch (error) {
+    console.error(`Failed to fetch languages for ${username}:`, error.message);
+    return { languages: {}, topLanguage: "" };
+  }
+};
+
 const calculateStats = (data) => {
     const today = new Date();
     const toISO = (d) => d.toISOString().slice(0, 10);
@@ -40,7 +84,6 @@ const calculateStats = (data) => {
     };
 };
 const updateGithubStatsJob = async () => {
-  // console.log("Running scheduled job: Updating GitHub stats...");
 
   try {
     const usersToUpdate = await User.find({ 
@@ -63,19 +106,23 @@ const updateGithubStatsJob = async () => {
       if (!rawData) continue;
 
       const stats = calculateStats(rawData);
+      
+      const { languages, topLanguage } = await fetchLanguagesData(username);
+      
       await GithubStats.findOneAndUpdate(
         { user: user._id },
         {
           $set: {
             username,
             ...stats,
+            languages,
+            topLanguage,
             lastUpdated: new Date(),
           },
         },
         { upsert: true, new: true }
       );
       
-      // console.log(`Successfully updated stats for ${username}`);
       await new Promise(resolve => setTimeout(resolve, 500)); 
     }
     console.log(`Job finished. Processed ${usersToUpdate.length} users.`);

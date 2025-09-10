@@ -48,8 +48,46 @@ const Leaderboard = () => {
       .finally(() => setContribLoading(false));
   }, [apiBase, contribType, leaderboardType]);
 
+  const getTopLanguageBadge = (user: any) => {
+    if (!user?.topLanguage) return null;
+    return `Top Lang: ${user.topLanguage}`;
+  };
+
+  const getLanguageBadges = (user: any) => {
+    if (!user?.languages || Object.keys(user.languages).length === 0) return [];
+    
+    return Object.entries(user.languages)
+      .sort((a: any, b: any) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([lang, count]: [string, any]) => {
+        if (leaderboardType === 'github') {
+          const kb = Math.round(count / 1024);
+          return `${lang}: ${kb}KB`;
+        } else {
+          return `${lang}: ${count} solved`;
+        }
+      });
+  };
+
   const topPerformers = contribData.map((user: any, idx: number) => {
     if (leaderboardType === 'leetcode') {
+      const languageBadges = getLanguageBadges(user);
+      const topLanguageBadge = getTopLanguageBadge(user);
+      
+      const badges = [
+        `Hard: ${user?.hardSolved ?? 0}`,
+        `Acc. Rate: ${user?.acceptanceRate ?? 0}%`,
+        `World Ranking: ${user?.ranking ?? '-'}`,
+        `Reputation: ${user?.reputation ?? '-'}`,
+        `Contrib: ${user?.contributionPoints ?? '-'}`
+      ];
+      
+      if (topLanguageBadge) {
+        badges.unshift(topLanguageBadge);
+      }
+      
+      badges.push(...languageBadges);
+      
       return {
         rank: idx + 1,
         name: user?.user?.fullname || user?.username || 'Unknown',
@@ -58,20 +96,26 @@ const Leaderboard = () => {
         points: typeof user?.totalSolved === 'number' ? user.totalSolved : 0,
         projects: typeof user?.easySolved === 'number' ? user.easySolved : 0,
         competitions: typeof user?.mediumSolved === 'number' ? user.mediumSolved : 0,
-        badges: [
-          `Hard: ${user?.hardSolved ?? 0}`,
-          `Acc. Rate: ${user?.acceptanceRate ?? 0}%`,
-          `World Ranking: ${user?.ranking ?? '-'}`,
-          `Reputation: ${user?.reputation ?? '-'}`,
-          `Contrib: ${user?.contributionPoints ?? '-'}`
-        ],
+        badges,
         trend: '',
         department: user?.user?.leetcode || user?.username || '',
         level: '',
         streak: '',
         leetcodeProfile: user?.user?.leetcode,
+        topLanguage: user?.topLanguage || ''
       };
     } else {
+      const languageBadges = getLanguageBadges(user);
+      const topLanguageBadge = getTopLanguageBadge(user);
+      
+      const badges = Array.isArray(user?.badges) ? user.badges : [];
+      
+      if (topLanguageBadge) {
+        badges.unshift(topLanguageBadge);
+      }
+      
+      badges.push(...languageBadges);
+      
       return {
         rank: idx + 1,
         name: user?.user?.fullname || user?.username || 'Unknown',
@@ -88,11 +132,12 @@ const Leaderboard = () => {
           : 0,
         projects: typeof user?.projects === 'number' ? user.projects : 0,
         competitions: typeof user?.competitions === 'number' ? user.competitions : 0,
-        badges: Array.isArray(user?.badges) ? user.badges : [],
+        badges,
         trend: user?.trend || '',
         department: user?.department || '',
         level: user?.level || '',
         streak: typeof user?.streak === 'number' ? user.streak : 0,
+        topLanguage: user?.topLanguage || ''
       };
     }
   });
@@ -275,6 +320,13 @@ const Leaderboard = () => {
                 </div>
               </div>
 
+              {/* Display top language if available */}
+              {performer.topLanguage && (
+                <div className="mb-3 px-3 py-1 bg-blue-600/20 text-blue-300 text-xs rounded-full border border-blue-600/30 inline-block">
+                  Top: {performer.topLanguage}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-1 justify-center">
                 {performer.badges.slice(0, 2).map((badge: string, idx: number) => (
                   <span
@@ -356,6 +408,12 @@ const Leaderboard = () => {
                         {performer.username && (
                           <div className="text-xs text-purple-300 font-mono truncate max-w-[100px] sm:max-w-none">
                             {performer.username}
+                          </div>
+                        )}
+                        {/* Display top language if available */}
+                        {performer.topLanguage && (
+                          <div className="text-xs text-blue-300 font-mono px-2 py-0.5 bg-blue-600/10 rounded-full border border-blue-600/20">
+                            {performer.topLanguage}
                           </div>
                         )}
                       </div>

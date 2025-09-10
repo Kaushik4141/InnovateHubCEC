@@ -161,6 +161,14 @@ const Competitions = () => {
 
   const handleApplyToCompetition = async (competitionId: string) => {
     try {
+      const competitionDetails = await competitionApi.getCompetitionDetails(competitionId);
+      const competition = competitionDetails.data;
+      
+      if (competition.isTeamEvent) {
+        navigate(`/competitions/${competitionId}/team`);
+        return;
+      }
+      
       const apiResponse = await competitionApi.applyToCompetition(competitionId);
 
       const data = await competitionApi.listCompetitions();

@@ -12,6 +12,62 @@ function extractLeetcodeUsername(urlOrUsername) {
   return urlOrUsername.split("/").pop();
 }
 
+const fetchLeetcodeLanguageData = async (username) => {
+  try {
+    const url = 'https://leetcode.com/graphql';
+    
+    const query = {
+      query: `
+        query userProfile($username: String!) {
+          matchedUser(username: $username) {
+            submitStats {
+              acSubmissionNum {
+                difficulty
+                count
+              }
+            }
+            languageProblemCount {
+              languageName
+              problemsSolved
+            }
+          }
+        }
+      `,
+      variables: { username }
+    };
+    
+    const response = await axios.post(url, query, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data && response.data.data && response.data.data.matchedUser) {
+      const languageData = response.data.data.matchedUser.languageProblemCount || [];
+      
+      const languages = {};
+      let topLanguage = "";
+      let maxSolved = 0;
+      
+      languageData.forEach(item => {
+        languages[item.languageName] = item.problemsSolved;
+        
+        if (item.problemsSolved > maxSolved) {
+          maxSolved = item.problemsSolved;
+          topLanguage = item.languageName;
+        }
+      });
+      
+      return { languages, topLanguage };
+    }
+    
+    return { languages: {}, topLanguage: "" };
+  } catch (error) {
+    console.error(`Failed to fetch language data for ${username}:`, error.message);
+    return { languages: {}, topLanguage: "" };
+  }
+};
+
 const fetchLeetcodeStatsForUser = async (user) => {
   const username = extractLeetcodeUsername(user.leetcode);
   if (!username) return null;
@@ -20,6 +76,9 @@ const fetchLeetcodeStatsForUser = async (user) => {
     const response = await axios.get(url);
     if (response.data && response.data.status === "success") {
       const data = response.data;
+      
+      const { languages, topLanguage } = await fetchLeetcodeLanguageData(username);
+      
       const stats = {
         user: user._id,
         username: username,
@@ -32,6 +91,8 @@ const fetchLeetcodeStatsForUser = async (user) => {
         contributionPoints: data.contributionPoints,
         reputation: data.reputation,
         submissionCalendar: data.submissionCalendar,
+        languages,
+        topLanguage,
         lastUpdated: new Date()
       };
       await LeetcodeStats.findOneAndUpdate(

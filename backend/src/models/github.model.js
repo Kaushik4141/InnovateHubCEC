@@ -32,7 +32,16 @@ const githubStatsSchema = new Schema(
       type: Number,
       default: 0,
     },
-  
+    languages: {
+      type: Object,
+      default: {},
+      description: "Object containing language names as keys and byte counts as values"
+    },
+    topLanguage: {
+      type: String,
+      default: "",
+      description: "Most used language by the user"
+    },
     lastUpdated: {
       type: Date,
       default: Date.now,
