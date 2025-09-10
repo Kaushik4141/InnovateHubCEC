@@ -157,3 +157,40 @@ export const deleteCompetition = async (req, res, next) => {
     }
   }
 };
+
+export const verifyParticipant = async (req, res, next) => {
+  if (!req.user.isAdmin) {
+    return res
+      .status(403)
+      .json(new ApiResponse(403, null, "Forbidden: Admins only"));
+  }
+  
+  try {
+    const { userId, competitionId } = req.body;
+    
+    if (!userId || !competitionId) {
+      return res
+        .status(400)
+        .json(new ApiResponse(400, null, "User ID and Competition ID are required"));
+    }
+    
+    const competition = await Competition.findById(competitionId);
+    if (!competition) {
+      return res
+        .status(404)
+        .json(new ApiResponse(404, null, "Competition not found"));
+    }
+    
+    const isRegistered = competition.aplliedBy.includes(userId);
+    
+    return res
+      .status(200)
+      .json(new ApiResponse(
+        200, 
+        { isRegistered, competitionTitle: competition.title }, 
+        isRegistered ? "User is registered for this competition" : "User is not registered for this competition"
+      ));
+  } catch (err) {
+    throw new ApiError(500, err.message);
+  }
+};
