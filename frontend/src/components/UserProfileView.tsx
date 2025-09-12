@@ -9,11 +9,14 @@ import {
   Globe,
   Copy,
   Share2,
+  QrCode as QrCodeIcon,
 } from "lucide-react";
+import QRCodeModal from './QRCodeModal';
 import axios from "axios";
 import Loader from "./loading";
 import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
 import ShareModal from "./ShareModal";
+import ActivityGraph from './ActivityGraph';
 
 const UserProfileView = () => {
   const apiBase = import.meta.env.VITE_API_URL;
@@ -26,6 +29,7 @@ const UserProfileView = () => {
   const [lightboxMedia, setLightboxMedia] = useState<LightboxMedia | null>(null);
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [qrCodeOpen, setQrCodeOpen] = useState(false);
   const openLightbox = (m: LightboxMedia) => { setLightboxMedia(m); setLightboxOpen(true); };
 
   // Deterministic unique avatar when no uploaded avatar or default placeholder
@@ -472,6 +476,13 @@ const handleShareProfile = () => {
               >
                 <Share2 className="h-4 w-4 mr-2" /> Share
                 </button>
+                
+                <button 
+                  className="bg-gray-700 text-gray-300 p-2 rounded-lg hover:bg-gray-600 transition-colors"
+                  onClick={() => setQrCodeOpen(true)}
+                >
+                  <QrCodeIcon className="h-5 w-5" />
+                </button>
 
                 <button className="bg-gray-700 text-white p-2 rounded hover:bg-gray-600">
                   <Settings className="h-4 w-4" />
@@ -708,8 +719,18 @@ const handleShareProfile = () => {
                 </div>
               )}
 
-              {activeTab === "activity" && (
-                <p className="text-gray-300">No recent activity.</p>
+              {activeTab === 'activity' && (
+                <div className="p-4">
+                  {user?.github ? (
+                    <ActivityGraph type="github" username={user.github} />
+                  ) : user?.leetcode ? (
+                    <ActivityGraph type="leetcode" username={user.leetcode} />
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400">No recent activity.</p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -724,6 +745,23 @@ const handleShareProfile = () => {
         copied={copied}
         onCopy={handleShareProfile}
       />
+      
+      {/* QR Code Modal */}
+      {user && (
+        <QRCodeModal
+          open={qrCodeOpen}
+          onClose={() => setQrCodeOpen(false)}
+          userId={user._id}
+          fullname={user.fullname}
+          userDetails={{
+            fullname: user.fullname,
+            year: user.year,
+            branch: user.branch,
+            email: user.email,
+            usn: user.usn
+          }}
+        />
+      )}
       </div>
     );
   }

@@ -20,10 +20,12 @@ import {
   Copy,
   QrCodeIcon,
 } from "lucide-react";
+import QRCodeModal from './QRCodeModal';
 import EditProfileModal from "./EditProfileModal";
 import Loader from "./loading";
 import MediaLightbox, { LightboxMedia } from "./MediaLightbox";
 import ShareModal from "./ShareModal";
+import ActivityGraph from './ActivityGraph';
 
 // Component for handling expandable text with read more/less functionality
 const ExpandableText: React.FC<{ text: string; maxLength?: number }> = ({
@@ -368,6 +370,7 @@ const Profile: FC = () => {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false); // Added for ShareModal
+  const [qrCodeOpen, setQrCodeOpen] = useState(false); // Added for QRCodeModal
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
 
@@ -695,7 +698,10 @@ const Profile: FC = () => {
               >
                 <Share2 className="h-4 w-4 mr-2" /> Share
               </button>
-              <button className="bg-gray-700 text-gray-300 p-2 rounded-lg hover:bg-gray-600 transition-colors">
+              <button 
+                className="bg-gray-700 text-gray-300 p-2 rounded-lg hover:bg-gray-600 transition-colors"
+                onClick={() => setQrCodeOpen(true)}
+              >
                 <QrCodeIcon className="h-5 w-5" />
               </button>
             </div>
@@ -1000,9 +1006,23 @@ const Profile: FC = () => {
                     )}
                   </div>
                 )}
-                {activeTab === "activity" && (
-                  <div className="text-center text-gray-400 py-8">
-                    Activity feed coming soon.
+                {activeTab === 'activity' && (
+                  <div className="p-4">
+                    {user?.github ? (
+                      <ActivityGraph type="github" username={user.github} />
+                    ) : user?.leetcode ? (
+                      <ActivityGraph type="leetcode" username={user.leetcode} />
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-400 mb-4">Connect your GitHub or LeetCode account to see your activity graph</p>
+                        <button 
+                          onClick={() => navigate('/settings/connections')} 
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          Connect Accounts
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1041,6 +1061,21 @@ const Profile: FC = () => {
         )}`}
         copied={copied}
         onCopy={handleShareProfile}
+      />
+      
+      {/* QR Code Modal */}
+      <QRCodeModal
+        open={qrCodeOpen}
+        onClose={() => setQrCodeOpen(false)}
+        userId={user._id}
+        fullname={user.fullname}
+        userDetails={{
+          fullname: user.fullname,
+          year: user.year,
+          branch: "CSE",
+          email: user.email,
+          usn: user.usn
+        }}
       />
     </div>
   );
