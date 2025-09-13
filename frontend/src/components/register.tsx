@@ -1,5 +1,5 @@
 import React, { useState, FormEvent } from 'react';
-import axios from 'axios';
+import axios from '../cookiescheker';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
