@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
+import axios from '../cookiescheker';
 import { useNavigate } from 'react-router-dom';
 import { Star, Send, MessageSquare, Bug, Lightbulb, HelpCircle, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';

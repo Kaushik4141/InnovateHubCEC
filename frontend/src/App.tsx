@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from './cookiescheker';
 import { useEffect, useState } from 'react';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';

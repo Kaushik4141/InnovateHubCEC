@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import axios from '../cookiescheker';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
@@ -25,7 +25,7 @@ const Onboarding: React.FC = () => {
     let mounted = true;
     (async () => {
       try {
-        const res = await axios.get(`${apiBase}/api/v1/users/current-user, { withCredentials: true }`);
+        const res = await axios.get(`${apiBase}/api/v1/users/current-user`, { withCredentials: true });
         if (!mounted) return;
         const user: Me = res.data?.data || res.data?.user || res.data; // align with ApiResponse used in backend
         setFullname(user?.fullname || '');

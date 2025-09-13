@@ -6,7 +6,7 @@ import {
   Trophy, Handshake, Menu, X, Group, Award, UserCheck, Folder,
   Calendar, Map, Shield, MessageSquare
 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../cookiescheker';
 
 const Header = () => {
   const navigate = useNavigate();
