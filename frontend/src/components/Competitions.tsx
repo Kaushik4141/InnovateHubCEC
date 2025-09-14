@@ -6,7 +6,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { competitionApi, Competition as CompetitionType } from '../services/competitionApi';
 import { getCurrentUser, type CurrentUser } from '../services/userApi';
-import Header from './Header'; // Import the Header component
+import Header from './Header'; 
 
 type Competition = CompetitionType & {
   organizer?: string;
@@ -40,6 +40,7 @@ const Competitions = () => {
   const [me, setMe] = useState<CurrentUser | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const [form, setForm] = useState({ 
     title: '', 
     description: '', 
@@ -54,6 +55,16 @@ const Competitions = () => {
   });
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const navigate = useNavigate();
+ //if mobile
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 1024); 
+    };
+
+    checkIfMobile();
+    window.addEventListener('resize', checkIfMobile);
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   useEffect(() => {
     const fetchCompetitions = async () => {
@@ -272,7 +283,7 @@ const Competitions = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <Header />
+      {isMobile && <Header />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-6">
           {/* Header */}

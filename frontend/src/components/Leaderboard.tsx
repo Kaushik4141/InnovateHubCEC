@@ -225,8 +225,7 @@ const Leaderboard = () => {
           </p>
         </div>
 
-        {/* Time Period Dropdown - Centered on desktop */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-end mb-6">
           <div className="relative w-full sm:w-64">
             <select
               className="w-full bg-slate-900 text-white border border-purple-500/50 rounded-xl px-5 py-3 pl-16 shadow-lg outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 appearance-none cursor-pointer hover:border-purple-400 hover:bg-slate-800"
