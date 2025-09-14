@@ -386,3 +386,29 @@ catch(e){
 throw new ApiError(500,"Server error",e.message)
 }
 });
+
+export const getUserSubmissions = asyncHandler(async (req, res) => {
+  try {
+    const { contestId, userId } = req.params;
+    
+    if (!req.user.isAdmin) {
+      throw new ApiError(403, "Forbidden: Admins only");
+    }
+    
+    const contest = await Contest.findById(contestId);
+    if (!contest) throw new ApiError(404, "Contest not found");
+    
+    const submissions = await Submission.find({
+      contest: contest._id,
+      user: userId,
+      verdict: "Accepted"
+    })
+    .populate("problem", "title")
+    .sort({ createdAt: 1 })
+    .select("problem languageId sourceCode verdict passed total execTimeMs createdAt");
+    
+    return res.status(200).json(new ApiResponse(200, submissions, "User submissions fetched successfully"));
+  } catch (e) {
+    throw new ApiError(500, "Server error", e.message);
+  }
+});

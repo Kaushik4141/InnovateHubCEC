@@ -131,6 +131,7 @@ const SolveProblem: React.FC = () => {
     if (!contestId || !problemId || !languageId) return;
     setSubmitting(true);
     setResult(null);
+    setCustomTestCaseResult(null); 
     try {
       const data = await submitSolution(contestId, problemId, { languageId, sourceCode });
       setResult(data);
@@ -164,6 +165,7 @@ const SolveProblem: React.FC = () => {
     if (!contestId || !problemId || !languageId) return;
     setRunningCustomTest(true);
     setCustomTestCaseResult(null);
+    setResult(null); 
     try {
       const data = await runCustomTest(
         contestId,
@@ -552,17 +554,30 @@ const SolveProblem: React.FC = () => {
                 
                 {customTestCaseResult ? (
                   customTestCaseResult.error ? (
-                    <div className="text-red-400 p-3 bg-red-900/20 rounded-lg border border-red-800/50">{customTestCaseResult.error}</div>
+                    <div className="space-y-3">
+                      <div className="text-red-400 p-3 bg-red-900/20 rounded-lg border border-red-800/50">
+                        <div className="font-semibold mb-2">❌ Execution Error</div>
+                        <div className="text-sm">{customTestCaseResult.error}</div>
+                      </div>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       <div className={`p-3 rounded-lg border ${customTestCaseResult.passed ? 'text-green-400 bg-green-900/20 border-green-800/50' : 'text-red-400 bg-red-900/20 border-red-800/50'}`}>
-                        {customTestCaseResult.passed ? 'Test Passed' : 'Test Failed'}
+                        <div className="font-semibold mb-1">
+                          {customTestCaseResult.passed ? '✅ Test Passed' : `❌ Test Failed - ${customTestCaseResult.verdict}`}
+                        </div>
+                        {!customTestCaseResult.passed && customTestCaseResult.verdict && (
+                          <div className="text-sm text-red-300">
+                            {customTestCaseResult.verdict === 'Compilation Error' && 'Your code failed to compile. Check for syntax errors.'}
+                            {customTestCaseResult.verdict === 'Runtime Error' && 'Your code crashed during execution. Check for logical errors.'}
+                            {customTestCaseResult.verdict === 'Time Limit Exceeded' && 'Your code took too long to execute. Try optimizing your algorithm.'}
+                            {customTestCaseResult.verdict === 'Wrong Answer' && 'Your output doesn\'t match the expected output.'}
+                            {customTestCaseResult.verdict === 'Internal Error' && 'An internal error occurred. Please try again.'}
+                          </div>
+                        )}
                       </div>
-                      {customTestCaseResult.verdict && (
-                        <div className="text-sm text-gray-400">Verdict: {customTestCaseResult.verdict}</div>
-                      )}
                       {typeof customTestCaseResult.timeMs === 'number' && (
-                        <div className="text-sm text-gray-400">Time: {customTestCaseResult.timeMs} ms</div>
+                        <div className="text-sm text-gray-400">Execution time: {customTestCaseResult.timeMs} ms</div>
                       )}
                       {customTestCaseResult.input && (
                         <div className="mt-3">
@@ -599,17 +614,33 @@ const SolveProblem: React.FC = () => {
                     </div>
                   )
                 ) : result?.error ? (
-                  <div className="text-red-400 p-3 bg-red-900/20 rounded-lg border border-red-800/50">{result.error}</div>
+                  <div className="space-y-3">
+                    <div className="text-red-400 p-3 bg-red-900/20 rounded-lg border border-red-800/50">
+                      <div className="font-semibold mb-2">❌ Submission Error</div>
+                      <div className="text-sm">{result.error}</div>
+                    </div>
+                  </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="text-gray-200 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
-                      Verdict: <span className={result.verdict === 'Accepted' ? 'text-green-400' : 'text-red-400'}>{result.verdict}</span>
+                    <div className={`p-3 rounded-lg border ${result.verdict === 'Accepted' ? 'text-green-400 bg-green-900/20 border-green-800/50' : 'text-red-400 bg-red-900/20 border-red-800/50'}`}>
+                      <div className="font-semibold mb-1">
+                        {result.verdict === 'Accepted' ? '✅ Accepted' : `❌ ${result.verdict}`}
+                      </div>
+                      {result.verdict !== 'Accepted' && (
+                        <div className="text-sm text-red-300">
+                          {result.verdict === 'Compilation Error' && 'Your code failed to compile. Check for syntax errors.'}
+                          {result.verdict === 'Runtime Error' && 'Your code crashed during execution. Check for logical errors.'}
+                          {result.verdict === 'Time Limit Exceeded' && 'Your code took too long to execute. Try optimizing your algorithm.'}
+                          {result.verdict === 'Wrong Answer' && 'Your output doesn\'t match the expected output.'}
+                          {result.verdict === 'Internal Error' && 'An internal error occurred. Please try again.'}
+                        </div>
+                      )}
                     </div>
                     <div className="text-sm text-gray-400">
-                      Passed {result.passed}/{result.total}
+                      Passed {result.passed}/{result.total} test cases
                     </div>
                     {result.execTimeMs != null && (
-                      <div className="text-sm text-gray-400">Time: {result.execTimeMs} ms</div>
+                      <div className="text-sm text-gray-400">Execution time: {result.execTimeMs} ms</div>
                     )}
                     {result.stdout && (
                       <div className="mt-3">

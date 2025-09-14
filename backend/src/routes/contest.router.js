@@ -12,7 +12,8 @@ import {
   attachExistingProblem,
   attachExistingProblemsBulk,
   runCustomTest,
-  getMyProblemStatus
+  getMyProblemStatus,
+  getUserSubmissions
 } from "../controllers/contest.controller.js";
 
 const router = Router();
@@ -31,5 +32,6 @@ router.get("/:contestId/problems/:problemId/my-status", verifyJWT, getMyProblemS
 
 router.post("/:contestId/problems/:problemId/submit", verifyJWT, submitSolution);
 router.get("/:contestId/leaderboard", getLeaderboard);
+router.get("/:contestId/users/:userId/submissions", verifyJWT, getUserSubmissions);
 
 export default router;

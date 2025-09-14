@@ -36,6 +36,13 @@ export type Submission = {
   execTimeMs?: number;
   stdout?: string;
   stderr?: string;
+  languageId?: number;
+  sourceCode?: string;
+  createdAt?: string;
+  problem?: {
+    _id: string;
+    title: string;
+  };
 };
 
 export type LeaderboardRow = {
@@ -123,4 +130,9 @@ export async function runCustomTest(
 export async function getMyProblemStatus(contestId: string, problemId: string) {
   const { data } = await api.get(`/api/v1/contests/${contestId}/problems/${problemId}/my-status`);
   return data?.data as { completed: boolean; acceptedAt: string | null };
+}
+
+export async function getUserSubmissions(contestId: string, userId: string) {
+  const { data } = await api.get(`/api/v1/contests/${contestId}/users/${userId}/submissions`);
+  return (data?.data || []) as Submission[];
 }
