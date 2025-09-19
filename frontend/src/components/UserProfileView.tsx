@@ -17,6 +17,7 @@ import ShareModal from "./ShareModal";
 
 const UserProfileView = () => {
   const apiBase = import.meta.env.VITE_API_URL;
+  const appUrl = 'https://innovatehubcec.vercel.app';
   const { fullname } = useParams<{ fullname: string }>();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -81,8 +82,8 @@ const UserProfileView = () => {
   // --- Connect Button & Notifications Logic ---
 
   const ConnectButton: React.FC<{
-    viewedUser: any;
-    currentUser: any;
+    viewedUser: User;
+    currentUser: User;
     refreshUser: () => void;
   }> = ({ viewedUser, currentUser, refreshUser }) => {
     const [connectStatus, setConnectStatus] = useState<
@@ -91,16 +92,28 @@ const UserProfileView = () => {
 
     useEffect(() => {
       if (!viewedUser || !currentUser) return;
-      if (viewedUser.isfollower || viewedUser.followers?.includes(currentUser._id)) {
+      
+      // Check if users are already connected
+      const isConnected = viewedUser.followers?.includes(currentUser._id) ||
+                         currentUser.following?.includes(viewedUser._id);
+      if (isConnected) {
         setConnectStatus("connected");
-      } else if (viewedUser.followRequests?.includes(currentUser._id)) {
-        setConnectStatus("requested");
-      } else {
-        setConnectStatus("none");
+        return;
       }
+
+      // Check if there's a pending request
+      const hasPendingRequest = viewedUser.followRequests?.includes(currentUser._id);
+      if (hasPendingRequest) {
+        setConnectStatus("requested");
+        return;
+      }
+
+      setConnectStatus("none");
     }, [viewedUser, currentUser]);
 
     const handleConnect = async () => {
+      if (connectStatus !== "none") return;
+      
       setConnectStatus("loading");
       try {
         await axios.post(
@@ -110,26 +123,40 @@ const UserProfileView = () => {
         );
         setConnectStatus("requested");
         refreshUser();
-      } catch {
+      } catch (error) {
+        console.error('Failed to connect:', error);
         setConnectStatus("none");
-        alert("Could not send request.");
+        alert("Could not send connection request. Please try again.");
       }
     };
 
-    return viewedUser._id !== currentUser._id ? (
+    // Don't show button if viewing own profile
+    if (viewedUser._id === currentUser._id) return null;
+
+    const buttonStyle = 
+      connectStatus === "connected" 
+        ? "bg-green-600 hover:bg-green-700" 
+        : connectStatus === "requested"
+          ? "bg-gray-600 hover:bg-gray-700"
+          : connectStatus === "loading"
+            ? "bg-blue-600 opacity-75"
+            : "bg-blue-600 hover:bg-blue-700";
+
+    return (
       <button
-        className={`px-4 py-2 rounded ${connectStatus === "connected" ? "bg-green-600" : "bg-blue-600"
-          } text-white`}
+        className={`px-4 py-2 rounded ${buttonStyle} text-white transition-colors duration-200`}
         onClick={handleConnect}
-        disabled={connectStatus !== "none"}
+        disabled={connectStatus === "loading" || connectStatus === "requested" || connectStatus === "connected"}
       >
         {connectStatus === "connected"
           ? "Connected"
           : connectStatus === "requested"
-            ? "Requested"
-            : "Connect"}
+            ? "Pending"
+            : connectStatus === "loading"
+              ? "Sending..."
+              : "Connect"}
       </button>
-    ) : null;
+    );
   };
 
   // LinkedIn-style image grid component
@@ -284,6 +311,9 @@ const UserProfileView = () => {
     followersCount: number;
     followingCount: number;
     isfollower: boolean;
+    followers: string[];
+    following: string[];
+    followRequests: string[];
   }
 
   const getOrdinalSuffix = (n: number) => {
@@ -345,7 +375,7 @@ const handleShareProfile = () => {
       setError("User not loaded.");
       return;
   }
-    const profileUrl = `${apiBase}/profile/c/${encodeURIComponent(user.fullname)}`;
+    const profileUrl = `${appUrl}/profile/c/${encodeURIComponent(user.fullname)}`;
     
     // Using the Clipboard API
     navigator.clipboard.writeText(profileUrl)

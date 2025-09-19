@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
+
 /* Custom utility for multiline text clamp */
 @layer utilities {
   .line-clamp-2 {

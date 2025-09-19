@@ -370,6 +370,7 @@ const Profile: FC = () => {
   const [shareOpen, setShareOpen] = useState(false); // Added for ShareModal
   const avatarInputRef = React.useRef<HTMLInputElement>(null);
   const apiBase = import.meta.env.VITE_API_URL;
+  const appUrl = 'https://innovatehubcec.vercel.app';
 
   // LinkedIn sync state
   const [syncing, setSyncing] = useState(false);
@@ -590,7 +591,7 @@ const Profile: FC = () => {
       setError("User not loaded.");
       return;
     }
-    const profileUrl = `${apiBase}/profile/c/${encodeURIComponent(
+    const profileUrl = `${appUrl}/profile/c/${encodeURIComponent(
       user.fullname 
     )}`;
 
@@ -1036,7 +1037,7 @@ const Profile: FC = () => {
       <ShareModal
         open={shareOpen}
         onClose={() => setShareOpen(false)}
-        profileUrl={`${apiBase}/profile/c/${encodeURIComponent(
+        profileUrl={`${appUrl}/profile/c/${encodeURIComponent(
           user.fullname
         )}`}
         copied={copied}

@@ -34,7 +34,7 @@ import CompetitionParticipants from './components/CompetitionParticipants';
 import Projects from './components/Projects'; // Import Projects from its correct location
 import Competitions from './components/Competitions';
 import TeamEvent from './components/TeamEvent';
-
+import Landing from './pages/landing';
 type Me = {
   _id: string;
   onboardingCompleted?: boolean;
@@ -135,6 +135,7 @@ function AppRoutes() {
         <Route path="/competitions" element={<RequireAuth><Competitions /></RequireAuth>} />
         <Route path="/competitions/:competitionId/team" element={<RequireAuth><TeamEvent /></RequireAuth>} />
         <Route path="/feedback" element={<FeedbackForm />} />
+        <Route path="/landing" element={<Landing />} />
       </Routes>
 
       {/* Floating Chatbot Button (self-contained) */}
